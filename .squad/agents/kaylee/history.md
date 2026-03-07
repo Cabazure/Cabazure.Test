@@ -428,3 +428,18 @@ This exposed an AutoFixture footgun: types with bool constructor parameters are 
 - All decisions merged to `.squad/decisions.md` (kaylee-cancellationtoken-customization.md, mal-cancellationtoken-docs.md)
 - Key decision: safe default (serializable) takes precedence over live-token expressiveness for discovery compatibility
 
+
+
+### Phase 12: IFixture/Fixture Parameter Injection (2026-03-07T17:33:43Z)
+
+**Task:** Inject live fixture instance for theory parameters of type IFixture or Fixture.
+
+**Implementation:**
+- AutoNSubstituteDataHelper.MergeValues: new branch using parameter.ParameterType.IsAssignableFrom(typeof(Fixture))
+- Covers both IFixture and Fixture in one check
+- Matched parameter receives the live fixture directly; bypasses CreateValue
+- [Frozen] on IFixture parameters: injected normally, frozen branch skipped
+- XML doc on MergeValues updated
+
+**Cross-team QA:** Zoe verified 6 new tests, all 122 passing.
+**Decision logged:** .squad/decisions.md - IFixture/Fixture Parameter Injection in Theory Methods

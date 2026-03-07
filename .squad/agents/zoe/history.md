@@ -445,3 +445,41 @@ ew CancellationToken(true)). This causes methods that check IsCancellationReques
 ew CancellationToken(false) which is equivalent to CancellationToken.None — a safe default that doesn't poison test data.
 
 **Status:** Tests complete and passing. Implementation verified working as designed.
+
+### Phase 12: Fixture Injection Tests (2026-03-07T17:33:43Z)
+
+**Task:** Write tests for AutoNSubstituteDataHelper fixture instance injection.
+
+**Test File Created:**
+- 	ests/Cabazure.Test.Tests/Attributes/AutoNSubstituteDataHelperFixtureInjectionTests.cs (6 tests)
+
+**Coverage:**
+1. Theory_IFixtureParameter_IsNotNull — resolved value is not null
+2. Theory_IFixtureParameter_IsFixtureInstance — resolved value is a concrete AutoFixture.Fixture
+3. Theory_IFixtureParameter_IsSameInstanceResolvingOtherParams — injected fixture is same instance that resolved [Frozen] params
+4. Theory_ConcreteFixtureParameter_IsInjected — concrete Fixture type also works
+5. InlineData_WithIFixtureParameter_InjectsFixture — IFixture fills auto slot after explicit inline value
+6. Theory_FrozenIFixtureParameter_IsInjectedNormally — [Frozen] on IFixture doesn't throw
+
+**Test Results:** ✅ 122/122 passing (6 new + 116 existing)
+
+**Key Pattern:** Test 3 (same-instance check using [Frozen] + ixture.Create<T>()) is the highest-value assertion — proves injection uses the shared fixture, not a new one.
+
+
+### Phase 12: Fixture Injection Tests (2026-03-07T17:33:43Z)
+
+**Task:** Write tests for AutoNSubstituteDataHelper fixture instance injection.
+
+**Test File Created:** tests/Cabazure.Test.Tests/Attributes/AutoNSubstituteDataHelperFixtureInjectionTests.cs (6 tests)
+
+**Coverage:**
+1. Theory_IFixtureParameter_IsNotNull
+2. Theory_IFixtureParameter_IsFixtureInstance
+3. Theory_IFixtureParameter_IsSameInstanceResolvingOtherParams (same-instance check with [Frozen])
+4. Theory_ConcreteFixtureParameter_IsInjected
+5. InlineData_WithIFixtureParameter_InjectsFixture
+6. Theory_FrozenIFixtureParameter_IsInjectedNormally
+
+**Test Results:** 122/122 passing (6 new + 116 existing)
+
+**Key Pattern:** Test 3 is highest-value: proves injected fixture is the shared instance, not a new one.

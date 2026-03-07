@@ -952,3 +952,19 @@ Future Cabazure.Test developers will:
 - Understand the discovery enumeration constraint when adding custom data attributes
 - Follow focused conventional commits as a project pattern
 
+
+---
+
+## Decision: IFixture/Fixture Parameter Injection in Theory Methods
+
+### 2026-03-07 18.32: IFixture/Fixture parameter injection
+**By:** Ricky Kaare Engelharth  
+**What:** Theory parameters of type IFixture or Fixture receive the live fixture instance from MergeValues rather than a fixture-created value. Check: parameter.ParameterType.IsAssignableFrom(typeof(Fixture)).  
+**Why:** Allows test authors to access the fixture directly in theory parameters for advanced setup.
+
+**Implementation:** Branch inserted in AutoNSubstituteDataHelper.MergeValues between the [Frozen] provided-value path and the general CreateValue path. IsAssignableFrom(typeof(Fixture)) handles both IFixture (interface) and Fixture (concrete class) in one check.
+
+**Implications for future work:**
+- Any theory parameter whose type satisfies IsAssignableFrom(typeof(Fixture)) will receive the fixture, not a generated specimen
+- [Frozen] on an IFixture parameter is a no-op (fixture is injected, not frozen into the specimen container)
+- Do not use this pattern for other AutoFixture types — only the live fixture root object is special-cased
