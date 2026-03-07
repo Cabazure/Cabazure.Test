@@ -137,3 +137,33 @@ All fixture-generated `IDisposable`/`IAsyncDisposable` values now disposed deter
 
 **Phase Rationale Validated:**
 xUnit3's `DisposalTracker` is a first-class framework facility designed precisely for this use case. Using it aligns with xUnit3 conventions and eliminates a subtle resource management gap in the previous implementation.
+
+### Phase 22: Namespace Consolidation (3/3) — Finalized (2026-03-07T19:42:15Z)
+
+**Status:** ✅ Complete — All namespace moves committed
+
+**Team Execution:**
+- **Kaylee:** Moved 5 attribute types from `Cabazure.Test.Attributes` → `Cabazure.Test` (AutoNSubstituteDataAttribute family + CustomizeWithAttribute)
+- **Wash:** Moved `FixtureCustomizationCollection` from `Cabazure.Test` → `Cabazure.Test.Customizations`, updated all usings in 20+ test files
+- **Mal (this phase):** Updated `.github/copilot-instructions.md` to reflect new namespace surface; verified git staging; committed with focused conventional commit message
+
+**Outcome:**
+Public API surface simplified. Test authors now need only `using Cabazure.Test;` for all test-facing types:
+- Attributes: `AutoNSubstituteDataAttribute`, `InlineAutoNSubstituteDataAttribute`, `MemberAutoNSubstituteDataAttribute`, `ClassAutoNSubstituteDataAttribute`, `CustomizeWithAttribute`
+- Customizations: `FixtureCustomizationCollection` (now in dedicated Customizations namespace)
+
+`Cabazure.Test.Attributes` namespace remains but contains only internal types (`FixtureDataExtensions`).
+
+**Documentation Decisions:**
+- Removed all references to `Cabazure.Test.Attributes` from copilot-instructions (it's an internal implementation detail now)
+- Updated Project Structure section to clarify `Attributes/` contains internal support only
+- Updated examples to use only `using Cabazure.Test;`
+- Clarified that `FixtureCustomizationCollection` lives in `Cabazure.Test.Customizations`
+- Added note that data attributes are "in the `Cabazure.Test` namespace"
+- Updated Per-Test Customization section to clarify `[CustomizeWith]` is in `Cabazure.Test`
+
+**Key Design Principle:**
+Single entry-point namespace (`Cabazure.Test`) for all public test-facing types reduces friction and confusion. Specialized sub-namespaces (`Customizations`, `Assertions`) are purely organizational for the library's internal structure, not a cognitive burden on users.
+
+**Commit Message:**
+Followed Conventional Commits with BREAKING CHANGE footer; scope(s) = `attributes,customizations`; properly attributed to Copilot.
