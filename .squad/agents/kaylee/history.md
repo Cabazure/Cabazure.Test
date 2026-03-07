@@ -335,3 +335,71 @@ Updated `.github/copilot-instructions.md` to reflect post-Phase-8 library state:
 - Removed loop duplication from Create(params ICustomization[]) and Create(MethodInfo)
 
 Build: 0 errors, 0 warnings. Tests: 111/111 passing.
+
+
+---
+
+## Phase 11: CancellationToken Customization (2026-03-07)
+
+### The Silent Test Poison Problem
+
+**AutoFixture's default behaviour:**
+- When AutoFixture needs a CancellationToken, it resolves it via the CancellationToken(bool canceled) constructor
+- AutoFixture resolves ool as 	rue (the dominant value) → creates an already-cancelled token
+- Any SUT that checks cancellationToken.IsCancellationRequested at entry sees 	rue and exits early
+- Tests pass because they never execute the real logic — silent failure masquerading as success
+
+**The fix:**
+- Created CancellationTokenCustomization : TypeCustomization<CancellationToken> in Customizations/
+- Constructor: ase(_ => new CancellationToken(false)) — equivalent to CancellationToken.None
+- Registered as the fifth default customization in FixtureCustomizationCollection
+
+**Design rationale:**
+- 
+ew CancellationToken(false) is **serializable** — preserves xUnit 3 individual test case discovery
+- A live token backed by CancellationTokenSource would force xUnit into XunitDelayEnumeratedTheoryTestCase (no pre-discovery)
+- For tests that need cancellation behaviour: create CancellationTokenSource directly in test body
+- For runner-scoped cancellation: use TestContext.Current.CancellationToken (xUnit 3)
+
+**XML documentation pattern:**
+- Four-part structure: problem statement, solution, when to use alternatives, opt-out path
+- Emphasizes that this is about safe defaults, not restricting cancellation testing
+- Documents the serialization constraint that drove the design choice
+
+### Implementation Details
+
+**File created:** src/Cabazure.Test/Customizations/CancellationTokenCustomization.cs
+- Subclasses TypeCustomization<CancellationToken> (following DateOnlyTimeOnlyCustomization pattern)
+- Factory lambda discards fixture parameter (_) — token creation needs no dependencies
+- sealed class — no expected subclassing (this is a terminal customization)
+
+**FixtureCustomizationCollection updated:**
+- Added to default list after DateOnlyTimeOnlyCustomization
+- XML doc summary updated: "first five entries" (was "first four")
+- Ordering rationale: CancellationToken is foundational infrastructure like DateOnly/TimeOnly, should be in the base set
+
+**Build result:** 0 errors, 0 warnings — clean compilation verified
+
+### Key Learning
+
+This exposed an AutoFixture footgun: types with bool constructor parameters are dangerous because AutoFixture's dominant-value heuristic (true for bool) can create invalid test states. Any type where "the thing is already done/cancelled/finished" is represented by a bool parameter is at risk. Future watch list: Task<T> (though that's abstract), IDisposable implementers with disposed flags, etc.
+
+### Phase 11 Summary (Completed 2026-03-07T17:26:47Z)
+
+**Task:** Implement CancellationTokenCustomization  
+**Status:** ✅ Complete — 0 errors, 0 warnings
+
+**Implementation:**
+- `CancellationTokenCustomization.cs` created as sealed subclass of `TypeCustomization<CancellationToken>`
+- Returns `new CancellationToken(false)` — non-cancelled, serializable token
+- Registered as 5th default customization in `FixtureCustomizationCollection`
+- No new external dependencies
+
+**Testing & Integration:**
+- Cross-team QA: Zoe verified 5 new tests all passing (116/116 suite)
+- Cross-team docs: Mal updated README with patterns and copilot-instructions with discovery constraint
+
+**Decision Log:**
+- All decisions merged to `.squad/decisions.md` (kaylee-cancellationtoken-customization.md, mal-cancellationtoken-docs.md)
+- Key decision: safe default (serializable) takes precedence over live-token expressiveness for discovery compatibility
+

@@ -43,3 +43,54 @@ xUnit 3 advantages we're leveraging: module initializers via `[ModuleInitializer
 - All examples align with existing README style and tone
 
 **No changes made to code — documentation only.** Documentation merged with README updates post-Phase 9.
+
+### Phase 10 — CancellationToken Customization Documentation
+
+**Date:** 2026-03-XX  
+**Task:** Document Kaylee's new `CancellationTokenCustomization` and xUnit 3 cancellation patterns in README and copilot-instructions.
+
+**What was documented:**
+
+1. **README.md:**
+   - Added `CancellationTokenCustomization` section under Customizations (between Immutable and DateOnlyTimeOnly)
+   - Explains default behavior: `new CancellationToken(false)` — fixes AutoFixture's already-cancelled token issue
+   - Three usage patterns documented:
+     - Runner-scoped: Use `TestContext.Current.CancellationToken` directly (xUnit 3 idiomatic)
+     - Per-test: Create `CancellationTokenSource` in test body
+     - Opt-out: `FixtureFactory.Customizations.Remove<CancellationTokenCustomization>()`
+   - Added feature table entry for `CancellationTokenCustomization`
+
+2. **.github/copilot-instructions.md:**
+   - Updated Commit Messages section to explicitly mention **focused conventional commits** (one concern per commit)
+   - Added `CancellationTokenCustomization` to Customizations list with usage guidance
+   - Added critical note in Data Attributes section: `SupportsDiscoveryEnumeration` must return `true` because live `CancellationToken` instances (from `CancellationTokenSource`) are not serializable during xUnit 3 test discovery
+
+**Key design decisions honored:**
+- CancellationToken handling is delegated to `CancellationTokenCustomization`, not to data attributes
+- Test context tokens are the idiomatic xUnit 3 pattern for runner-scoped cancellation
+- SupportsDiscoveryEnumeration requirement protects against serialization failures during discovery
+- Documentation emphasizes practical patterns over framework implementation details
+
+**No code changes — documentation and instruction updates only.**
+
+### Phase 11 Summary (Completed 2026-03-07T17:26:47Z)
+
+**Task:** Provide architectural leadership and documentation for CancellationToken customization completion
+
+**Status:** ✅ Complete
+
+**Documentation Updates:**
+- `README.md`: CancellationTokenCustomization section finalized (positioned between ImmutableCollectionCustomization and DateOnlyTimeOnlyCustomization)
+- `.github/copilot-instructions.md`: Extended with explicit "focused conventional commits" guidance and critical SupportsDiscoveryEnumeration constraint documentation for future custom data attribute implementation
+
+**Cross-Team Orchestration:**
+- Validated Kaylee's implementation against safety + discovery requirements
+- Approved Zoe's 5 test cases for comprehensive coverage
+- Merged all decision documents into `.squad/decisions.md` for team-wide reference
+
+**Key Learning Documented:**
+- AutoFixture's dominant-value heuristic creates silent failures for bool-parameter types where `true` = "already done/cancelled"
+- Watch-list: Any API accepting bool that gates "normal" behavior (includes CancellationTokenSource-backed tokens, IDisposable disposed flags, etc.)
+- Established pattern: default customizations fix framework gaps; opt-in customizations handle specialized use cases
+
+**Status:** Library feature-complete with best-practice defaults. Pattern documented for future team members.

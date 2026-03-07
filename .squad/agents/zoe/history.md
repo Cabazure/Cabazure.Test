@@ -368,3 +368,53 @@ My domain is the test project `Cabazure.Test.Tests`. The unique challenge: we're
 - ParameterInfo sourced from constructors, consistent with AutoFixture pipeline
 
 All 111 tests passing. QA approval for Phase 10 integration.
+
+### 2026-03-07: CancellationTokenCustomization Tests Written
+
+**Task:** Write comprehensive tests for CancellationTokenCustomization (implemented by Kaylee in parallel).
+
+**Test File Created:**
+- 	ests/Cabazure.Test.Tests/Customizations/CancellationTokenCustomizationTests.cs (5 test methods)
+
+**Coverage Areas:**
+1. **Default behavior: non-cancelled token** — CancellationTokenCustomization_CreatesToken_WithIsCancellationRequestedFalse
+   - Creates fixture via FixtureFactory.Create(), resolves CancellationToken, asserts IsCancellationRequested == false
+   - Verifies the fix for AutoFixture's default 
+ew CancellationToken(true) bug
+
+2. **CanBeCanceled is false** — CancellationTokenCustomization_CreatesToken_WithCanBeCanceledFalse
+   - Documents the known limitation: the default token is non-cancellable by design
+   - Produces CancellationToken.None / default(CancellationToken) / 
+ew CancellationToken(false) (all equivalent)
+
+3. **Multiple resolutions produce equal tokens** — CancellationTokenCustomization_CreatesTwoTokens_ThatAreEqual
+   - From a single fixture, resolve CancellationToken twice
+   - Both should be equal to each other and to CancellationToken.None
+   - Demonstrates frozen-value behavior through AutoFixture's default caching
+
+4. **Removable from defaults** — CancellationTokenCustomization_WhenRemoved_AllowsAutoFixtureDefault
+   - Remove CancellationTokenCustomization from FixtureFactory.Customizations via Remove<T>()
+   - Create fixture, resolve token, assert IsCancellationRequested == true (AutoFixture default is already-cancelled)
+   - **Restore the customization afterward** using 	ry/finally to avoid cross-test pollution
+   - This test verifies opt-out behavior as documented in the XML remarks
+
+5. **Integration with [AutoNSubstituteData]** — CancellationTokenCustomization_WithAutoNSubstituteData_ProvidesNonCancelledToken
+   - [Theory, AutoNSubstituteData] with CancellationToken ct parameter
+   - Asserts ct.IsCancellationRequested == false (dogfooding verification)
+
+**Test Patterns Learned:**
+- **Static collection modification requires cleanup:** FixtureFactory.Customizations is static; tests that mutate it must restore to original state in inally block
+- **try/finally pattern:** Used in WhenRemoved test to ensure restoration even if assertion fails
+- **Dogfooding with theory parameters:** [Theory, AutoNSubstituteData] used to verify CancellationToken injection works correctly
+
+**Build Result:**
+- ✅ All 111 tests passing (5 new + 106 existing)
+- 0 errors, 0 warnings
+- Implementation exists and is registered in defaults (Kaylee completed in parallel)
+
+**Key Design Note:**
+The customization fixes a critical AutoFixture bug where default ool resolution as 	rue produces already-cancelled tokens (
+ew CancellationToken(true)). This causes methods that check IsCancellationRequested at entry to fail silently in tests. The fix uses 
+ew CancellationToken(false) which is equivalent to CancellationToken.None — a safe default that doesn't poison test data.
+
+**Status:** Tests complete and passing. Implementation verified working as designed.

@@ -812,3 +812,143 @@ Created comprehensive test coverage for `TypeCustomization<T>` and the two new `
 ✅ **0 errors, 0 warnings**
 
 
+
+
+# Decision: CancellationToken Customization Strategy
+
+**Date:** 2026-03-07  
+**Author:** Kaylee (Core .NET Developer)  
+**Status:** Implemented
+
+## Context
+
+AutoFixture produces an already-cancelled `CancellationToken` by default because it resolves the `bool` constructor parameter as `true` (the dominant value for bool). This creates a silent test failure mode: any SUT that checks `cancellationToken.IsCancellationRequested` at entry will exit early, causing tests to pass while never executing the real logic.
+
+## Decision
+
+Created `CancellationTokenCustomization` that returns `new CancellationToken(false)` (equivalent to `CancellationToken.None`) and registered it as the fifth default customization in `FixtureCustomizationCollection`.
+
+### Why `new CancellationToken(false)` instead of a live token?
+
+A live token backed by `CancellationTokenSource` is **not serializable** in xUnit 3. Using one would:
+- Break `SupportsDiscoveryEnumeration()` on data attributes
+- Force xUnit to fall back to `XunitDelayEnumeratedTheoryTestCase`
+- Lose individual test case pre-discovery in Test Explorer
+
+`new CancellationToken(false)` is serializable and preserves discovery while providing a safe default.
+
+## Alternatives Considered
+
+1. **Live token from CancellationTokenSource**: Not serializable, breaks xUnit 3 discovery
+2. **Leave AutoFixture default**: Creates silent test failures — unacceptable
+3. **No default, force explicit creation**: Violates "pit of success" design principle
+
+## For Tests That Need Cancellation Behavior
+
+- **Test-scoped cancellation:** Create `CancellationTokenSource` directly in test body, pass `cts.Token` to SUT
+- **Runner-scoped cancellation:** Use `TestContext.Current.CancellationToken` (xUnit 3) — cancelled if test run is aborted
+
+## Opt-Out Path
+
+Remove via `FixtureFactory.Customizations.Remove<CancellationTokenCustomization>()` from a `[ModuleInitializer]`.
+
+## Related Files
+
+- `src/Cabazure.Test/Customizations/CancellationTokenCustomization.cs`
+- `src/Cabazure.Test/FixtureCustomizationCollection.cs`
+
+## Key Insight
+
+This exposed a general AutoFixture footgun: types with bool constructor parameters are at risk when `true` represents "already done/cancelled/finished" states. The dominant-value heuristic creates invalid test data. Watch list: any type where a bool parameter gates behavior that should normally be active during tests.
+
+
+# Decision: CancellationToken Customization Documentation
+
+**Date:** 2026-03-XX  
+**Architect:** Mal  
+**Status:** Documented
+
+## Context
+
+Kaylee is implementing `CancellationTokenCustomization` as a default customization to fix AutoFixture's problematic default behavior of producing already-cancelled tokens. This required documentation updates to README.md and `.github/copilot-instructions.md` to explain the feature and establish patterns for future development.
+
+## Decision
+
+### 1. CancellationToken Handling via Customization
+
+- `CancellationTokenCustomization` is included **by default** in `FixtureFactory`
+- It provides `new CancellationToken(false)` — a non-cancelled, non-cancellable token
+- This replaces AutoFixture's default already-cancelled token
+- **The customization handles all CancellationToken creation; data attributes do not**.
+
+### 2. Three Usage Patterns for Developers
+
+**Runner-scoped cancellation** (xUnit 3 idiomatic):
+```csharp
+[Theory, AutoNSubstituteData]
+public void MyTest(CancellationToken token)
+{
+    // For runner-scoped cancellation, use TestContext.Current.CancellationToken instead
+    var runnerToken = TestContext.Current.CancellationToken;
+}
+```
+
+**Per-test cancellation** (e.g., testing timeout/cancellation handling):
+```csharp
+[Theory, AutoNSubstituteData]
+public void MyTest(CancellationToken token)
+{
+    var cts = new CancellationTokenSource();
+    // Use cts.Token for controlled cancellation testing
+    cts.Cancel();
+}
+```
+
+**Opt-out**:
+```csharp
+[ModuleInitializer]
+public static void Initialize()
+    => FixtureFactory.Customizations.Remove<CancellationTokenCustomization>();
+```
+
+### 3. SupportsDiscoveryEnumeration = true Requirement
+
+All custom data attributes must return `SupportsDiscoveryEnumeration = true` because:
+- Live `CancellationToken` instances (from `CancellationTokenSource`) are **not serializable**
+- xUnit 3 test discovery tries to serialize test case parameters
+- Non-serializable tokens would break discovery and cause test enumeration to fail
+- Our standard data attributes (`[AutoNSubstituteData]`, etc.) handle this correctly
+
+**Implications for future data attribute implementations:**
+- Always return `true` from `SupportsDiscoveryEnumeration`
+- Never attempt to serialize live `CancellationToken` instances to test case discovery
+
+### 4. Documentation in README
+
+- Added dedicated `CancellationTokenCustomization` section under Customizations
+- Positioned between `ImmutableCollectionCustomization` and `DateOnlyTimeOnlyCustomization`
+- Explains problem (AutoFixture's default), solution, and all three usage patterns
+- Updated Features table to include the customization
+
+### 5. Documentation in copilot-instructions.md
+
+- **Commit Messages:** Added explicit mention of "focused conventional commits" rule
+- **Customizations:** Added `CancellationTokenCustomization` with usage guidance
+- **Data Attributes:** Added critical note about `SupportsDiscoveryEnumeration = true` requirement and the reason (serialization of live tokens during discovery)
+
+## Rationale
+
+- **Customization-based approach** keeps CancellationToken handling orthogonal to data attribute logic
+- **TestContext.Current.CancellationToken** aligns with xUnit 3's design for runner-scoped resources
+- **SupportsDiscoveryEnumeration note** prevents future bugs from non-serializable tokens breaking discovery
+- **Documentation-first** ensures developers understand idiomatic patterns before implementing variations
+- **Clear examples** show practical patterns for the three common scenarios
+
+## Consequence
+
+Future Cabazure.Test developers will:
+- Understand why CancellationToken parameters work correctly in theory tests
+- Know how to use runner-scoped vs. per-test cancellation tokens
+- Understand the discovery enumeration constraint when adding custom data attributes
+- Follow focused conventional commits as a project pattern
+

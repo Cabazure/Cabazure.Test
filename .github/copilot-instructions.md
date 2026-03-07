@@ -55,11 +55,14 @@ Four xUnit 3 `DataAttribute` implementations for `[Theory]` tests, all backed by
 
 All support `[Frozen]` parameters — a frozen parameter is registered in the fixture before subsequent parameters are resolved.
 
+**Important:** All custom data attributes **must** return `SupportsDiscoveryEnumeration = true` in their implementation. Live `CancellationToken` instances (from `CancellationTokenSource`) are not serializable in xUnit 3's test case discovery phase and would break test enumeration if discovery tried to serialize them. The standard data attributes handle this correctly.
+
 ### Customizations
 
 - `AutoNSubstituteCustomization` — applied automatically by `FixtureFactory`; enables NSubstitute auto-substitution.
 - `RecursionCustomization` — replaces `ThrowingRecursionBehavior` with `OmitOnRecursionBehavior`; use when your domain has self-referencing types.
 - `ImmutableCollectionCustomization` — enables `ImmutableArray<T>`, `ImmutableList<T>`, `ImmutableDictionary<TKey,TValue>`, `ImmutableHashSet<T>`, `ImmutableSortedSet<T>`, `ImmutableSortedDictionary<TKey,TValue>`, `ImmutableQueue<T>`, and `ImmutableStack<T>`.
+- `CancellationTokenCustomization` — applied automatically by `FixtureFactory`; provides non-cancelled `CancellationToken` parameters (`new CancellationToken(false)`). Use `TestContext.Current.CancellationToken` for runner-scoped cancellation in test code; use `CancellationTokenSource` in test body for per-test cancellation scenarios.
 
 ### Project-Wide Customizations (`FixtureFactory.Customizations`)
 
@@ -120,7 +123,7 @@ The library tests itself — `Cabazure.Test.Tests` uses `[AutoNSubstituteData]` 
 
 ## Commit Messages
 
-All commits must follow [Conventional Commits](https://www.conventionalcommits.org/):
+All commits must follow [Conventional Commits](https://www.conventionalcommits.org/), using **focused commits** — one concern per commit, no mixing unrelated changes:
 
 ```
 <type>(<scope>): <description>

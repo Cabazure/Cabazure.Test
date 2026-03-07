@@ -157,6 +157,7 @@ public class PaymentServiceTests
 | `[CustomizeWith]` | Per-method or per-class attribute that applies an `ICustomization` on top of any project-wide registrations. |
 | `RecursionCustomization` | Replaces `ThrowingRecursionBehavior` with `OmitOnRecursionBehavior` so recursive object graphs don't throw. |
 | `ImmutableCollectionCustomization` | Enables fixture creation of `ImmutableList<T>`, `ImmutableArray<T>`, `ImmutableDictionary<,>`, and other immutable collections. |
+| `CancellationTokenCustomization` | Provides non-cancelled `CancellationToken` parameters in theory tests (`new CancellationToken(false)`), fixing AutoFixture's default. |
 | `DateOnlyTimeOnlyCustomization` | Enables reliable creation of `DateOnly` and `TimeOnly` values derived from a random `DateTime`. |
 | `JsonElementCustomization` | Opt-in customization that enables creation of `System.Text.Json.JsonElement` instances. |
 | Auto-substitution | Interfaces and abstract classes are automatically replaced with NSubstitute substitutes everywhere — no manual `Substitute.For<T>()` required. |
@@ -172,6 +173,26 @@ Replaces AutoFixture's default `ThrowingRecursionBehavior` with `OmitOnRecursion
 ### `ImmutableCollectionCustomization`
 
 Enables creation of `ImmutableList<T>`, `ImmutableArray<T>`, `ImmutableHashSet<T>`, `ImmutableDictionary<,>`, `ImmutableQueue<T>`, `ImmutableStack<T>`, and `ImmutableSortedSet<T>`. Without this customization, AutoFixture throws `ObjectCreationException` for most immutable types. **Included by default.**
+
+### `CancellationTokenCustomization`
+
+Provides properly initialized `CancellationToken` parameters in theory tests. AutoFixture's default behavior creates an already-cancelled token with `CanBeCanceled = false`, which is rarely useful for testing. This customization supplies `new CancellationToken(false)` instead — a token that is not cancelled but cannot be cancelled.
+
+**Included by default.** You can:
+
+- **Use runner-scoped cancellation** in test code: Access `TestContext.Current.CancellationToken` directly (xUnit 3's idiomatic approach). This token is cancelled if the test run is aborted.
+- **Create per-test cancellation** for testing cancellation handling: Build a `CancellationTokenSource` in the test body:
+  ```csharp
+  var cts = new CancellationTokenSource();
+  var token = cts.Token;
+  // Use and control token as needed
+  ```
+- **Opt out** of the customization if you need different behavior:
+  ```csharp
+  [ModuleInitializer]
+  public static void Initialize()
+      => FixtureFactory.Customizations.Remove<CancellationTokenCustomization>();
+  ```
 
 ### `DateOnlyTimeOnlyCustomization`
 
