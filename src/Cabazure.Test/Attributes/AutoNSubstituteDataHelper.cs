@@ -1,6 +1,7 @@
 using System.Reflection;
 using AutoFixture;
 using AutoFixture.Kernel;
+using NSubstitute;
 
 namespace Cabazure.Test.Attributes;
 
@@ -19,6 +20,8 @@ internal static class AutoNSubstituteDataHelper
     /// <summary>
     /// Resolves a complete set of theory parameter values by combining <paramref name="provided"/>
     /// values (left-aligned) with fixture-generated values for any remaining parameters.
+    /// Parameters of type <see cref="IFixture"/> or <see cref="Fixture"/> receive the fixture
+    /// instance used to resolve the remaining parameters.
     /// </summary>
     /// <param name="fixture">The <see cref="IFixture"/> used to generate missing values.</param>
     /// <param name="parameters">All parameters of the theory method.</param>
@@ -48,6 +51,10 @@ internal static class AutoNSubstituteDataHelper
                 {
                     FreezeValue(fixture, parameter.ParameterType, value);
                 }
+            }
+            else if (parameter.ParameterType.IsAssignableFrom(typeof(Fixture)))
+            {
+                values[i] = fixture;
             }
             else
             {
