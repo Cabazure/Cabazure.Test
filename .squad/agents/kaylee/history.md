@@ -150,3 +150,52 @@ My domain is the guts of the library: AutoFixture customizations, the `ISpecimen
 
 **Build Status:** Clean
 **Commit:** 411c454 (feat: add FluentArg.Matching and ReceivedCallExtensions)
+
+### Phase 18: WaitForReceivedExtensions Implementation (2026-03-07)
+
+**Task:** Create async call waiting extensions for NSubstitute, enabling race-free verification of calls in concurrent/async test scenarios.
+
+**Deliverables:**
+- src/Cabazure.Test/WaitForReceivedExtensions.cs — WaitForReceived<T>() / WaitForReceivedWithAnyArgs<T>() extensions and internal SignalingCallHandler
+
+**Key NSubstitute internals confirmed:**
+- Call specification capture: SetNextRoute → RecordCallSpecification → UseCallSpecInfo → Handle(spec=>spec, call=>CreateFrom)
+- ICallSpecification.CreateCopyThatMatchesAnyArguments() — creates any-args variant after capture
+- CallHandlerFactory signature: `delegate ICallHandler(ISubstituteState)`
+- RegisterCustomCallHandlerFactory accumulates handlers (no unregister API); handlers remain for substitute lifetime
+- ICallRouter.ReceivedCalls() returns IEnumerable<ICall> for pre-check (race-free when registered after handler)
+
+**Design Decisions:**
+1. DefaultTimeout = TimeSpan.FromSeconds(10) — static mutable field; users can set in [ModuleInitializer]
+2. CancellationToken sourced from TestContext.Current.CancellationToken (xunit.v3.extensibility.core)
+3. timeout parameter is nullable TimeSpan? — null means use DefaultTimeout; Timeout.InfiniteTimeSpan for infinite wait
+4. Handler registration BEFORE pre-check ensures race-free detection (future calls + already-received)
+5. TaskCompletionSource with RunContinuationsAsynchronously prevents synchronous continuation deadlocks
+6. TrySetResult is idempotent — accumulated handlers become no-ops after first signal (acceptable for test lifetimes)
+7. PendingSpecificationInfo.Handle branch: spec arm (created from Received call) + call arm (fallback to CreateFrom)
+8. MatchArgs.AsSpecifiedInCall used in CreateFrom (preserves exact argument matching from expression)
+
+**xUnit 3 Integration:**
+- TestContext.Current never returns null — falls back to idle context with default CancellationToken
+- No additional package reference needed (xunit.v3.extensibility.core already present)
+
+**Build Status:** Clean, 0 warnings, 0 errors
+
+### Phase 18: WaitForReceivedExtensions (2026-03-07T20:21:58Z)
+
+**Task:** Implement WaitForReceivedExtensions — async call waiting for concurrent/async test scenarios.
+
+**Deliverables:**
+- src/Cabazure.Test/WaitForReceivedExtensions.cs (160 lines)
+  - Public: WaitForReceived<T>() / WaitForReceivedWithAnyArgs<T>()
+  - Internal: SignalingCallHandler with TaskCompletionSource
+  - Static: DefaultTimeout = TimeSpan.FromSeconds(10) (mutable for test suites)
+
+**Design Highlights:**
+- CancellationToken sourced from TestContext.Current.CancellationToken (no parameter)
+- Handler registration BEFORE pre-check ensures race-free detection
+- ICallRouter.RegisterCustomCallHandlerFactory accumulates handlers (idempotent via TrySetResult)
+- ICallSpecification.CreateCopyThatMatchesAnyArguments() for any-arg matching
+
+**Build:** Clean. Tests: 152/152 passing (8 new by Zoe + 144 existing).
+**Commit:** af98f11 — feat(concurrency): add WaitForReceived and WaitForReceivedWithAnyArgs

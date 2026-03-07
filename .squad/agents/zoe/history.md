@@ -178,3 +178,58 @@ My domain is the test project `Cabazure.Test.Tests`. The unique challenge: we're
 3. Verified asymmetry: ReceivedArg<T>() throws InvalidOperationException; ReceivedArgs<T>() returns empty enumerable (mirrors LINQ First() vs Where())
 
 **Commit:** 411c454 (feat: add FluentArg.Matching and ReceivedCallExtensions)
+
+### Phase 17: WaitForReceivedExtensions Tests (2026-03-07)
+
+**Task:** Write tests for `WaitForReceivedExtensions` — async waiting utilities for NSubstitute calls.
+
+**Test File Created:** `tests/Cabazure.Test.Tests/WaitForReceivedExtensionsTests.cs` (8 tests)
+
+**Coverage:**
+1. `WaitForReceived_AlreadyReceivedExactMatch_ReturnsImmediately` — call already made before await, must complete within 50ms (fail-fast if not immediate)
+2. `WaitForReceivedWithAnyArgs_AlreadyReceived_ReturnsImmediately` — ForAnyArgs variant with different arg value still completes immediately
+3. `WaitForReceived_CallArrivesAfterAwaiting_CompletesTask` — call from another thread (Task.Run) completes the wait
+4. `WaitForReceived_NonMatchingArgument_ThrowsTimeoutException` — wrong arg doesn't satisfy exact match, timeout fires
+5. `WaitForReceivedWithAnyArgs_DifferentArgumentValues_Completes` — ForAnyArgs variant completes for any argument
+6. `WaitForReceived_TimeoutExpiry_ThrowsTimeoutException` — no call at all, timeout fires
+7. `WaitForReceived_MultipleConcurrentWaiters_AllComplete` — two concurrent waiters on same substitute/method, single call satisfies both (Task.WhenAll)
+8. `WaitForReceived_CustomTimeoutParameter_OverridesDefaultTimeout` — explicit 100ms timeout fires (not DefaultTimeout=30s), with try/finally restoration
+
+**Test Status:** Tests written and structured correctly. Build fails (as expected) because Kaylee's `WaitForReceivedExtensions.cs` implementation doesn't exist yet. Error messages confirm all extension methods and static property references are correctly named.
+
+**Key Patterns:**
+- **FluentAssertions async:** Use `.CompleteWithinAsync(TimeSpan)` for positive assertions, `.ThrowAsync<TException>()` for expected exceptions
+- **Fire-and-forget call:** `_ = Task.Run(() => substitute.Method(arg))` to trigger call from another thread without blocking
+- **Static property mutation:** Use try/finally to restore `WaitForReceivedExtensions.DefaultTimeout` after test (prevent cross-test pollution)
+- **Short timeouts for fail-fast:** Use 50-100ms timeouts in tests to avoid slow test suite; tests should fail quickly if behavior is wrong
+- **TestContext.Current.CancellationToken:** Extension sources CancellationToken internally — no explicit ct parameter in tests
+
+**Integration Status:** Ready for integration once Kaylee's implementation lands. Expected adjustments: none (API contract is clear). Post-integration verification: run full test suite and confirm 152/152 passing (8 new + 144 existing).
+
+### Phase 18: WaitForReceivedExtensions Tests (2026-03-07T20:21:58Z)
+
+**Task:** Write tests for WaitForReceivedExtensions — async call waiting utilities.
+
+**Test File Created:**
+- tests/Cabazure.Test.Tests/WaitForReceivedExtensionsTests.cs (144 lines, 8 tests)
+
+**Test Coverage:**
+1. WaitForReceived_AlreadyReceivedExactMatch_ReturnsImmediately — pre-received, exact args
+2. WaitForReceivedWithAnyArgs_AlreadyReceived_ReturnsImmediately — pre-received, any args
+3. WaitForReceived_CallArrivesAfterAwaiting_CompletesTask — delayed call from Task.Run
+4. WaitForReceived_NonMatchingArgument_ThrowsTimeoutException — wrong arg triggers timeout
+5. WaitForReceivedWithAnyArgs_DifferentArgumentValues_Completes — any-arg variant ignores arg value
+6. WaitForReceived_TimeoutExpiry_ThrowsTimeoutException — no call, timeout fires
+7. WaitForReceived_MultipleConcurrentWaiters_AllComplete — 2 concurrent waiters on same call
+8. WaitForReceived_CustomTimeoutParameter_OverridesDefaultTimeout — explicit timeout overrides default
+
+**Key Patterns:**
+- .CompleteWithinAsync(TimeSpan) for positive assertions
+- .ThrowAsync<TException>() for expected timeout/cancellation
+- Task.Run() fire-and-forget to trigger calls from another thread
+- try/finally on DefaultTimeout static mutation to prevent cross-test pollution
+- Short timeouts (50-100ms) for fail-fast behavior
+
+**Build:** Clean. 152/152 tests passing.
+**Coordinator Fix:** 3 tests adjusted for FA7 (CompleteWithinAsync Task→Func<Task> wrapper).
+**Commit:** af98f11 — feat(concurrency): add WaitForReceived and WaitForReceivedWithAnyArgs

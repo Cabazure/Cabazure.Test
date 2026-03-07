@@ -1122,3 +1122,129 @@ Both `FluentArgTests.cs` and `ReceivedCallExtensionsTests.cs` declare their own 
 
 This asymmetry mirrors LINQ's `.First()` vs `.Where()` — singular expects one, plural tolerates zero. This is the correct design and is verified by tests.
 
+
+
+---
+
+# WaitForReceivedExtensions Design
+
+**Date:** 2026-03-07  
+**Author:** Kaylee  
+**Status:** Implemented
+
+## Context
+
+Test authors need to verify that NSubstitute calls occur in concurrent/async scenarios without polling or Thread.Sleep hacks. The library should provide a race-free async wait API that integrates with xUnit 3's cancellation tokens.
+
+## Decision
+
+Implement `WaitForReceivedExtensions` with two public methods:
+- `await substitute.WaitForReceived(x => x.Process(expectedRequest), timeout: TimeSpan?)`
+- `await substitute.WaitForReceivedWithAnyArgs(x => x.Process(default!), timeout: TimeSpan?)`
+
+**Key Design:**
+1. **No CancellationToken parameter** — sourced from `TestContext.Current.CancellationToken` (xunit.v3.extensibility.core)
+2. **DefaultTimeout = 10s** — static mutable field; users set in `[ModuleInitializer]` for suite-wide config
+3. **timeout: null** means use DefaultTimeout; users can pass `Timeout.InfiniteTimeSpan` for infinite wait
+4. **Race-free implementation:**
+   - Register `SignalingCallHandler` via `ICallRouter.RegisterCustomCallHandlerFactory` FIRST
+   - Pre-check `router.ReceivedCalls()` SECOND
+   - Handler signals `TaskCompletionSource` on match; pre-check catches already-received
+5. **Handler accumulation is acceptable** — handlers remain for substitute lifetime (scope = single test); `TrySetResult` is idempotent
+6. **TimeoutException** surfaced from `Task.WaitAsync(TimeSpan, CancellationToken)` (no wrapping)
+
+## Implementation Details
+
+**Call specification capture:**
+```csharp
+context.ThreadContext.SetNextRoute(router, state => context.RouteFactory.RecordCallSpecification(state))
+callSpec(substitute)
+pendingInfo = context.ThreadContext.PendingSpecification.UseCallSpecInfo()
+capturedSpec = pendingInfo.Handle(
+    spec => spec,
+    call => context.CallSpecificationFactory.CreateFrom(call, MatchArgs.AsSpecifiedInCall))
+if (withAnyArgs)
+    capturedSpec = capturedSpec.CreateCopyThatMatchesAnyArguments()
+```
+
+**SignalingCallHandler:**
+- Implements `ICallHandler.Handle(ICall) → RouteAction`
+- Returns `RouteAction.Continue()` to preserve normal substitute behavior
+- `TrySetResult()` on first match; subsequent matches are no-ops
+
+## Alternatives Considered
+
+1. **CancellationToken parameter** — rejected; xUnit 3's TestContext.Current.CancellationToken is the canonical source
+2. **Handler unregistration** — not needed; NSubstitute has no unregister API, and test-scoped substitutes are short-lived
+3. **Polling** — rejected; custom handler registration enables true async signaling without CPU burn
+
+## Consequences
+
+- Test authors can `await substitute.WaitForReceived(...)` in async tests without race conditions
+- No polling or sleep hacks needed
+- Timeout/cancellation behavior is consistent with xUnit 3's test lifetime management
+- Accumulated handlers are acceptable overhead for test-scoped substitutes
+
+---
+
+### 23. WaitForReceivedExtensions Design — Async Call Verification API
+
+**Proposed by:** Kaylee (Core Dev)  
+**Date:** 2026-03-07  
+**Status:** Approved  
+**Phase:** 13
+
+#### Context
+
+Test authors need to verify that NSubstitute calls occur in concurrent/async scenarios without polling or `Thread.Sleep` hacks. The library should provide a race-free async wait API that integrates with xUnit 3's cancellation tokens.
+
+#### Decision
+
+Implement `WaitForReceivedExtensions` with two public methods:
+- `await substitute.WaitForReceived(x => x.Process(expectedRequest), timeout: TimeSpan?)`
+- `await substitute.WaitForReceivedWithAnyArgs(x => x.Process(default!), timeout: TimeSpan?)`
+
+#### Key Design Points
+
+1. **No CancellationToken parameter** — sourced from `TestContext.Current.CancellationToken` (xunit.v3.extensibility.core)
+2. **DefaultTimeout = 10s** — static mutable field; users set in `[ModuleInitializer]` for suite-wide config
+3. **timeout: null** means use DefaultTimeout; users can pass `Timeout.InfiniteTimeSpan` for infinite wait
+4. **Race-free implementation:**
+   - Register `SignalingCallHandler` via `ICallRouter.RegisterCustomCallHandlerFactory` FIRST
+   - Pre-check `router.ReceivedCalls()` SECOND
+   - Handler signals `TaskCompletionSource` on match; pre-check catches already-received
+5. **Handler accumulation is acceptable** — handlers remain for substitute lifetime (scope = single test); `TrySetResult` is idempotent
+6. **TimeoutException** surfaced from `Task.WaitAsync(TimeSpan, CancellationToken)` (no wrapping)
+
+#### Implementation Details
+
+**Call specification capture:**
+```csharp
+context.ThreadContext.SetNextRoute(router, state => context.RouteFactory.RecordCallSpecification(state))
+callSpec(substitute)
+pendingInfo = context.ThreadContext.PendingSpecification.UseCallSpecInfo()
+capturedSpec = pendingInfo.Handle(
+    spec => spec,
+    call => context.CallSpecificationFactory.CreateFrom(call, MatchArgs.AsSpecifiedInCall))
+if (withAnyArgs)
+    capturedSpec = capturedSpec.CreateCopyThatMatchesAnyArguments()
+```
+
+**SignalingCallHandler:**
+- Implements `ICallHandler.Handle(ICall) → RouteAction`
+- Returns `RouteAction.Continue()` to preserve normal substitute behavior
+- `TrySetResult()` on first match; subsequent matches are no-ops
+
+#### Alternatives Considered
+
+1. **CancellationToken parameter** — rejected; xUnit 3's TestContext.Current.CancellationToken is the canonical source
+2. **Handler unregistration** — not needed; NSubstitute has no unregister API, and test-scoped substitutes are short-lived
+3. **Polling** — rejected; custom handler registration enables true async signaling without CPU burn
+
+#### Consequences
+
+- Test authors can `await substitute.WaitForReceived(...)` in async tests without race conditions
+- No polling or sleep hacks needed
+- Timeout/cancellation behavior is consistent with xUnit 3's test lifetime management
+- Accumulated handlers are acceptable overhead for test-scoped substitutes
+
