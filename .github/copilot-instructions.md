@@ -14,6 +14,14 @@ This project uses Squad for AI team collaboration. Before working on any issue:
 
 **After every session, all `.squad/` changes must be committed to the repo.** This includes history files, decisions, orchestration logs, and session logs. The Scribe is responsible for staging and committing `.squad/` changes at the end of each agent batch. No agent session is complete until squad state is committed.
 
+### README Sync Rule
+
+**Whenever a new public API, customization, or feature is added or removed, `README.md` must be updated in the same commit.** The README is the primary documentation for library users. A feature that isn't in the README doesn't exist to consumers. This applies to:
+- New or removed public types (`FixtureFactory`, `ImmutableCollectionCustomization`, etc.)
+- New or removed attributes (`[CustomizeWith]`, data attributes)
+- New or removed customizations
+- Breaking changes to existing APIs
+
 ## Tech Stack
 
 | Concern | Package |
@@ -27,17 +35,54 @@ This project uses Squad for AI team collaboration. Before working on any issue:
 
 ## Core Library Concepts
 
-### `SutFixture`
+### `FixtureFactory`
 
-The central fixture class. Wraps AutoFixture with `AutoNSubstituteCustomization` so that unregistered abstract/interface dependencies are automatically substituted. Key surface:
+The public entry point for creating configured AutoFixture `IFixture` instances. Use in `[Fact]` tests:
 
-- `Create<T>()` — creates an instance with all unregistered dependencies auto-mocked.
-- `Freeze<T>()` — registers a value (or substitute) to be reused for all subsequent `Create` calls.
-- `Substitute<T>()` — explicitly creates an NSubstitute substitute for `T`.
+- `FixtureFactory.Create()` — returns an `IFixture` with `AutoNSubstituteCustomization` applied.
+- `FixtureFactory.Create(params ICustomization[])` — same, with additional customizations.
 
-### `AutoNSubstituteDataAttribute`
+The returned `IFixture` supports the full AutoFixture API: `fixture.Create<T>()`, `fixture.Freeze<T>()`, `fixture.Inject(instance)`, etc.
 
-A custom xUnit 3 `DataAttribute` (`[AutoNSubstituteData]`) that uses `SutFixture` to generate and inject Theory test method arguments. Supports `[Frozen]` parameters.
+### Data Attributes
+
+Four xUnit 3 `DataAttribute` implementations for `[Theory]` tests, all backed by `FixtureFactory`:
+
+- `[AutoNSubstituteData]` — all parameters auto-generated from the fixture.
+- `[InlineAutoNSubstituteData(value1, value2)]` — leading parameters provided inline, rest auto-generated.
+- `[MemberAutoNSubstituteData(nameof(MyData))]` — leading parameters from a static member, rest auto-generated.
+- `[ClassAutoNSubstituteData(typeof(MyDataClass))]` — leading parameters from an `IEnumerable<object[]>` class, rest auto-generated.
+
+All support `[Frozen]` parameters — a frozen parameter is registered in the fixture before subsequent parameters are resolved.
+
+### Customizations
+
+- `AutoNSubstituteCustomization` — applied automatically by `FixtureFactory`; enables NSubstitute auto-substitution.
+- `RecursionCustomization` — replaces `ThrowingRecursionBehavior` with `OmitOnRecursionBehavior`; use when your domain has self-referencing types.
+- `ImmutableCollectionCustomization` — enables `ImmutableArray<T>`, `ImmutableList<T>`, `ImmutableDictionary<TKey,TValue>`, `ImmutableHashSet<T>`, `ImmutableSortedSet<T>`, `ImmutableSortedDictionary<TKey,TValue>`, `ImmutableQueue<T>`, and `ImmutableStack<T>`.
+
+### Project-Wide Customizations (`SutFixtureCustomizations`)
+
+Register customizations for all tests in the assembly using `[ModuleInitializer]`:
+
+```csharp
+internal static class TestInitializer
+{
+    [ModuleInitializer]
+    public static void Initialize()
+        => SutFixtureCustomizations.Add(new MyProjectCustomization());
+}
+```
+
+### Per-Test Customization (`[CustomizeWith]`)
+
+Apply a customization to a specific test method or class:
+
+```csharp
+[CustomizeWith(typeof(MyCustomization))]
+[Theory, AutoNSubstituteData]
+public void MyTest(MyService sut) { ... }
+```
 
 ### xUnit 3 Specifics
 
@@ -50,9 +95,10 @@ A custom xUnit 3 `DataAttribute` (`[AutoNSubstituteData]`) that uses `SutFixture
 ```
 src/
   Cabazure.Test/
-    Attributes/          ← [AutoNSubstituteData] and supporting attributes
+    Attributes/          ← [AutoNSubstituteData] family and supporting attributes
     Customizations/      ← AutoFixture customizations (AutoNSubstituteCustomization, etc.)
-    Fixture/             ← SutFixture and related types
+    AssemblyInitializer.cs  ← [ModuleInitializer] entry point
+    FixtureFactory.cs       ← Public fixture factory
 tests/
   Cabazure.Test.Tests/   ← Library's own tests — uses the library (dogfooding required)
 ```
@@ -62,7 +108,7 @@ tests/
 - Use `var` when the type is obvious from the right-hand side.
 - Prefer expression-bodied members for simple getters and single-line methods.
 - Every public API member requires an XML doc comment (`<summary>`, `<typeparam>`, `<param>`, `<returns>`).
-- Follow Microsoft's C# naming conventions (PascalCase types/members, camelCase locals, `_camelCase` private fields).
+- Follow Microsoft's C# naming conventions (PascalCase types/members, camelCase locals and private fields — no underscore prefix).
 - Avoid abbreviations in public APIs.
 - Target nullable reference types enabled (`<Nullable>enable</Nullable>`).
 
@@ -85,7 +131,7 @@ All commits must follow [Conventional Commits](https://www.conventionalcommits.o
 **Types:** `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `perf`, `ci`
 
 **Scopes** (use the relevant one):
-- `fixture` — SutFixture and fixture types
+- `fixture` — FixtureFactory and fixture configuration
 - `attributes` — DataAttribute and xUnit 3 integration
 - `customizations` — AutoFixture customizations
 - `tests` — test project changes

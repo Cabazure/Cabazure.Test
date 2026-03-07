@@ -105,6 +105,25 @@ My domain is the test project `Cabazure.Test.Tests`. The unique challenge: we're
 
 **Build status:** ✅ Compiles clean (`dotnet build`, 0 errors, 0 warnings).
 
+### README Updated — Full Library Documentation
+
+**Task:** Rewrite README.md to reflect the current shipped API.
+
+**What changed:**
+- Removed all references to the now-deleted `SutFixture` class
+- Replaced old `build.yml` badge with the correct `ci.yml` badge
+- Added full documentation for `FixtureFactory.Create()` and `FixtureFactory.Create(params ICustomization[])`
+- Added documentation and examples for all four theory data attributes: `AutoNSubstituteData`, `InlineAutoNSubstituteData`, `MemberAutoNSubstituteData`, `ClassAutoNSubstituteData`
+- Added documentation for `AutoNSubstituteCustomization` (ConfigureMembers=true, GenerateDelegates=true)
+- Added documentation for `RecursionCustomization` (OmitOnRecursionBehavior)
+- Added documentation for `ImmutableCollectionCustomization` (all 8 immutable collection types)
+- Added documentation for `SutFixtureCustomizations` with `[ModuleInitializer]` pattern
+- Added documentation for `[CustomizeWith]` at method and class level
+- Added documentation for `[Frozen]` with a realistic multi-dependency example
+- Committed as `docs: update README with full library documentation`
+
+**Key observation:** The old README still described `SutFixture` which was replaced by `FixtureFactory` in Phase 8. The README had drifted significantly from the shipped API.
+
 ### 2026-03-07: Phase 8 Tests Migrated — SutFixture → FixtureFactory/IFixture
 
 **Task:** Update test files to use the new `FixtureFactory`/`IFixture` API.

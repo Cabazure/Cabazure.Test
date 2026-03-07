@@ -119,3 +119,36 @@ My domain is the guts of the library: `SutFixture`, AutoFixture customizations, 
 - Uses `AutoFixture.Fixture` (fully qualified) because `Fixture` is also a namespace in the test project — namespace collision pitfall to remember.
 
 **Build result:** 0 errors, 0 warnings, 61/61 tests green.
+
+### ImmutableCollectionCustomization
+
+**Verification — AutoFixture 4.18.1 does NOT handle immutable collections natively:**
+- `ImmutableList<T>`, `ImmutableArray<T>`, `ImmutableHashSet<T>`, `ImmutableDictionary<TKey,TValue>` → `ObjectCreationExceptionWithPath` (throws)
+- `ImmutableQueue<T>`, `ImmutableStack<T>` → created but *empty* (no items populated)
+- The customization is required for all eight types.
+
+**Dynamic dispatch confirmed working:**
+- `ImmutableQueue.CreateRange(dynamic)` and `ImmutableStack.CreateRange(dynamic)` both work via dynamic dispatch — no cast or reflection workaround needed.
+- All `ToImmutableXxx(dynamic)` extension methods also resolve correctly.
+
+**PropertyInfo/FieldInfo fix confirmed critical:**
+- AutoFixture sends `PropertyInfo` requests when populating object properties.
+- Without the `PropertyInfo pi => pi.PropertyType` arm in `GetRequestType`, a class with `public ImmutableList<string> Tags { get; set; }` would receive an empty default — the property would NOT be populated.
+- Test `Customize_PopulatesProperty_OnObjectWithImmutableListProperty` validates this path.
+
+**Implementation details:**
+- `public sealed class ImmutableCollectionCustomization` in `Cabazure.Test.Customizations` namespace.
+- Private nested `ImmutableCollectionBuilder : ISpecimenBuilder` handles all eight immutable types.
+- `ArgumentNullException.ThrowIfNull(fixture)` guards the `Customize` method.
+- 10 `[Fact]` tests: null-fixture throws, one per collection type (8 total), plus property-population test.
+
+**Build result:** 0 errors, 0 warnings, 71/71 tests green.
+
+### Copilot Instructions Update
+
+Updated `.github/copilot-instructions.md` to reflect post-Phase-8 library state:
+- Added **README Sync Rule** section (after Squad History Commit Rule) — requires `README.md` to be updated in the same commit whenever public API, attributes, customizations, or breaking changes are introduced.
+- Fixed **private field naming** in Code Style: changed `_camelCase` to `camelCase` with no underscore prefix, aligning with the team decision documented in `.squad/decisions.md`.
+- Replaced **`SutFixture` / `AutoNSubstituteDataAttribute`** concept docs with the current public API: `FixtureFactory`, all four Data Attributes, the three Customizations, `SutFixtureCustomizations`, and `[CustomizeWith]`.
+- Updated **Project Structure** tree: removed `Fixture/` directory (deleted in Phase 8), added `AssemblyInitializer.cs` and `FixtureFactory.cs` entries.
+- Updated **commit scope table**: `fixture` scope description changed from "SutFixture and fixture types" to "FixtureFactory and fixture configuration".
