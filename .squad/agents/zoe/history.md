@@ -105,3 +105,26 @@ My domain is the test project `Cabazure.Test.Tests`. The unique challenge: we're
 
 **Build status:** ✅ Compiles clean (`dotnet build`, 0 errors, 0 warnings).
 
+### 2026-03-07: Phase 8 Tests Migrated — SutFixture → FixtureFactory/IFixture
+
+**Task:** Update test files to use the new `FixtureFactory`/`IFixture` API.
+
+**Files Changed:**
+- **Deleted** `tests/Cabazure.Test.Tests/Fixture/SutFixtureTests.cs`
+- **Created** `tests/Cabazure.Test.Tests/Fixture/FixtureFactoryTests.cs`
+  - Class renamed `SutFixtureTests` → `FixtureFactoryTests`
+  - All helper types (`IMyInterface`, `MyAbstractClass`, `MyConcreteClass`, `MyServiceWithDependency`) preserved as nested types
+  - `new SutFixture()` → `FixtureFactory.Create()`
+  - `fixture.Freeze(instance)` → `fixture.Inject(instance)` (AutoFixture's `FixtureRegistrar.Inject<T>`)
+  - `fixture.Substitute<T>()` → `NSubstitute.Substitute.For<T>()` — tests that used fixture only to call `Substitute<T>()` no longer need the fixture var
+  - Added `using Cabazure.Test;` + `using AutoFixture;`, removed `using Cabazure.Test.Fixture;`
+- **Updated** `AutoNSubstituteDataAttributeTests.cs` — `SutFixtureTests.*` → `FixtureFactoryTests.*`
+- **Updated** `InlineAutoNSubstituteDataAttributeTests.cs` — same rename
+- **Updated** `MemberAutoNSubstituteDataAttributeTests.cs` — same rename
+- **Updated** `ClassAutoNSubstituteDataAttributeTests.cs` — same rename
+- **No changes needed** in `SutFixtureCustomizationsTests.cs` or `CustomizeWithAttributeTests.cs` — they do not use `SutFixture` directly.
+
+**Key design note:** `Substitute_ReturnsNSubstituteProxy` and `Substitute_ReturnsDifferentInstances_OnMultipleCalls` no longer need a fixture object — they now call `Substitute.For<T>()` directly and omit the unused `FixtureFactory.Create()` call for cleanliness.
+
+**Status:** File edits complete. Build verification pending Kaylee's `FixtureFactory` source changes.
+

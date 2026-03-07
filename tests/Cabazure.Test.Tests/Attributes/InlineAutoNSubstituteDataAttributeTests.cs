@@ -11,7 +11,7 @@ public class InlineAutoNSubstituteDataAttributeTests
     [InlineAutoNSubstituteData("hello")]
     public void InlineValue_IsPassedThrough(
         string value,
-        SutFixtureTests.IMyInterface service)
+        FixtureFactoryTests.IMyInterface service)
     {
         value.Should().Be("hello");
         service.Should().NotBeNull();
@@ -22,7 +22,7 @@ public class InlineAutoNSubstituteDataAttributeTests
     public void MultipleInlineValues_ArePassedThrough(
         string message,
         int count,
-        SutFixtureTests.IMyInterface service)
+        FixtureFactoryTests.IMyInterface service)
     {
         message.Should().Be("hello");
         count.Should().Be(42);
@@ -41,7 +41,7 @@ public class InlineAutoNSubstituteDataAttributeTests
     [InlineAutoNSubstituteData]
     public void NoInlineValues_AutoGeneratesAllParameters(
         string value,
-        SutFixtureTests.IMyInterface service)
+        FixtureFactoryTests.IMyInterface service)
     {
         value.Should().NotBeNullOrEmpty();
         service.Should().NotBeNull();
@@ -50,8 +50,8 @@ public class InlineAutoNSubstituteDataAttributeTests
     [Theory]
     [InlineAutoNSubstituteData]
     public void FrozenParameter_InjectsSameInstanceIntoSut(
-        [Frozen] SutFixtureTests.IMyInterface service,
-        SutFixtureTests.MyServiceWithDependency sut)
+        [Frozen] FixtureFactoryTests.IMyInterface service,
+        FixtureFactoryTests.MyServiceWithDependency sut)
     {
         sut.Dependency.Should().BeSameAs(service);
     }

@@ -12,7 +12,7 @@ public class ClassAutoNSubstituteDataAttributeTests
     [ClassAutoNSubstituteData(typeof(SingleColumnData))]
     public void ClassData_ProvidesRows(
         string value,
-        SutFixtureTests.IMyInterface service)
+        FixtureFactoryTests.IMyInterface service)
     {
         value.Should().BeOneOf("hello", "world");
         service.Should().NotBeNull();
@@ -23,7 +23,7 @@ public class ClassAutoNSubstituteDataAttributeTests
     public void ClassData_MultipleColumns_ArePassedThrough(
         string message,
         int count,
-        SutFixtureTests.IMyInterface service)
+        FixtureFactoryTests.IMyInterface service)
     {
         message.Should().BeOneOf("hello", "world");
         count.Should().BeOneOf(1, 2);
@@ -34,8 +34,8 @@ public class ClassAutoNSubstituteDataAttributeTests
     [ClassAutoNSubstituteData(typeof(SingleColumnData))]
     public void FrozenAutoParameter_InjectsSameInstanceIntoSut(
         string _,
-        [Frozen] SutFixtureTests.IMyInterface service,
-        SutFixtureTests.MyServiceWithDependency sut)
+        [Frozen] FixtureFactoryTests.IMyInterface service,
+        FixtureFactoryTests.MyServiceWithDependency sut)
     {
         sut.Dependency.Should().BeSameAs(service);
     }

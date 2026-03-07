@@ -23,7 +23,7 @@ public class MemberAutoNSubstituteDataAttributeTests
     [MemberAutoNSubstituteData(nameof(StringRows))]
     public void MemberProperty_ProvidesRows(
         string value,
-        SutFixtureTests.IMyInterface service)
+        FixtureFactoryTests.IMyInterface service)
     {
         value.Should().BeOneOf("hello", "world");
         service.Should().NotBeNull();
@@ -34,7 +34,7 @@ public class MemberAutoNSubstituteDataAttributeTests
     public void MemberProperty_MultipleColumns_ArePassedThrough(
         string message,
         int count,
-        SutFixtureTests.IMyInterface service)
+        FixtureFactoryTests.IMyInterface service)
     {
         message.Should().BeOneOf("hello", "world");
         count.Should().BeOneOf(1, 2);
@@ -45,8 +45,8 @@ public class MemberAutoNSubstituteDataAttributeTests
     [MemberAutoNSubstituteData(nameof(StringRows))]
     public void FrozenAutoParameter_InjectsSameInstanceIntoSut(
         string _,
-        [Frozen] SutFixtureTests.IMyInterface service,
-        SutFixtureTests.MyServiceWithDependency sut)
+        [Frozen] FixtureFactoryTests.IMyInterface service,
+        FixtureFactoryTests.MyServiceWithDependency sut)
     {
         sut.Dependency.Should().BeSameAs(service);
     }
@@ -55,7 +55,7 @@ public class MemberAutoNSubstituteDataAttributeTests
     [MemberAutoNSubstituteData("ExternalRows", MemberType = typeof(ExternalMemberData))]
     public void MemberType_ResolvesOnExternalType(
         string value,
-        SutFixtureTests.IMyInterface service)
+        FixtureFactoryTests.IMyInterface service)
     {
         value.Should().Be("external");
         service.Should().NotBeNull();
@@ -71,7 +71,7 @@ public class MemberAutoNSubstituteDataAttributeTests
     [MemberAutoNSubstituteData(nameof(MethodRows), "item")]
     public void MemberMethod_WithParameters_ProvidesRows(
         string value,
-        SutFixtureTests.IMyInterface service)
+        FixtureFactoryTests.IMyInterface service)
     {
         value.Should().BeOneOf("item1", "item2");
         service.Should().NotBeNull();

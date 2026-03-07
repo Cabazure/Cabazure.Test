@@ -1,17 +1,17 @@
 using AutoFixture;
-using Cabazure.Test.Fixture;
+using Cabazure.Test;
 using FluentAssertions;
 using NSubstitute;
 using Xunit;
 
 namespace Cabazure.Test.Tests.Fixture;
 
-public class SutFixtureTests
+public class FixtureFactoryTests
 {
     [Fact]
     public void Create_ReturnsNewInstance()
     {
-        var fixture = new SutFixture();
+        var fixture = FixtureFactory.Create();
         var result = fixture.Create<string>();
         result.Should().NotBeNullOrEmpty();
     }
@@ -19,17 +19,16 @@ public class SutFixtureTests
     [Fact]
     public void Create_ForInterface_ReturnsNSubstituteProxy()
     {
-        var fixture = new SutFixture();
+        var fixture = FixtureFactory.Create();
         var result = fixture.Create<IMyInterface>();
         result.Should().NotBeNull();
-        // NSubstitute substitutes implement the interface
         result.Should().BeAssignableTo<IMyInterface>();
     }
 
     [Fact]
     public void Create_ForAbstractClass_ReturnsNSubstituteProxy()
     {
-        var fixture = new SutFixture();
+        var fixture = FixtureFactory.Create();
         var result = fixture.Create<MyAbstractClass>();
         result.Should().NotBeNull();
         result.Should().BeAssignableTo<MyAbstractClass>();
@@ -38,7 +37,7 @@ public class SutFixtureTests
     [Fact]
     public void Create_ForConcreteClass_ReturnsInstance()
     {
-        var fixture = new SutFixture();
+        var fixture = FixtureFactory.Create();
         var result = fixture.Create<MyConcreteClass>();
         result.Should().NotBeNull();
     }
@@ -46,7 +45,7 @@ public class SutFixtureTests
     [Fact]
     public void Create_ForConcreteClassWithDependencies_InjectsMockedDependencies()
     {
-        var fixture = new SutFixture();
+        var fixture = FixtureFactory.Create();
         var result = fixture.Create<MyServiceWithDependency>();
         result.Should().NotBeNull();
         result.Dependency.Should().NotBeNull();
@@ -55,7 +54,7 @@ public class SutFixtureTests
     [Fact]
     public void CreateMany_ReturnsDefaultThreeInstances()
     {
-        var fixture = new SutFixture();
+        var fixture = FixtureFactory.Create();
         var result = fixture.CreateMany<string>();
         result.Should().HaveCount(3);
     }
@@ -63,7 +62,7 @@ public class SutFixtureTests
     [Fact]
     public void CreateMany_WithCount_ReturnsSpecifiedCount()
     {
-        var fixture = new SutFixture();
+        var fixture = FixtureFactory.Create();
         var result = fixture.CreateMany<string>(5);
         result.Should().HaveCount(5);
     }
@@ -71,7 +70,7 @@ public class SutFixtureTests
     [Fact]
     public void Freeze_ReturnsSubstitute_ForInterface()
     {
-        var fixture = new SutFixture();
+        var fixture = FixtureFactory.Create();
         var frozen = fixture.Freeze<IMyInterface>();
         frozen.Should().NotBeNull();
         frozen.Should().BeAssignableTo<IMyInterface>();
@@ -80,7 +79,7 @@ public class SutFixtureTests
     [Fact]
     public void Freeze_ReturnsSameInstance_WhenCreatingDependentType()
     {
-        var fixture = new SutFixture();
+        var fixture = FixtureFactory.Create();
         var frozen = fixture.Freeze<IMyInterface>();
         var sut = fixture.Create<MyServiceWithDependency>();
         sut.Dependency.Should().BeSameAs(frozen);
@@ -89,9 +88,9 @@ public class SutFixtureTests
     [Fact]
     public void Freeze_WithInstance_RegistersProvidedInstance()
     {
-        var fixture = new SutFixture();
+        var fixture = FixtureFactory.Create();
         var instance = Substitute.For<IMyInterface>();
-        fixture.Freeze(instance);
+        fixture.Inject(instance);
         var sut = fixture.Create<MyServiceWithDependency>();
         sut.Dependency.Should().BeSameAs(instance);
     }
@@ -99,8 +98,7 @@ public class SutFixtureTests
     [Fact]
     public void Substitute_ReturnsNSubstituteProxy()
     {
-        var fixture = new SutFixture();
-        var result = fixture.Substitute<IMyInterface>();
+        var result = Substitute.For<IMyInterface>();
         result.Should().NotBeNull();
         result.Should().BeAssignableTo<IMyInterface>();
     }
@@ -108,23 +106,22 @@ public class SutFixtureTests
     [Fact]
     public void Substitute_ReturnsDifferentInstances_OnMultipleCalls()
     {
-        var fixture = new SutFixture();
-        var sub1 = fixture.Substitute<IMyInterface>();
-        var sub2 = fixture.Substitute<IMyInterface>();
+        var sub1 = Substitute.For<IMyInterface>();
+        var sub2 = Substitute.For<IMyInterface>();
         sub1.Should().NotBeSameAs(sub2);
     }
 
     [Fact]
     public void Create_ForValueType_ReturnsNonDefault()
     {
-        var fixture = new SutFixture();
+        var fixture = FixtureFactory.Create();
         var result = fixture.Create<int>();
         // AutoFixture generates non-default values for value types
         // (not guaranteed to be non-zero but should not throw)
         ((object)result).Should().BeOfType<int>();
     }
 
-    // Test helpers
+    // Test helpers — referenced by other test files via FixtureFactoryTests.*
     public interface IMyInterface { }
 
     public abstract class MyAbstractClass { }

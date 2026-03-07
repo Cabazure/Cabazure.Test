@@ -4,7 +4,7 @@ namespace Cabazure.Test.Customizations;
 
 /// <summary>
 /// Global registry for project-wide <see cref="ICustomization"/> instances that are applied
-/// to every <see cref="Fixture.SutFixture"/> created by the Cabazure.Test data attributes.
+/// to every <see cref="IFixture"/> created by the Cabazure.Test data attributes.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -31,7 +31,7 @@ public static class SutFixtureCustomizations
 
     /// <summary>
     /// Registers a project-wide <see cref="ICustomization"/> that will be applied to every
-    /// <see cref="Fixture.SutFixture"/> created by the Cabazure.Test data attributes.
+    /// <see cref="IFixture"/> created by the Cabazure.Test data attributes.
     /// </summary>
     /// <param name="customization">The customization to register. Must not be <see langword="null"/>.</param>
     /// <exception cref="ArgumentNullException">

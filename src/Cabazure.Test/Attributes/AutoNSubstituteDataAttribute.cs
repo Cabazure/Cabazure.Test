@@ -1,5 +1,4 @@
 using System.Reflection;
-using Cabazure.Test.Fixture;
 using Xunit;
 using Xunit.Sdk;
 using Xunit.v3;
@@ -8,7 +7,7 @@ namespace Cabazure.Test.Attributes;
 
 /// <summary>
 /// An xUnit 3 data attribute that provides theory test method arguments using
-/// a <see cref="SutFixture"/>, with automatic NSubstitute substitution for
+/// <see cref="FixtureFactory"/>, with automatic NSubstitute substitution for
 /// interface and abstract class parameters.
 /// </summary>
 /// <remarks>

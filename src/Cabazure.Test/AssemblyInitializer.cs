@@ -1,6 +1,6 @@
 using System.Runtime.CompilerServices;
 
-namespace Cabazure.Test.Fixture;
+namespace Cabazure.Test;
 
 /// <summary>
 /// Performs assembly-level initialization for Cabazure.Test using the .NET

@@ -1,57 +1,26 @@
 using System.Reflection;
 using AutoFixture;
-using Cabazure.Test.Customizations;
-using Cabazure.Test.Fixture;
+using AutoFixture.Kernel;
 
 namespace Cabazure.Test.Attributes;
 
 /// <summary>
-/// Shared helper for merging explicit theory data rows with <see cref="SutFixture"/>-generated values.
+/// Shared helper for merging explicit theory data rows with fixture-generated values.
 /// </summary>
 internal static class AutoNSubstituteDataHelper
 {
     /// <summary>
-    /// Creates a <see cref="SutFixture"/> for the given test method with all applicable
-    /// customizations applied in priority order:
-    /// <list type="number">
-    ///   <item><description><see cref="AutoNSubstituteCustomization"/> — always first.</description></item>
-    ///   <item><description>Project-wide registrations from <see cref="SutFixtureCustomizations"/>.</description></item>
-    ///   <item><description><see cref="CustomizeWithAttribute"/> instances on the test method.</description></item>
-    ///   <item><description><see cref="CustomizeWithAttribute"/> instances on the declaring class.</description></item>
-    /// </list>
+    /// Creates a configured <see cref="IFixture"/> for the given test method.
+    /// See <see cref="FixtureFactory.Create(MethodInfo)"/> for layering order.
     /// </summary>
-    /// <param name="testMethod">The theory method for which the fixture is being created.</param>
-    /// <returns>A fully configured <see cref="SutFixture"/>.</returns>
-    internal static SutFixture CreateFixture(MethodInfo testMethod)
-    {
-        var customizations = new List<ICustomization>
-        {
-            new AutoNSubstituteCustomization(),
-        };
-
-        customizations.AddRange(SutFixtureCustomizations.All);
-
-        foreach (var attr in testMethod.GetCustomAttributes<CustomizeWithAttribute>())
-        {
-            customizations.Add(attr.Instantiate());
-        }
-
-        if (testMethod.DeclaringType is { } declaringType)
-        {
-            foreach (var attr in declaringType.GetCustomAttributes<CustomizeWithAttribute>())
-            {
-                customizations.Add(attr.Instantiate());
-            }
-        }
-
-        return new SutFixture([.. customizations]);
-    }
+    internal static IFixture CreateFixture(MethodInfo testMethod)
+        => FixtureFactory.Create(testMethod);
 
     /// <summary>
     /// Resolves a complete set of theory parameter values by combining <paramref name="provided"/>
     /// values (left-aligned) with fixture-generated values for any remaining parameters.
     /// </summary>
-    /// <param name="fixture">The <see cref="SutFixture"/> used to generate missing values.</param>
+    /// <param name="fixture">The <see cref="IFixture"/> used to generate missing values.</param>
     /// <param name="parameters">All parameters of the theory method.</param>
     /// <param name="provided">
     /// Explicit values for the leading parameters. May be shorter than <paramref name="parameters"/>;
@@ -59,7 +28,7 @@ internal static class AutoNSubstituteDataHelper
     /// </param>
     /// <returns>An array containing one resolved value per parameter.</returns>
     internal static object?[] MergeValues(
-        SutFixture fixture,
+        IFixture fixture,
         ParameterInfo[] parameters,
         object?[] provided)
     {
@@ -95,27 +64,18 @@ internal static class AutoNSubstituteDataHelper
         return values;
     }
 
-    internal static object CreateValue(SutFixture fixture, Type type)
-    {
-        var createMethod = typeof(SutFixture)
-            .GetMethod(nameof(SutFixture.Create))!
-            .MakeGenericMethod(type);
-        return createMethod.Invoke(fixture, null)!;
-    }
+    internal static object CreateValue(IFixture fixture, Type type)
+        => new SpecimenContext(fixture).Resolve(type);
 
-    internal static void FreezeValue(SutFixture fixture, Type type, object value)
+    internal static void FreezeValue(IFixture fixture, Type type, object value)
     {
         if (type.IsValueType)
         {
             return;
         }
 
-        var freezeMethod = typeof(SutFixture)
-            .GetMethods()
-            .First(m => m.Name == nameof(SutFixture.Freeze)
-                        && m.GetParameters().Length == 1
-                        && m.GetParameters()[0].ParameterType.IsGenericParameter)
-            .MakeGenericMethod(type);
-        freezeMethod.Invoke(fixture, [value]);
+        fixture.Customizations.Insert(
+            0,
+            SpecimenBuilderNodeFactory.CreateTypedNode(type, new FixedBuilder(value)));
     }
 }

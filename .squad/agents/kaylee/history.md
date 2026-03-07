@@ -74,3 +74,33 @@ My domain is the guts of the library: `SutFixture`, AutoFixture customizations, 
 - `SutFixture.cs`: `_fixture` → `fixture`
 - `SutFixtureCustomizations.cs`: `_customizations` → `customizations`, `_lock` → `syncLock` (reserved keyword avoidance)
 - Build: 0 warnings, 56/56 tests green after all changes.
+
+### Phase 8: Replace SutFixture with FixtureFactory
+
+**FixtureFactory (new public API):**
+- Created `src/Cabazure.Test/FixtureFactory.cs` in root `Cabazure.Test` namespace (not a subfolder).
+- `public static IFixture Create()` — no-arg convenience, delegates to `Create([])`.
+- `public static IFixture Create(params ICustomization[])` — applies `AutoNSubstituteCustomization` first, then each supplied customization in order.
+- `internal static IFixture Create(MethodInfo)` — full priority stack: AutoNSubstitute → SutFixtureCustomizations.All → `[CustomizeWith]` on method → `[CustomizeWith]` on class. Used only by data attributes via `AutoNSubstituteDataHelper`.
+
+**AutoNSubstituteDataHelper (reflection eliminated):**
+- `CreateFixture` now one-liner delegating to `FixtureFactory.Create(MethodInfo)` — returns `IFixture`, not `SutFixture`.
+- `MergeValues` signature changed: `SutFixture` → `IFixture` (no callers required updating since they use `var`).
+- `CreateValue` replaced `MakeGenericMethod(type)` call with `new SpecimenContext(fixture).Resolve(type)` — kernel API, zero reflection.
+- `FreezeValue` replaced reflected `Freeze<T>(instance)` call with `fixture.Customizations.Insert(0, SpecimenBuilderNodeFactory.CreateTypedNode(type, new FixedBuilder(value)))` — same mechanism `FreezingCustomization` uses internally.
+- Added `using AutoFixture.Kernel;`, removed `using Cabazure.Test.Fixture;` and `using Cabazure.Test.Customizations;`.
+
+**SutFixture deleted:**
+- `src/Cabazure.Test/Fixture/SutFixture.cs` — deleted.
+- `src/Cabazure.Test/Fixture/AssemblyInitializer.cs` — moved to `src/Cabazure.Test/AssemblyInitializer.cs`; namespace updated from `Cabazure.Test.Fixture` to `Cabazure.Test`.
+- `src/Cabazure.Test/Fixture/` directory (including `.gitkeep`) — deleted.
+
+**4 data attributes updated:**
+- Removed `using Cabazure.Test.Fixture;` from all four.
+- Updated XML doc references from `SutFixture` to `FixtureFactory`.
+
+**Supporting file XML docs cleaned:**
+- `SutFixtureCustomizations.cs` — replaced `Fixture.SutFixture` cref with `IFixture` / `IFixture`.
+- `AutoNSubstituteCustomization.cs` — replaced `Fixture.SutFixture` cref with `FixtureFactory`.
+
+**Build result:** 0 errors, 0 warnings (Release TreatWarningsAsErrors is on).

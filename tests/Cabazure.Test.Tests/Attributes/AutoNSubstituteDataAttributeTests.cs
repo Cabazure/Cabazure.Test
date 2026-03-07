@@ -20,16 +20,16 @@ public class AutoNSubstituteDataAttributeTests
     }
 
     [Theory, AutoNSubstituteData]
-    public void Theory_ProvidesInterfaceSubstitute(SutFixtureTests.IMyInterface service)
+    public void Theory_ProvidesInterfaceSubstitute(FixtureFactoryTests.IMyInterface service)
     {
         service.Should().NotBeNull();
-        service.Should().BeAssignableTo<SutFixtureTests.IMyInterface>();
+        service.Should().BeAssignableTo<FixtureFactoryTests.IMyInterface>();
     }
 
     [Theory, AutoNSubstituteData]
     public void Theory_WithFrozenParameter_InjectsSameInstanceIntoSut(
-        [Frozen] SutFixtureTests.IMyInterface service,
-        SutFixtureTests.MyServiceWithDependency sut)
+        [Frozen] FixtureFactoryTests.IMyInterface service,
+        FixtureFactoryTests.MyServiceWithDependency sut)
     {
         sut.Dependency.Should().BeSameAs(service);
     }
@@ -38,7 +38,7 @@ public class AutoNSubstituteDataAttributeTests
     public void Theory_MultipleParameters_AreAllProvided(
         string str,
         int number,
-        SutFixtureTests.IMyInterface service)
+        FixtureFactoryTests.IMyInterface service)
     {
         str.Should().NotBeNullOrEmpty();
         ((object)number).Should().BeOfType<int>();

@@ -9,7 +9,7 @@ namespace Cabazure.Test.Customizations;
 /// </summary>
 /// <remarks>
 /// Apply this customization to an <see cref="IFixture"/> to enable automatic
-/// mocking of dependencies when using <see cref="Fixture.SutFixture"/>.
+/// mocking of dependencies when using <see cref="FixtureFactory"/>.
 /// </remarks>
 public sealed class AutoNSubstituteCustomization : ICustomization
 {
