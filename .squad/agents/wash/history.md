@@ -52,7 +52,20 @@ My domain is xUnit 3 integration. Key difference from xUnit 2: `DataAttribute` i
 - Added `InvokeProtected` / `InvokeProtectedAsync` row to the Features table so the API is discoverable from the features overview.
 - When documenting reflection-based helpers, always surface the binding flags used — `FlattenHierarchy` vs `DeclaredOnly` has a material impact on test utility that readers need to know.
 
-### 2026-03-10: Phase 16 — README [Frozen] Namespace Update
+### 2026-03-10: Phase 17 — FluentAssertions Extensions Documentation
+- Added new "## FluentAssertions Extensions" section to README after "Protected Methods" and before "Compatibility"
+- Documented `JsonElementAssertions.BeEquivalentTo()` overloads:
+  - Comparison between two `JsonElement` instances (normalized via serialization)
+  - Comparison of `JsonElement` against JSON string literals
+  - Key notes: array order is significant; object key order is preserved but does not affect equivalence
+- Documented `DateTimeOffsetExtensions` with `CabazureAssertionOptions`:
+  - `BeCloseTo(DateTimeOffset)` using default precision (1 second)
+  - `BeCloseTo(DateTimeOffset, int precisionMilliseconds)` with explicit precision
+  - `NotBeCloseTo(DateTimeOffset)` and `NotBeCloseTo(DateTimeOffset, int)` variants
+  - Configuration via `[ModuleInitializer]` to set project-wide default precision
+- All examples show namespace is `Cabazure.Test` only — no extra using directives required
+- Code examples follow README style: language-tagged fences, clear explanations before code blocks, matching existing section patterns
+
 - Updated all `[Frozen]` code examples in README to include `using AutoFixture.Xunit3;` at the top, making the source of `[Frozen]` explicit to readers.
 - Enhanced Installation section to list all bundled dependencies (xUnit 3, AutoFixture.Xunit3, NSubstitute, FluentAssertions) with explicit mention that they are transitive dependencies requiring no additional setup.
 - Created a new dedicated "Freezing Fixtures with `[Frozen]`" section before the Features table that:
@@ -82,3 +95,32 @@ Documentation Impact:
 Cross-team: Kaylee refactored source code (agent-51); Zoe migrated tests (agent-52).
 
 Decision logged: .squad/decisions.md - Phase 16 decision with Wash documentation details
+
+### Phase 17: FluentAssertions Extensions Documentation (2026-03-07T22:12:13Z)
+
+Task: Document two new FluentAssertions extension features (JsonElementAssertions and DateTimeOffsetExtensions) in README with clear examples and configuration guidance.
+
+Implementation:
+- Added "## FluentAssertions Extensions" section after "Protected Methods" section
+- JsonElement feature documentation:
+  - Explains `BeEquivalentTo()` overloads with two code examples
+  - Notes on array order sensitivity and object key ordering
+  - Clear usage: element-to-element and element-to-string comparison
+- DateTimeOffset feature documentation:
+  - Explains `BeCloseTo()` and `NotBeCloseTo()` methods with three examples
+  - Example 1: Default 1-second precision (no explicit tolerance)
+  - Example 2: Explicit per-assertion millisecond precision
+  - Example 3: Project-wide configuration via `[ModuleInitializer]`
+  - Realistic business logic scenario (OrderTimestamp)
+- All code examples use `using Cabazure.Test;` only (minimal imports)
+- Consistent with existing README style: language tags, checkmark comments, proper heading hierarchy
+
+Documentation Impact:
+- Users: Clear discovery path for both extension features
+- Examples: Runnable, idiomatic C# with proper patterns
+- Maintenance: Documented contract for future API changes
+- Discoverability: Placed between core features and compatibility notes
+
+Cross-team: Kaylee implemented JsonElementAssertions and DateTimeOffsetExtensions; Zoe provided comprehensive test coverage (19 tests, all passing).
+
+Decision logged: .squad/decisions.md - Phase 17 Decisions 1–3 (JsonElementAssertions, DateTimeOffsetExtensions, Documentation)

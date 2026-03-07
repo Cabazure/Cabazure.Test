@@ -1249,6 +1249,175 @@ if (withAnyArgs)
 - Accumulated handlers are acceptable overhead for test-scoped substitutes
 
 
+---
+
+# Phase 17: FluentAssertions Extensions
+
+## Decision 1: JsonElementAssertions Design
+
+**Proposed by:** Kaylee (Core Dev)  
+**Date:** 2026-03-07  
+**Status:** Implemented
+
+### Context
+
+`System.Text.Json.JsonElement` lacks FluentAssertions support. Comparing JSON elements requires either manual serialization or object-model traversal. We need ergonomic JSON assertion support for integration tests.
+
+### Decisions
+
+#### 1a. Serialization-based comparison
+
+`JsonElementAssertions.BeEquivalentTo()` uses `JsonSerializer.Serialize()` to normalize both elements, then compares the resulting JSON strings.
+
+**Rationale:**
+- Serialization normalizes whitespace (irrelevant variations don't fail assertions)
+- Handles all JSON types uniformly (objects, arrays, scalars, null)
+- Failure messages include both actual and expected JSON for easy diffing
+- Performance impact is negligible for test scenarios
+
+#### 1b. Two BeEquivalentTo overloads
+
+1. `BeEquivalentTo(JsonElement expected)` — element-to-element comparison
+2. `BeEquivalentTo(string expectedJson)` — parses string then delegates to first overload
+
+**Rationale:** Convenience for common cases; string overload avoids manual `JsonDocument.Parse().RootElement` ceremony in tests.
+
+#### 1c. FA 7.0.0 pattern compliance
+
+Uses `Execute.Assertion.BecauseOf(...).ForCondition(...).FailWith(...)` and returns `AndConstraint<JsonElementAssertions>` for method chaining.
+
+**Rationale:** Aligns with FluentAssertions 7.x API design; enables fluent chains.
+
+#### 1d. Struct assertions class (no base class)
+
+`JsonElementAssertions` is a custom class with no base inheritance — structs cannot inherit from FluentAssertions' reference-type base classes.
+
+**Rationale:** Pragmatic workaround; struct assertion classes are a valid pattern in FA extensions.
+
+### Alternatives Considered
+
+- Object-model traversal (compare `.ValueKind`, recursive children) — more complex, same result
+- `ToString()` comparison — loses key ordering, inconsistent whitespace handling
+
+---
+
+## Decision 2: DateTimeOffsetExtensions Design
+
+**Proposed by:** Kaylee (Core Dev)  
+**Date:** 2026-03-07  
+**Status:** Implemented
+
+### Context
+
+FluentAssertions' `BeCloseTo` requires explicit `TimeSpan` precision on every call. Most tests want either (a) a global default precision or (b) inline millisecond literals without `TimeSpan.FromMilliseconds` ceremony.
+
+### Decisions
+
+#### 2a. CabazureAssertionOptions.DateTimeOffsetPrecision static property
+
+A static `TimeSpan` property with default 1-second precision, configurable via `[ModuleInitializer]`.
+
+**Rationale:**
+- Reduces boilerplate in test code when the same tolerance applies across many assertions
+- Aligns with library's design philosophy of configurable defaults
+- `[ModuleInitializer]` enables project-wide setup without per-test overhead
+
+#### 2b. Four extension methods on DateTimeOffsetAssertions<TAssertions>
+
+- `BeCloseTo(nearbyTime)` — uses global default precision
+- `BeCloseTo(nearbyTime, int precisionMilliseconds)` — converts int to TimeSpan
+- `NotBeCloseTo(distantTime)` — uses global default precision
+- `NotBeCloseTo(distantTime, int precisionMilliseconds)` — converts int to TimeSpan
+
+**Rationale:**
+- All delegate to FA's instance methods: `assertions.BeCloseTo(nearbyTime, precision, because, becauseArgs)`
+- Int-millisecond overloads enable `timestamp.Should().BeCloseTo(expected, 500)` instead of `TimeSpan.FromMilliseconds(500)` boilerplate
+- Parameterless overloads reference the static default, no per-call configuration needed
+
+#### 2c. No TimeSpan extension overloads
+
+Skipped extensions for `BeCloseTo(DateTimeOffset, TimeSpan)` — FA already has these as instance methods; adding extension overloads would be shadowed by name resolution (dead code).
+
+**Rationale:** Method resolution prioritizes instance methods over extensions; extensions would never be invoked.
+
+### Alternatives Considered
+
+- Test-level constants (`const int PrecisionMs = 1000`) — doesn't solve global default problem
+- Base test class with protected property — forces inheritance, conflicts with xUnit's composition model
+- Per-attribute configuration — too granular; global + per-call override is the right balance
+
+### Consequences
+
+- Reduced boilerplate for datetime assertions across the test suite
+- Configurable defaults align with modern testing library patterns
+- Int-millisecond convenience without `TimeSpan` ceremony
+- Global precision is mutable; tests must clean up or use `try/finally` if modifying
+
+---
+
+## Decision 3: FluentAssertions Extensions Documentation
+
+**Proposed by:** Wash (Integration Dev)  
+**Date:** 2026-03-07  
+**Status:** Implemented
+
+### Context
+
+Two new FluentAssertions extension features need comprehensive user-facing documentation. Documentation should follow existing README style, provide clear examples, and explain configuration patterns.
+
+### Decisions
+
+#### 3a. README section placement and structure
+
+Added "## FluentAssertions Extensions" section after "Protected Methods" and before "Compatibility".
+
+**Rationale:** Placement ensures discovery after readers see core features but before compatibility warnings. Both features are extension conveniences, not core library mechanics.
+
+#### 3b. JsonElement feature documentation
+
+**Content:**
+- Explains `JsonElementAssertions.BeEquivalentTo()` overloads
+- Two examples: element-to-element and element-to-string comparison
+- Notes on array order (significant) and object key order (preserved, doesn't affect equivalence)
+- All code uses `using Cabazure.Test;` only
+
+**Rationale:** JSON comparison is a common assertion need in modern C#. Raw JSON string literals (C# 11) make testing straightforward. Notes on ordering prevent user confusion about equivalence semantics.
+
+#### 3c. DateTimeOffset feature documentation
+
+**Content:**
+- Explains `BeCloseTo()` and `NotBeCloseTo()` methods
+- Three subsections with examples:
+  1. Using default 1-second precision without explicit tolerance
+  2. Using explicit precision in milliseconds per assertion
+  3. Configuring project-wide default via `[ModuleInitializer]`
+- All code uses `using Cabazure.Test;` only
+
+**Rationale:** DateTime assertions are frequent in business logic tests. Default 1-second precision is practical for most scenarios. `[ModuleInitializer]` configuration aligns with library philosophy. Explicit per-assertion precision provides escape hatch for edge cases.
+
+#### 3d. Documentation style consistency
+
+All code examples follow existing README patterns:
+- Language-tagged code fences (`` `\`\`csharp `` )
+- Clear explanatory text before code blocks
+- Checkmark comments (`// ✓ Passes`) for assertion outcomes
+- Consistent heading levels (## for main section, ### for subsections, #### for details)
+- Leading "---" separator before new main sections
+
+**Rationale:** Consistency improves readability; users recognize patterns from other sections.
+
+#### 3e. Namespace clarity contract
+
+Key decision: both features are available via `using Cabazure.Test;` with no additional using directives.
+
+**Rationale:** Emphasizes library's ergonomic defaults. Every code example demonstrates the minimal using set. Aligns with library philosophy.
+
+### Consequences
+
+- Users have clear, discoverable documentation for both extension features
+- Examples are runnable and follow library conventions
+- Configuration patterns (static property, per-call override) are explained
+- Documentation becomes a contract for future API changes
 
 ---
 

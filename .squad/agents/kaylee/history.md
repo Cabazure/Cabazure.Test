@@ -181,3 +181,37 @@ The `throw;` after `.Throw()` is unreachable at runtime but required so the comp
 **Cross-team:** Zoe handled test migration (7 files, type alias pattern, 165 passing); Wash clarified README documentation (namespace, examples, Matching enum).
 
 **Decision logged:** .squad/decisions.md — "Phase 16: Replace Custom FrozenAttribute with AutoFixture.Xunit3.FrozenAttribute"
+
+### Phase 17: FluentAssertions Extensions (2026-03-07T23:11:00Z)
+
+**Task:** Implement custom FluentAssertions extensions for JsonElement and DateTimeOffset.
+
+**Implementation:**
+- Created `src/Cabazure.Test/Assertions/` folder
+- `JsonElementAssertions.cs`:
+  - Custom assertions class for `JsonElement` struct
+  - FA 7.0.0 pattern: `Execute.Assertion` (NOT AssertionChain — that's FA 8.x)
+  - Two `BeEquivalentTo` overloads: `JsonElement` and `string` (parses then delegates)
+  - Comparison via `JsonSerializer.Serialize` (normalizes whitespace, preserves key order)
+  - Returns `AndConstraint<JsonElementAssertions>` for chaining
+  - `Should()` extension method on `JsonElement`
+- `DateTimeOffsetExtensions.cs`:
+  - `CabazureAssertionOptions.DateTimeOffsetPrecision` static property (default: 1 second)
+  - Four extension methods on `DateTimeOffsetAssertions<TAssertions>`:
+    1. `BeCloseTo(nearbyTime)` — default precision
+    2. `BeCloseTo(nearbyTime, int precisionMilliseconds)` — int ms
+    3. `NotBeCloseTo(distantTime)` — default precision
+    4. `NotBeCloseTo(distantTime, int precisionMilliseconds)` — int ms
+  - All delegate to FA instance methods (`assertions.BeCloseTo(...)` / `assertions.NotBeCloseTo(...)`)
+  - Skipped TimeSpan overloads — FA already has them as instance methods, extension would be shadowed (dead code)
+
+**Key Design Decisions:**
+- `JsonElement` is a struct → no base class inheritance (struct can't inherit from FA's `ReferenceTypeAssertions`)
+- FA 7.0.0 assertions use `Execute.Assertion.BecauseOf(...).ForCondition(...).FailWith(...)` pattern
+- DateTimeOffset extensions provide two new overload signatures: no-args (uses global default) and int-ms (convenient for inline literals)
+- `AndConstraint<T>` is in `FluentAssertions` namespace; `Execute.Assertion` is in `FluentAssertions.Execution`
+
+**Build:** Clean ✅
+
+**Cross-team:** Zoe provided test coverage (19 tests, 19 passing); Wash added comprehensive README documentation with examples.
+**Decision logged:** `.squad/decisions.md` — Phase 17 FluentAssertions Extensions (Decisions 1–3: JsonElementAssertions, DateTimeOffsetExtensions, Documentation)

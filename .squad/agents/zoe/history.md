@@ -98,3 +98,41 @@ Test Result: 165/165 passing; no regressions.
 Cross-team: Kaylee refactored source code first (agent-51); Wash updated documentation (agent-53).
 
 Decision logged: .squad/decisions.md - Phase 16 decision with implementation details
+
+### Phase 17: FluentAssertions Extensions Tests (2026-03-07)
+
+**Task:** Write comprehensive tests for two new FluentAssertions extension files being implemented by Kaylee.
+
+**Files Created:**
+- `tests/Cabazure.Test.Tests/Assertions/JsonElementAssertionsTests.cs` (10 tests)
+- `tests/Cabazure.Test.Tests/Assertions/DateTimeOffsetExtensionsTests.cs` (9 tests)
+
+**Coverage:**
+
+JsonElementAssertions (10 tests):
+- Identity/equivalence checks with identical elements
+- Difference detection with appropriate error messages
+- Structure mismatch detection
+- String overload with matching/different JSON
+- Null value handling
+- Empty object handling
+- Array comparison with order sensitivity
+- Array order difference detection
+- Invalid JSON string throws JsonException
+
+DateTimeOffsetExtensions (9 tests):
+- Default precision (1s) pass/fail scenarios
+- Custom int millisecond precision pass/fail scenarios
+- NotBeCloseTo variants for both default and custom precision
+- Custom default precision via CabazureAssertionOptions with proper cleanup (try/finally)
+
+**Key Patterns:**
+- Used `Action act = () => ...` with `.Should().Throw<Exception>()` for failure tests
+- JsonElement test setup uses `JsonDocument.Parse().RootElement.Clone()` for proper value isolation
+- Static property mutation test includes try/finally to prevent test pollution
+- Tests follow existing project style: namespace `Cabazure.Test.Tests.Assertions`, minimal comments, AAA pattern
+
+**Test Result:** ✅ 19/19 passing — Kaylee's implementation complete, verified. Build clean.
+
+**Cross-team:** Kaylee implemented both extension modules; Wash added comprehensive README documentation.
+**Decision logged:** `.squad/decisions.md` — Phase 17 FluentAssertions Extensions test patterns and verification.
