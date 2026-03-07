@@ -26,7 +26,7 @@ public class FixtureCustomizationCollectionTests
     [Fact]
     public void Add_Null_Throws()
     {
-        var act = () => FixtureFactory.Customizations.Add(null!);
+        var act = () => FixtureFactory.Customizations.Add((ICustomization)null!);
         act.Should().Throw<ArgumentNullException>();
     }
 

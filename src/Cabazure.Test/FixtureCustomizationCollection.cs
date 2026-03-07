@@ -1,5 +1,6 @@
 using System.Collections;
 using AutoFixture;
+using AutoFixture.Kernel;
 using Cabazure.Test.Customizations;
 
 namespace Cabazure.Test;
@@ -74,6 +75,50 @@ public sealed class FixtureCustomizationCollection : IEnumerable<ICustomization>
     }
 
     /// <summary>
+    /// Registers a factory function for creating instances of <typeparamref name="T"/>.
+    /// This is the simplest way to customize how a specific type is created inline.
+    /// </summary>
+    /// <typeparam name="T">The type to customize.</typeparam>
+    /// <param name="factory">
+    /// A function that receives an <see cref="IFixture"/> and returns an instance of <typeparamref name="T"/>.
+    /// Must not be <see langword="null"/>.
+    /// </param>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="factory"/> is <see langword="null"/>.
+    /// </exception>
+    /// <example>
+    /// <code>
+    /// FixtureFactory.Customizations.Add&lt;DateOnly&gt;(f => DateOnly.FromDateTime(f.Create&lt;DateTime&gt;()));
+    /// </code>
+    /// </example>
+    public void Add<T>(Func<IFixture, T> factory)
+    {
+        ArgumentNullException.ThrowIfNull(factory);
+        Add(new TypeCustomization<T>(factory));
+    }
+
+    /// <summary>
+    /// Wraps and registers an <see cref="ISpecimenBuilder"/> as a customization.
+    /// This is for power users who need full control over specimen creation logic.
+    /// </summary>
+    /// <param name="builder">
+    /// The specimen builder to add. Must not be <see langword="null"/>.
+    /// </param>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="builder"/> is <see langword="null"/>.
+    /// </exception>
+    /// <example>
+    /// <code>
+    /// FixtureFactory.Customizations.Add(new MyAdvancedBuilder());
+    /// </code>
+    /// </example>
+    public void Add(ISpecimenBuilder builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        Add(new SpecimenBuilderCustomizationWrapper(builder));
+    }
+
+    /// <summary>
     /// Removes the first occurrence of <paramref name="customization"/> from the collection.
     /// </summary>
     /// <param name="customization">The instance to remove.</param>
@@ -141,4 +186,16 @@ public sealed class FixtureCustomizationCollection : IEnumerable<ICustomization>
 
     /// <inheritdoc/>
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    private sealed class SpecimenBuilderCustomizationWrapper : ICustomization
+    {
+        private readonly ISpecimenBuilder builder;
+
+        public SpecimenBuilderCustomizationWrapper(ISpecimenBuilder builder)
+        {
+            this.builder = builder;
+        }
+
+        public void Customize(IFixture fixture) => fixture.Customizations.Add(builder);
+    }
 }

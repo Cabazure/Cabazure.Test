@@ -196,6 +196,75 @@ var fixture = FixtureFactory.Create(new JsonElementCustomization());
 var element = fixture.Create<JsonElement>();
 ```
 
+### Custom Type Registration
+
+AutoFixture cannot construct some types by default — `JsonElement`, `DateOnly`, or your own domain types with special creation logic. Use `FixtureFactory.Customizations` to register custom factories and builders.
+
+#### Inline delegate (simplest)
+
+Provide a factory function that receives the fixture and returns a fully constructed instance:
+
+```csharp
+FixtureFactory.Customizations.Add<DateOnly>(
+    f => DateOnly.FromDateTime(f.Create<DateTime>()));
+```
+
+The factory is invoked whenever AutoFixture needs to create a `DateOnly`, whether requested directly or as a constructor parameter.
+
+#### Using `Build<T>()` for partial overrides
+
+For types AutoFixture can already construct, use `Build<T>()` to fix specific properties without replacing the entire creation logic:
+
+```csharp
+FixtureFactory.Customizations.Add<Order>(
+    f => f.Build<Order>()
+        .With(o => o.Status, OrderStatus.Pending)
+        .Create());
+```
+
+#### Reusable customization class
+
+For customizations shared across many tests, subclass `TypeCustomization<T>`:
+
+```csharp
+public sealed class MoneyCustomization : TypeCustomization<Money>
+{
+    public MoneyCustomization()
+        : base(f => new Money(f.Create<decimal>())) { }
+}
+```
+
+Register it once in your test assembly initializer:
+
+```csharp
+[ModuleInitializer]
+public static void Initialize()
+{
+    FixtureFactory.Customizations.Add(new MoneyCustomization());
+}
+```
+
+#### Direct `ISpecimenBuilder` registration
+
+For power users who need full control over specimen creation logic, implement `ISpecimenBuilder` and register it directly:
+
+```csharp
+FixtureFactory.Customizations.Add(new MyAdvancedSpecimenBuilder());
+```
+
+#### Overriding a built-in customization
+
+To replace a built-in customization like `DateOnlyTimeOnlyCustomization` or `JsonElementCustomization`, remove the original first:
+
+```csharp
+// Remove the built-in first
+FixtureFactory.Customizations.Remove<DateOnlyTimeOnlyCustomization>();
+
+// Then add your replacement
+FixtureFactory.Customizations.Add<DateOnly>(
+    f => DateOnly.FromDateTime(f.Create<DateTime>().Date));
+```
+
 ---
 
 ## Packages Included
