@@ -302,6 +302,54 @@ All packages are exposed as transitive dependencies — you get full access to t
 
 ---
 
+## Protected Methods
+
+The `ProtectedMethodExtensions` class provides extension methods for invoking protected instance methods on any object via reflection. This is useful for testing Template Method pattern implementations, protected virtual hooks, and other protected methods without subclassing.
+
+### Overloads
+
+- **`InvokeProtected(target, methodName, args)`** — Invokes a protected void method.
+- **`InvokeProtected<TResult>(target, methodName, args)`** — Invokes a protected method that returns `TResult`.
+- **`InvokeProtectedAsync(target, methodName, args)`** — Invokes a protected async method that returns `Task`.
+- **`InvokeProtectedAsync<TResult>(target, methodName, args)`** — Invokes a protected async method that returns `Task<TResult>`.
+
+### Example
+
+```csharp
+using Cabazure.Test;
+using FluentAssertions;
+using Xunit;
+
+public class OrderProcessorTests
+{
+    [Fact]
+    public void CalculateDiscount_Returns10Percent()
+    {
+        // Given a class with a protected virtual method
+        var sut = new OrderProcessor();
+
+        // Act
+        var result = sut.InvokeProtected<decimal>("CalculateDiscount", 100m);
+
+        // Assert
+        result.Should().Be(10m);
+    }
+}
+
+public class OrderProcessor
+{
+    protected virtual decimal CalculateDiscount(decimal total) => total * 0.1m;
+}
+```
+
+### Notes
+
+- **Base class methods** — Protected methods on base classes are found automatically; no need to cast or specify which class defines the method.
+- **Exception handling** — Original exceptions are surfaced directly (not wrapped in `TargetInvocationException`), making stack traces clear and assertion errors readable.
+- **Overload resolution** — Overloads are resolved by argument count and type compatibility. If a method is ambiguous, `AmbiguousMatchException` is thrown.
+
+---
+
 ## Compatibility
 
 - **.NET 9+** (`net9.0`)
