@@ -44,6 +44,21 @@ My domain is the test project `Cabazure.Test.Tests`. The unique challenge: we're
 
 **Status:** Tests written and ready. Waiting for Kaylee to fix implementation compilation errors before tests can run.
 
+### 2026-03-07: Field Naming Convention Applied to Tests
+
+**Update:** Following the finalized field naming convention decision (camelCase, no prefix), the test project's field names have been aligned with the production codebase. This ensures consistency across the entire library.
+
+**Field Naming Convention (Organization-wide):**
+- **Private instance fields:** camelCase, no prefix (e.g., `fixture`, `customizations`)
+- **Private static fields:** camelCase, no prefix (no `s_` prefix)
+- **Special case:** Keywords like `lock` are replaced with appropriate names (e.g., `syncLock`)
+
+**Rationale:**
+- Aligns with Cabazure sibling repos (organization-wide consistency)
+- Matches .NET design guidelines for private members (BCL preference for camelCase)
+- Enforced via `.editorconfig` analyzer rules
+- Tests now follow the same naming convention as production code (no dogfooding inconsistency)
+
 ### 2026-03-07: Phase 7 Tests Completed — TestAssemblyInitializer + Missing Coverage
 
 **Task:** Add `TestAssemblyInitializer` with project-wide customization and fill test gaps in `SutFixtureCustomizationsTests` and `CustomizeWithAttributeTests`.
