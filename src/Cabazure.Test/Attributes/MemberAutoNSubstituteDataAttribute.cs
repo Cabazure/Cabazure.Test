@@ -22,7 +22,7 @@ namespace Cabazure.Test.Attributes;
 /// resolve the member on a different type.
 /// </para>
 /// <para>
-/// Parameters decorated with <see cref="FrozenAttribute"/> are frozen in the fixture
+/// Parameters decorated with <see cref="AutoFixture.Xunit3.FrozenAttribute"/> are frozen in the fixture
 /// before subsequent parameters are resolved.
 /// </para>
 /// <example>

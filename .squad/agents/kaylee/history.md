@@ -136,3 +136,48 @@ The `throw;` after `.Throw()` is unreachable at runtime but required so the comp
 **Build:** Clean ✅
 **Test Integration:** Zoe's test suite validates all scenarios (10 tests, 162/162 passing)
 **Cross-team:** Zoe created implementation as squad unblock; Kaylee baseline design locked by test API contract.
+
+### Phase 16 (Take 2): Replace Custom FrozenAttribute with AutoFixture.Xunit3.FrozenAttribute (2026-03-07)
+
+**Task:** Remove `Cabazure.Test.Attributes.FrozenAttribute` and wire up `AutoFixture.Xunit3.FrozenAttribute` instead.
+
+**What changed:**
+- `src/Cabazure.Test/Cabazure.Test.csproj` — added `AutoFixture.Xunit3 4.19.0` package reference
+- `src/Cabazure.Test/Attributes/FrozenAttribute.cs` — deleted entirely
+- `src/Cabazure.Test/Attributes/AutoNSubstituteDataHelper.cs`:
+  - Added `using AutoFixture.Xunit3;`
+  - `MergeValues` now reads `parameter.GetCustomAttribute<FrozenAttribute>()` (resolves to `AutoFixture.Xunit3.FrozenAttribute`)
+  - Auto-generated frozen params: call `fixture.Customize(frozenAttr.GetCustomization(parameter))` **before** `CreateValue`. `FreezeOnMatchCustomization` creates the value and registers it as frozen in one step; `CreateValue` then returns the already-frozen instance.
+  - Provided frozen params: unchanged — `FreezeValue(fixture, type, value)` path using `SpecimenBuilderNodeFactory.CreateTypedNode(type, new FixedBuilder(value))` is equivalent to `Matching.ExactType`.
+- XML docs in all four `*AutoNSubstituteData*Attribute.cs` files updated: `<see cref="FrozenAttribute"/>` → `<see cref="AutoFixture.Xunit3.FrozenAttribute"/>`.
+
+**Key insight:** `FreezeOnMatchCustomization` (used by `AutoFixture.Xunit3.FrozenAttribute.GetCustomization`) calls `new SpecimenContext(fixture).Resolve(Request)` internally to create the specimen, then inserts `FilteringSpecimenBuilder(FixedBuilder(value), Matcher)` at index 0. So after customization, the next `Resolve(parameter)` call returns the already-registered frozen value. The old pattern (create then freeze) still works for provided values where we already have the object in hand.
+
+**Build:** Clean ✅
+
+## Learnings
+
+### AutoFixture.Xunit3.FrozenAttribute pattern (Phase 16)
+
+`AutoFixture.Xunit3.FrozenAttribute.GetCustomization(parameter)` returns a `FreezeOnMatchCustomization`. When applied via `fixture.Customize(...)` **before** `CreateValue`, it both creates the specimen internally and registers it at index 0 as a `FilteringSpecimenBuilder(FixedBuilder(value), Matcher)`. The subsequent `CreateValue` call therefore returns the already-frozen instance from the cache — no double creation, no extra registration step needed. For provided values (inline/class/member data), skip `GetCustomization` and use the existing `FreezeValue` path (`SpecimenBuilderNodeFactory.CreateTypedNode`) so we freeze the exact object in hand rather than letting AutoFixture create a new one.
+
+### Phase 16 (FrozenAttribute Replacement — 2026-03-07T21:44:11Z)
+
+**Task:** Replace custom Cabazure.Test.Attributes.FrozenAttribute with AutoFixture.Xunit3.FrozenAttribute.
+
+**Implementation:**
+- Deleted src/Cabazure.Test/Attributes/FrozenAttribute.cs
+- Updated AutoNSubstituteDataHelper.MergeValues to call rozenAttr.GetCustomization(parameter) before CreateValue
+- Added AutoFixture.Xunit3 4.19.0 to src/Cabazure.Test/Cabazure.Test.csproj
+- Build verified clean; no test modifications needed in source library (Zoe's responsibility)
+
+**Why:** Removes custom attribute surface area; users now get Matching enum support (ExactType, DirectBaseType, ImplementedInterfaces) for free. AutoFixture.Xunit3 is battle-tested upstream standard.
+
+**Key Behavioral Notes:**
+- Auto-generated frozen params: FreezeOnMatchCustomization creates AND freezes before CreateValue returns
+- Provided frozen params: FreezeValue path kept; equivalent to Matching.ExactType, no duplicate creation
+- Value type guard unchanged
+
+**Cross-team:** Zoe handled test migration (7 files, type alias pattern, 165 passing); Wash clarified README documentation (namespace, examples, Matching enum).
+
+**Decision logged:** .squad/decisions.md — "Phase 16: Replace Custom FrozenAttribute with AutoFixture.Xunit3.FrozenAttribute"

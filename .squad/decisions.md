@@ -1448,3 +1448,50 @@ Test 10 (`InvokeProtected_MethodThrows_SurfacesOriginalException`) explicitly as
 
 - `tests/Cabazure.Test.Tests/ProtectedMethodExtensionsTests.cs`
 
+
+---
+
+## Phase 16: Replace Custom FrozenAttribute with AutoFixture.Xunit3.FrozenAttribute
+
+**Date:** 2026-03-07  
+**Authors:** Kaylee (Core .NET Developer), Zoe (QA & Testing Lead), Wash (Integration & Tooling)
+
+### Decision
+
+Remove the custom Cabazure.Test.Attributes.FrozenAttribute and use AutoFixture.Xunit3.FrozenAttribute (from the AutoFixture.Xunit3 4.19.0 package) instead.
+
+### Rationale
+
+- Our custom FrozenAttribute was a thin shim with no By / Matching support
+- AutoFixture.Xunit3.FrozenAttribute is the official attribute; it delegates to FreezeOnMatchCustomization which supports Matching.ExactType (default), Matching.DirectBaseType, Matching.ImplementedInterfaces, etc.
+- Consumers can now use [Frozen(Matching.ImplementedInterfaces)] and similar overloads without any additional library wrapping
+- Reduces maintenance burden of an in-house type that shadows the ecosystem standard
+- Transitive dependency already present; no new package overhead
+
+### Behavioral Notes
+
+- **Auto-generated parameters:** ixture.Customize(frozenAttr.GetCustomization(parameter)) is called **before** CreateValue. FreezeOnMatchCustomization creates the value internally AND registers it as frozen in one step. CreateValue then returns the already-frozen instance.
+- **Provided parameters** (inline/class/member data): the existing FreezeValue path is kept — it is equivalent to Matching.ExactType and does not duplicate value creation.
+- Value types are still never frozen (guard unchanged)
+
+### Implementation Details
+
+#### Kaylee (Core Dev)
+- Deleted src/Cabazure.Test/Attributes/FrozenAttribute.cs
+- Updated src/Cabazure.Test/Attributes/AutoNSubstituteDataHelper.cs
+- Added AutoFixture.Xunit3 4.19.0 to src/Cabazure.Test/Cabazure.Test.csproj
+- Build verified clean
+
+#### Zoe (QA)
+- Applied type alias to 7 test files
+- Full grep verification of [Frozen] coverage completed
+- Test Result: 165/165 tests passing
+
+#### Wash (Integration & Tooling)
+- Enhanced README Installation Section
+- Added new Freezing Fixtures section
+- Updated 3 code examples
+
+### Package Version
+
+AutoFixture.Xunit3 4.19.0 — compatible with AutoFixture 4.18.1 and xunit.v3.extensibility.core 3.2.2 already in the project.

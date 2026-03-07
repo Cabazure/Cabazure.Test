@@ -9,9 +9,9 @@
 
 My domain: test project `Cabazure.Test.Tests`. Unique challenge: testing a testing library using that library itself (dogfooding). Watch edge cases: sealed classes, value types, parameterless constructors, multiple constructors, `[Frozen]` parameter interaction.
 
-**Completed Work Summary (Phases 1-18):**
+**Completed Work Summary (Phases 1-18, plus Phase 16 FrozenAttribute migration):**
 
-Full test coverage for library features: FixtureFactory, 4 data attributes, 8 customizations, NSubstitute integration (argument matchers + async call waiting). 152+ tests passing. Infrastructure patterns: sealed-class composition, static collection restoration, FluentAssertions property checks, same-instance assertions with [Frozen] + Create<T>, dogfooding theory tests, JsonElement cloning, namespace collision workarounds.
+Full test coverage for library features: FixtureFactory, 4 data attributes, 8 customizations, NSubstitute integration (argument matchers + async call waiting). 165 tests passing. Infrastructure patterns: sealed-class composition, static collection restoration, FluentAssertions property checks, same-instance assertions with [Frozen] + Create<T>, dogfooding theory tests, JsonElement cloning, namespace collision workarounds.
 
 ## Recent Work
 
@@ -54,3 +54,47 @@ Full test coverage for library features: FixtureFactory, 4 data attributes, 8 cu
 - Fire-and-forget Task.Run() for delayed calls, try/finally DefaultTimeout mutation
 - .CompleteWithinAsync(TimeSpan) and .ThrowAsync<TException>() patterns
 - 152 tests passing
+
+### Phase 16 (FrozenAttribute Migration — 2026-03-07)
+
+**Task:** Migrate test files from custom `Cabazure.Test.Attributes.FrozenAttribute` to `AutoFixture.Xunit3.FrozenAttribute`.
+
+**Files Updated (7 total):**
+- `Attributes/AutoNSubstituteDataAttributeTests.cs`
+- `Attributes/InlineAutoNSubstituteDataAttributeTests.cs`
+- `Attributes/ClassAutoNSubstituteDataAttributeTests.cs`
+- `Attributes/MemberAutoNSubstituteDataAttributeTests.cs`
+- `Attributes/AutoNSubstituteDataHelperFixtureInjectionTests.cs`
+- `Attributes/SubstituteAttributeTests.cs`
+- `Customizations/TypeCustomizationTests.cs`
+
+**Key Learnings:**
+- Task listed 4 files but 7 files total use `[Frozen]` — always grep the full test tree for `\[Frozen\]`.
+- The custom `FrozenAttribute` was still present in `Cabazure.Test.Attributes` when tests were updated, causing CS0104 ambiguity. Resolved with `using FrozenAttribute = AutoFixture.Xunit3.FrozenAttribute;` alias — takes precedence over namespace imports and survives until the custom attribute is deleted.
+- Added explicit `<PackageReference Include="AutoFixture.Xunit3" Version="4.19.0" />` to csproj.
+- Result: 165/165 tests passing.
+
+## Learnings
+
+### Phase 16 FrozenAttribute Test Update (Re-verified)
+
+- All Phase 16 FrozenAttribute migration changes were already applied in a previous session. When asked to redo work, always check the current file state before modifying.
+- `AutoFixture.Xunit3` 4.19.0 is already present in the test csproj; the type alias pattern (`using FrozenAttribute = AutoFixture.Xunit3.FrozenAttribute;`) is already in all 4 attribute test files (and 3 others).
+- 165/165 tests confirmed passing on re-verification.
+
+### Phase 16 (FrozenAttribute Migration - 2026-03-07T21:44:11Z)
+
+Task: Migrate 7 test files from custom Cabazure.Test.Attributes.FrozenAttribute to AutoFixture.Xunit3.FrozenAttribute.
+
+Implementation:
+- Applied type alias pattern to 7 files
+- Full grep verification of [Frozen] coverage completed
+- AutoFixture.Xunit3 4.19.0 already present in Cabazure.Test.Tests.csproj
+
+Pattern Decision: Type alias avoids CS0104 ambiguity during transition; self-documents intent; works both during and after cleanup.
+
+Test Result: 165/165 passing; no regressions.
+
+Cross-team: Kaylee refactored source code first (agent-51); Wash updated documentation (agent-53).
+
+Decision logged: .squad/decisions.md - Phase 16 decision with implementation details

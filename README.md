@@ -22,6 +22,14 @@ Two things set this library apart. First, project-wide fixture customizations ar
 dotnet add package Cabazure.Test
 ```
 
+The package includes all dependencies needed for testing:
+- **xUnit 3** — test framework
+- **AutoFixture & AutoFixture.Xunit3** — fixture generation and `[Frozen]` attribute
+- **NSubstitute** — automatic mocking
+- **FluentAssertions** — assertion library
+
+No additional packages are required to get started.
+
 ---
 
 ## Quick Start
@@ -62,6 +70,7 @@ public class OrderServiceTests
 For theory-driven tests, `[AutoNSubstituteData]` resolves all parameters from a fixture. Mark upstream dependencies with `[Frozen]` so they are registered before the SUT is constructed — the same instance flows through to the SUT's constructor.
 
 ```csharp
+using AutoFixture.Xunit3;
 using Cabazure.Test.Attributes;
 using FluentAssertions;
 using NSubstitute;
@@ -91,6 +100,12 @@ public class NotificationServiceTests
 Combine explicit inline values with auto-generated parameters. Inline values fill leading parameters; the rest are resolved from the fixture.
 
 ```csharp
+using AutoFixture.Xunit3;
+using Cabazure.Test.Attributes;
+using FluentAssertions;
+using NSubstitute;
+using Xunit;
+
 public class DiscountServiceTests
 {
     [Theory]
@@ -128,6 +143,13 @@ internal static class TestAssemblyInitializer
 Apply a customization to a single test method or an entire test class without touching the global registry.
 
 ```csharp
+using AutoFixture.Xunit3;
+using Cabazure.Test.Attributes;
+using Cabazure.Test.Customizations;
+using FluentAssertions;
+using NSubstitute;
+using Xunit;
+
 [CustomizeWith(typeof(MyProjectCustomization))]
 public class PaymentServiceTests
 {
@@ -140,6 +162,52 @@ public class PaymentServiceTests
     }
 }
 ```
+
+---
+
+## Freezing Fixtures with `[Frozen]`
+
+The `[Frozen]` attribute comes from the `AutoFixture.Xunit3` package, which is a transitive dependency of `Cabazure.Test`. When you mark a parameter with `[Frozen]` in a theory test, AutoFixture registers that instance in the fixture before resolving subsequent parameters, ensuring the same instance is injected everywhere it is needed.
+
+Add the using directive:
+
+```csharp
+using AutoFixture.Xunit3;
+```
+
+### Example: Freezing a Dependency
+
+```csharp
+[Theory, AutoNSubstituteData]
+public void Process_UsesRepository(
+    [Frozen] IRepository repo,      // Frozen first — registered in the fixture
+    Service service)                // Created with repo already wired in
+{
+    var item = new Item { Id = 1 };
+    service.Process(item);
+    repo.Received(1).Save(item);
+}
+```
+
+### Advanced: Matching Behavior
+
+For fine-grained control over which types match the frozen instance, use the `Matching` enum:
+
+```csharp
+[Theory, AutoNSubstituteData]
+public void Handler_UsesInterfaces(
+    [Frozen(Matching.ImplementedInterfaces)] IHandler handler,
+    MyClass sut)
+{
+    sut.DoWork();
+    handler.Received(1).Execute();
+}
+```
+
+**Key points:**
+- Frozen parameters must appear **before** any parameters that depend on them — parameters are resolved **left to right**.
+- Only reference types are frozen; value types are ignored.
+- Works with all data attributes: `[AutoNSubstituteData]`, `[InlineAutoNSubstituteData]`, `[MemberAutoNSubstituteData]`, `[ClassAutoNSubstituteData]`.
 
 ---
 

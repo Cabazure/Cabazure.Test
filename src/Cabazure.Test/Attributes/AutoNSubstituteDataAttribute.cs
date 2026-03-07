@@ -12,7 +12,7 @@ namespace Cabazure.Test.Attributes;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Parameters decorated with <see cref="FrozenAttribute"/> are frozen in the fixture
+/// Parameters decorated with <see cref="AutoFixture.Xunit3.FrozenAttribute"/> are frozen in the fixture
 /// before subsequent parameters are resolved, so all later parameters that depend on
 /// the same type receive the same instance.
 /// </para>

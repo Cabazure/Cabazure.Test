@@ -1,6 +1,7 @@
 using System.Reflection;
 using AutoFixture;
 using AutoFixture.Kernel;
+using AutoFixture.Xunit3;
 
 namespace Cabazure.Test.Attributes;
 
@@ -39,14 +40,14 @@ internal static class AutoNSubstituteDataHelper
         for (var i = 0; i < parameters.Length; i++)
         {
             var parameter = parameters[i];
-            var isFrozen = parameter.GetCustomAttribute<FrozenAttribute>() is not null;
+            var frozenAttr = parameter.GetCustomAttribute<FrozenAttribute>();
 
             if (i < provided.Length)
             {
                 var value = provided[i];
                 values[i] = value;
 
-                if (isFrozen && value is not null && !parameter.ParameterType.IsValueType)
+                if (frozenAttr is not null && value is not null && !parameter.ParameterType.IsValueType)
                 {
                     FreezeValue(fixture, parameter.ParameterType, value);
                 }
@@ -57,13 +58,14 @@ internal static class AutoNSubstituteDataHelper
             }
             else
             {
-                var value = CreateValue(fixture, parameter);
-                values[i] = value;
-
-                if (isFrozen && !parameter.ParameterType.IsValueType)
+                if (frozenAttr is not null)
                 {
-                    FreezeValue(fixture, parameter.ParameterType, value);
+                    // FreezeOnMatchCustomization creates the value AND registers it as frozen
+                    // in one step; CreateValue then returns the already-frozen instance.
+                    fixture.Customize(frozenAttr.GetCustomization(parameter));
                 }
+
+                values[i] = CreateValue(fixture, parameter);
             }
         }
 

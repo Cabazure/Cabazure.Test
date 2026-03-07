@@ -51,3 +51,34 @@ My domain is xUnit 3 integration. Key difference from xUnit 2: `DataAttribute` i
 - README "Protected Methods" section was already scaffolded as a stub (Overloads bulleted list + single sync example). Updated it to: lead with a 4-overload quick-reference code block (void/typed/async-void/async-typed), replace the stub example with `[Theory, AutoNSubstituteData]` style to match the library's own idioms, and rewrite Notes to explicitly name `MissingMethodException` and `ExceptionDispatchInfo`.
 - Added `InvokeProtected` / `InvokeProtectedAsync` row to the Features table so the API is discoverable from the features overview.
 - When documenting reflection-based helpers, always surface the binding flags used — `FlattenHierarchy` vs `DeclaredOnly` has a material impact on test utility that readers need to know.
+
+### 2026-03-10: Phase 16 — README [Frozen] Namespace Update
+- Updated all `[Frozen]` code examples in README to include `using AutoFixture.Xunit3;` at the top, making the source of `[Frozen]` explicit to readers.
+- Enhanced Installation section to list all bundled dependencies (xUnit 3, AutoFixture.Xunit3, NSubstitute, FluentAssertions) with explicit mention that they are transitive dependencies requiring no additional setup.
+- Created a new dedicated "Freezing Fixtures with `[Frozen]`" section before the Features table that:
+  - States clearly that `[Frozen]` is provided by `AutoFixture.Xunit3` package (transitive dependency of `Cabazure.Test`)
+  - Shows the required using directive
+  - Provides a complete working example
+  - Documents advanced usage with `Matching.ImplementedInterfaces` enum
+  - Lists key points: left-to-right resolution, reference types only, works with all data attributes
+- **Namespace Decision:** `[Frozen]` now consistently references `AutoFixture.Xunit3`, not `Cabazure.Test.Attributes`. The custom `FrozenAttribute` in `Cabazure.Test.Attributes` is a legacy artifact and users should prefer the standard AutoFixture.Xunit3 version for NuGet discoverability and upstream compatibility.
+
+### Phase 16 (FrozenAttribute Documentation - 2026-03-07T21:44:11Z)
+
+Task: Update README to clarify FrozenAttribute namespace and document Matching enum support.
+
+Implementation:
+- Enhanced Installation section with bundled dependency list (xUnit 3, AutoFixture.Xunit3, NSubstitute, FluentAssertions)
+- Clarified AutoFixture.Xunit3 as source of [Frozen]
+- Added new Freezing Fixtures section before Features table
+- Updated 3 code examples (NotificationServiceTests, DiscountServiceTests, PaymentServiceTests) with using AutoFixture.Xunit3
+
+Documentation Impact:
+- Users: Clear namespace authority; reduced confusion
+- NuGet Discoverability: Examples align with AutoFixture.Xunit3 official docs
+- Maintainability: Single source of truth reduces tracking burden
+- Backward Compatibility: Custom FrozenAttribute still available but de-emphasized
+
+Cross-team: Kaylee refactored source code (agent-51); Zoe migrated tests (agent-52).
+
+Decision logged: .squad/decisions.md - Phase 16 decision with Wash documentation details
