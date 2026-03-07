@@ -13,6 +13,20 @@ My domain is xUnit 3 integration. Key difference from xUnit 2: `DataAttribute` i
 
 📌 Team initialized on 2026-03-07 — Firefly cast: Mal (Lead), Kaylee (Core Dev), Wash (Integration Dev), Zoe (QA), Scribe (Memory).
 
+### 2026-03-07: README Authoring
+- `README.md` is wired as `PackageReadmeFile` in `Cabazure.Test.csproj` — it will appear on nuget.org automatically when the package is packed. The file must exist at the repo root for the pack step to succeed without warnings.
+- FluentAssertions 7.x migration note was included in the README under Compatibility. FA 7 contains breaking changes from 6.x; users migrating from Atc.Test or similar FA-6-based packages should be directed to the official migration guide.
+
+### 2026-03-07: GitHub Actions Pipelines
+- Created 3-workflow pattern matching all sibling Cabazure repos:
+  - `ci.yml`: triggers on push/PR to main → build + test + coverage badges (committed back to repo)
+  - `release.yml`: triggers on `vX.Y.Z` tags (must be on main) → build + test + coverage + pack + NuGet publish
+  - `release-preview.yml`: triggers on `vX.Y.Z-previewN` tags (no main guard) → build + pack + NuGet publish
+- **`dotnet build` does NOT produce `.nupkg` files by default** — a separate `dotnet pack --no-build -c:Release -p:Version=${VERSION}` step is required before `dotnet nuget push`
+- Solution file is `.slnx` format (new XML format) — `dotnet` CLI auto-discovers it, no need to specify explicitly in workflow commands
+- Version flows from git tag → `VERSION` env var → `-p:Version=${VERSION}` on both build and pack steps
+- `NUGET_KEY` secret must be configured in repo settings before first release
+
 ### 2026-03-07: Solution Scaffolding
 - Created `Cabazure.Test.sln` with src/tests structure
 - **xUnit 3 Package Discovery:** xUnit v3 is at version 3.2.2 on NuGet
