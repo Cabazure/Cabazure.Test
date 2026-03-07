@@ -92,7 +92,7 @@ public sealed class MemberAutoNSubstituteDataAttribute : DataAttribute
         var result = new List<ITheoryDataRow>();
         foreach (var row in rows)
         {
-            var fixture = new SutFixture();
+            var fixture = AutoNSubstituteDataHelper.CreateFixture(testMethod);
             var values = AutoNSubstituteDataHelper.MergeValues(fixture, theoryParams, row);
             result.Add(new TheoryDataRow(values));
         }

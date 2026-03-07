@@ -1,4 +1,6 @@
 using System.Reflection;
+using AutoFixture;
+using Cabazure.Test.Customizations;
 using Cabazure.Test.Fixture;
 
 namespace Cabazure.Test.Attributes;
@@ -8,6 +10,43 @@ namespace Cabazure.Test.Attributes;
 /// </summary>
 internal static class AutoNSubstituteDataHelper
 {
+    /// <summary>
+    /// Creates a <see cref="SutFixture"/> for the given test method with all applicable
+    /// customizations applied in priority order:
+    /// <list type="number">
+    ///   <item><description><see cref="AutoNSubstituteCustomization"/> — always first.</description></item>
+    ///   <item><description>Project-wide registrations from <see cref="SutFixtureCustomizations"/>.</description></item>
+    ///   <item><description><see cref="CustomizeWithAttribute"/> instances on the test method.</description></item>
+    ///   <item><description><see cref="CustomizeWithAttribute"/> instances on the declaring class.</description></item>
+    /// </list>
+    /// </summary>
+    /// <param name="testMethod">The theory method for which the fixture is being created.</param>
+    /// <returns>A fully configured <see cref="SutFixture"/>.</returns>
+    internal static SutFixture CreateFixture(MethodInfo testMethod)
+    {
+        var customizations = new List<ICustomization>
+        {
+            new AutoNSubstituteCustomization(),
+        };
+
+        customizations.AddRange(SutFixtureCustomizations.All);
+
+        foreach (var attr in testMethod.GetCustomAttributes<CustomizeWithAttribute>())
+        {
+            customizations.Add(attr.Instantiate());
+        }
+
+        if (testMethod.DeclaringType is { } declaringType)
+        {
+            foreach (var attr in declaringType.GetCustomAttributes<CustomizeWithAttribute>())
+            {
+                customizations.Add(attr.Instantiate());
+            }
+        }
+
+        return new SutFixture([.. customizations]);
+    }
+
     /// <summary>
     /// Resolves a complete set of theory parameter values by combining <paramref name="provided"/>
     /// values (left-aligned) with fixture-generated values for any remaining parameters.

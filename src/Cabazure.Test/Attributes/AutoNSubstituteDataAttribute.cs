@@ -37,7 +37,7 @@ public sealed class AutoNSubstituteDataAttribute : DataAttribute
     {
         ArgumentNullException.ThrowIfNull(testMethod);
 
-        var fixture = new SutFixture();
+        var fixture = AutoNSubstituteDataHelper.CreateFixture(testMethod);
         var parameters = testMethod.GetParameters();
         var values = AutoNSubstituteDataHelper.MergeValues(fixture, parameters, []);
         IReadOnlyCollection<ITheoryDataRow> result = [new TheoryDataRow(values)];
