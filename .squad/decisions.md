@@ -234,6 +234,168 @@ Every `SutFixture` created by the data attributes now uses `AutoNSubstituteDataH
 
 ---
 
+### 7. SutFixtureCustomizations → FixtureFactory.Customizations Refactor
+
+**Date:** 2026-03-07  
+**Author:** Kaylee (Core .NET Developer)  
+**Status:** Approved
+
+#### 7a. Consolidation Rationale
+
+**Decision:** Merged `SutFixtureCustomizations` static class into `FixtureFactory.Customizations` (type: `FixtureCustomizationCollection`).
+
+**Rationale:**
+- `SutFixtureCustomizations` was a standalone global registry class with no connection to `FixtureFactory`
+- Better discoverability: users find the customization API through `FixtureFactory.Customizations` rather than a separate class
+- `SutFixtureCustomizations` was a holdover name from the removed `SutFixture` class; it no longer reflected the architecture
+- Richer API: `FixtureCustomizationCollection` supports `Add`, `Remove(instance)`, `Remove<T>()`, `Clear`, `Count`, and implements `IEnumerable<ICustomization>`
+
+#### 7b. Implementation Details
+
+- `FixtureFactory.Customizations` is a static property returning `FixtureCustomizationCollection`
+- Pre-seeded with `AutoNSubstituteCustomization` (non-negotiable foundation)
+- Thread-safe via internal locking (same pattern as previous `SutFixtureCustomizations`)
+- `All` property returns a snapshot to prevent external mutation of the shared list
+
+#### Consequences
+
+- **Breaking change for direct consumers:** Code that accessed `SutFixtureCustomizations.Add` must now use `FixtureFactory.Customizations.Add`.
+- All internal and test references have been updated.
+- The `[ModuleInitializer]` pattern for project-wide registrations remains unchanged; callers simply use the new API.
+
+---
+
+### 8. Phase 8 — FixtureFactory API Design
+
+**Proposed by:** Kaylee (Core .NET Developer)  
+**Date:** 2026-03-07  
+**Status:** Proposed
+
+**Note:** See Decision 7 for the consolidation that moved customization registry into `FixtureFactory.Customizations`.
+
+#### 8a. Introduce `FixtureFactory` as the public entry point
+
+**Decision:** Replace `SutFixture` with a `public static class FixtureFactory` in the root `Cabazure.Test` namespace.
+
+**Rationale:**
+- `IFixture` is a well-known, fully-featured API; wrapping it in `SutFixture` provided no additional functionality.
+- Returning `IFixture` directly gives consumers the full AutoFixture surface without a proxy layer.
+- A static factory is the idiomatic pattern for returning configured instances without exposing construction complexity.
+
+#### 8b. Three overloads — two public, one internal
+
+| Overload | Access | Purpose |
+|---|---|---|
+| `Create()` | public | No-arg convenience; delegates to `Create([])`. |
+| `Create(params ICustomization[])` | public | Applies `AutoNSubstituteCustomization` first, then each supplied customization. |
+| `Create(MethodInfo)` | internal | Full priority stack for theory data attributes. |
+
+**Rationale:**
+- The `MethodInfo` overload is an implementation detail of the attribute pipeline; making it public would expose an internal contract to consumers.
+- The two public overloads are sufficient for direct `[Fact]` usage.
+
+#### 8c. Eliminate reflection from `AutoNSubstituteDataHelper`
+
+**Decision:** Use AutoFixture kernel APIs directly.
+
+- `CreateValue` → `new SpecimenContext(fixture).Resolve(type)`
+- `FreezeValue` → `fixture.Customizations.Insert(0, SpecimenBuilderNodeFactory.CreateTypedNode(type, new FixedBuilder(value)))`
+
+**Rationale:**
+- `MakeGenericMethod` was the only reason `SutFixture` existed as a concrete type in the helper.
+- Kernel APIs are the canonical, non-reflective way to perform these operations; they are already what AutoFixture's own extension methods delegate to.
+- Removes a runtime failure mode (reflection errors only surfaced at test execution time).
+
+#### 8d. Delete `SutFixture` and the `Fixture/` subdirectory
+
+**Decision:** `SutFixture.cs` is deleted; `AssemblyInitializer.cs` is moved to the project root (`Cabazure.Test` namespace) and the `Fixture/` directory is removed entirely.
+
+**Rationale:**
+- The `Fixture/` directory only existed to house `SutFixture`; `AssemblyInitializer` was placed there historically but belongs at the project root since it is a library-level concern.
+- Removing the directory reduces navigational friction and eliminates a namespace that served no grouping purpose.
+
+#### Consequences
+
+- **Breaking change for consumers:** Any code that directly instantiates `SutFixture` must be updated to use `FixtureFactory.Create()` or `FixtureFactory.Create(customizations)` instead. The returned `IFixture` provides a superset of the functionality `SutFixture` exposed.
+- `AutoNSubstituteDataAttribute` and its three variants are unchanged from a user perspective; the fixture they inject into theory parameters is still configured identically.
+- `FixtureFactory.Customizations.Add` and `[CustomizeWith]` continue to work without modification.
+
+---
+
+### 9. Immutable Collection Support — ImmutableCollectionCustomization
+
+**Date:** 2026-03-07  
+**Author:** Kaylee (Core Dev)  
+**Status:** Approved
+
+**Decision:** `ImmutableCollectionCustomization` is included in the library as a `public sealed class` that provides full support for all eight System.Collections.Immutable types.
+
+**Supported Types:**
+- `ImmutableList<T>`, `ImmutableArray<T>`, `ImmutableHashSet<T>`, `ImmutableDictionary<TKey, TValue>`
+- `ImmutableSortedSet<T>`, `ImmutableSortedDictionary<TKey, TValue>`
+- `ImmutableQueue<T>`, `ImmutableStack<T>`
+
+**Rationale:**
+- Without this customization, AutoFixture 4.18.1 throws `ObjectCreationException` for the first four types and creates empty collections for the last two.
+- The customization handles both constructor parameters and object properties (via `PropertyInfo` and `FieldInfo` support).
+- Essential for projects using immutable data structures.
+
+**Consequences:**
+- Users opt-in by passing `new ImmutableCollectionCustomization()` to `FixtureFactory.Create()` or via `[CustomizeWith]`.
+- The customization is not applied by default; `AutoNSubstituteCustomization` remains the foundation.
+
+---
+
+### 10. Recursion Handling — RecursionCustomization
+
+**Date:** 2026-03-07  
+**Author:** Kaylee (Core Dev)  
+**Status:** Proposed
+
+**Decision:** `RecursionCustomization` is provided as a `public sealed class` following the same style as `AutoNSubstituteCustomization`.
+
+**Implementation:**
+- Removes AutoFixture's default `ThrowingRecursionBehavior`
+- Installs `OmitOnRecursionBehavior` instead (leaves recursive properties as `null`)
+
+**Rationale:**
+- `OmitOnRecursionBehavior` is test-friendly — recursive properties default to `null` rather than throwing
+- This is the recommended approach for handling recursive object graphs in tests
+- Consistent pattern with other customization classes in this library
+
+**Namespace Pitfall:**
+- In the test project, `Fixture` is both a class (`AutoFixture.Fixture`) and a namespace remnant
+- When constructing `new Fixture()` directly without going through `FixtureFactory`, use `new AutoFixture.Fixture()` to avoid CS0118 ambiguity
+
+---
+
+### 11. README Synchronization with FixtureFactory Phase 8 API
+
+**Date:** 2026-03-07  
+**Author:** Zoe (QA/Docs Lead)  
+**Status:** Approved
+
+**Decision:** README.md has been fully rewritten to reflect the library's current public API after Phase 8 (FixtureFactory refactor).
+
+**Changes Made:**
+- Replaced defunct `SutFixture` API with `FixtureFactory`
+- Fixed broken CI badge (was `build.yml`, corrected to `ci.yml`)
+- Added complete sections for all four theory data attributes
+- Added sections for `RecursionCustomization` and `ImmutableCollectionCustomization`
+- Added section for `FixtureFactory.Customizations` (formerly `SutFixtureCustomizations`) project-wide registration pattern
+- Added section for `[CustomizeWith]` method/class-level customization
+- Added section for `[Frozen]` parameter freezing with realistic multi-dependency example
+
+**Rationale:**
+- README drift is a real risk after refactors; must be treated as a deliverable alongside public API changes
+- Previous README still described the now-deleted `SutFixture` class
+
+**Governance Note:**
+- README should be kept in sync whenever a public API surface changes
+- QA/docs owner (Zoe) will flag README gaps in future task reviews
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus

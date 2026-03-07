@@ -148,6 +148,43 @@ My domain is the test project `Cabazure.Test.Tests`. The unique challenge: we're
 **Status:** File edits complete. Build verification pending Kaylee's `FixtureFactory` source changes.
 
 
+### 2026-03-07: Phase 8 Tests Migrated — SutFixture → FixtureFactory/IFixture
+
+**Task:** Update test files to use the new `FixtureFactory`/`IFixture` API.
+
+**Files Changed:**
+- **Deleted** `tests/Cabazure.Test.Tests/Fixture/SutFixtureTests.cs`
+- **Created** `tests/Cabazure.Test.Tests/Fixture/FixtureFactoryTests.cs`
+  - Class renamed `SutFixtureTests` → `FixtureFactoryTests`
+  - All helper types (`IMyInterface`, `MyAbstractClass`, `MyConcreteClass`, `MyServiceWithDependency`) preserved as nested types
+  - `new SutFixture()` → `FixtureFactory.Create()`
+  - `fixture.Freeze(instance)` → `fixture.Inject(instance)` (AutoFixture's `FixtureRegistrar.Inject<T>`)
+  - `fixture.Substitute<T>()` → `NSubstitute.Substitute.For<T>()` — tests that used fixture only to call `Substitute<T>()` no longer need the fixture var
+  - Added `using Cabazure.Test;` + `using AutoFixture;`, removed `using Cabazure.Test.Fixture;`
+- **Updated** `AutoNSubstituteDataAttributeTests.cs` — `SutFixtureTests.*` → `FixtureFactoryTests.*`
+- **Updated** `InlineAutoNSubstituteDataAttributeTests.cs` — same rename
+- **Updated** `MemberAutoNSubstituteDataAttributeTests.cs` — same rename
+- **Updated** `ClassAutoNSubstituteDataAttributeTests.cs` — same rename
+- **No changes needed** in `SutFixtureCustomizationsTests.cs` or `CustomizeWithAttributeTests.cs` — they do not use `SutFixture` directly.
+
+**Key design note:** `Substitute_ReturnsNSubstituteProxy` and `Substitute_ReturnsDifferentInstances_OnMultipleCalls` no longer need a fixture object — they now call `Substitute.For<T>()` directly and omit the unused `FixtureFactory.Create()` call for cleanliness.
+
+**Status:** File edits complete. Build verification pending Kaylee's `FixtureFactory` source changes.
+
+### 2026-03-07: Phase 8 — SutFixtureCustomizations Replaced by FixtureFactory.Customizations
+
+**Notification:** Kaylee has refactored the fixture customization API. The standalone `SutFixtureCustomizations` static class has been removed and its functionality merged into `FixtureFactory.Customizations` (a `FixtureCustomizationCollection` type).
+
+**Impact for Zoe:**
+- All test code already uses `FixtureFactory` (Phase 8 migration complete)
+- No direct `SutFixtureCustomizations` references in test files
+- For future updates: if test code needs to add project-wide customizations, it will use `FixtureFactory.Customizations.Add(...)` (previously `SutFixtureCustomizations.Add(...)`)
+- The `[ModuleInitializer]` pattern in `TestAssemblyInitializer` remains unchanged
+
+**Decision Reference:**
+- Decision #7: SutFixtureCustomizations → FixtureFactory.Customizations Refactor (API consolidation)
+- Decision #8: Phase 8 — FixtureFactory API Design (full design)
+
 ### README Rewritten -- Reflects FixtureFactory API (Phase 8+)
 
 **Task:** Rewrite README.md to accurately reflect the current public API after Phase 8 removed SutFixture.
