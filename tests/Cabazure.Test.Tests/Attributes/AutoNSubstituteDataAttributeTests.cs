@@ -16,7 +16,7 @@ public class AutoNSubstituteDataAttributeTests
     [Theory, AutoNSubstituteData]
     public void Theory_ProvidesIntArgument(int value)
     {
-        value.Should().BeOfType<int>();
+        ((object)value).Should().BeOfType<int>();
     }
 
     [Theory, AutoNSubstituteData]
@@ -41,7 +41,7 @@ public class AutoNSubstituteDataAttributeTests
         SutFixtureTests.IMyInterface service)
     {
         str.Should().NotBeNullOrEmpty();
-        number.Should().BeOfType<int>();
+        ((object)number).Should().BeOfType<int>();
         service.Should().NotBeNull();
     }
 }

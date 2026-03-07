@@ -1,3 +1,7 @@
 # Squad: ignore generated logs
 .squad/orchestration-log/
 .squad/log/
+
+# .NET build output
+bin/
+obj/

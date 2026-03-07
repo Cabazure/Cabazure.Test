@@ -121,7 +121,7 @@ public class SutFixtureTests
         var result = fixture.Create<int>();
         // AutoFixture generates non-default values for value types
         // (not guaranteed to be non-zero but should not throw)
-        result.Should().BeOfType<int>();
+        ((object)result).Should().BeOfType<int>();
     }
 
     // Test helpers

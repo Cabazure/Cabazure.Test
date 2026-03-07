@@ -1,5 +1,6 @@
 using AutoFixture;
 using AutoFixture.Dsl;
+using AutoFixture.Kernel;
 using Cabazure.Test.Customizations;
 using NSubstitute;
 
@@ -100,18 +101,17 @@ public sealed class SutFixture
 
     /// <summary>
     /// Configures AutoFixture customization for type <typeparamref name="T"/> using
-    /// the provided composer transformation, and returns the customized composer.
+    /// the provided composer transformation.
     /// </summary>
     /// <typeparam name="T">The type to customize.</typeparam>
     /// <param name="composerTransformation">
     /// A function that configures the composer for <typeparamref name="T"/>.
     /// </param>
-    /// <returns>The customized composer.</returns>
-    public ICustomizationComposer<T> Customize<T>(
+    public void Customize<T>(
         Func<ICustomizationComposer<T>, ISpecimenBuilder> composerTransformation)
     {
         ArgumentNullException.ThrowIfNull(composerTransformation);
-        return _fixture.Customize<T>(composerTransformation);
+        _fixture.Customize<T>(composerTransformation);
     }
 
     /// <summary>

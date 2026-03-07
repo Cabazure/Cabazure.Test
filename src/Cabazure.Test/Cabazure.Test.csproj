@@ -5,6 +5,7 @@
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <NoWarn>$(NoWarn);CA2255</NoWarn>
     
     <!-- NuGet Package Metadata -->
     <PackageId>Cabazure.Test</PackageId>

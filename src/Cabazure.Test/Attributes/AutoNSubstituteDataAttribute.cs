@@ -1,8 +1,8 @@
 using System.Reflection;
-using AutoFixture;
 using Cabazure.Test.Fixture;
 using Xunit;
 using Xunit.Sdk;
+using Xunit.v3;
 
 namespace Cabazure.Test.Attributes;
 
@@ -28,19 +28,24 @@ namespace Cabazure.Test.Attributes;
 /// </code>
 /// </example>
 /// </remarks>
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
 public sealed class AutoNSubstituteDataAttribute : DataAttribute
 {
     /// <inheritdoc />
-    public override IEnumerable<object[]> GetData(MethodInfo testMethod)
+    public override ValueTask<IReadOnlyCollection<ITheoryDataRow>> GetData(
+        MethodInfo testMethod,
+        DisposalTracker disposalTracker)
     {
         ArgumentNullException.ThrowIfNull(testMethod);
 
         var fixture = new SutFixture();
         var parameters = testMethod.GetParameters();
         var values = ResolveParameters(fixture, parameters);
-        return [values];
+        IReadOnlyCollection<ITheoryDataRow> result = [new TheoryDataRow(values)];
+        return new ValueTask<IReadOnlyCollection<ITheoryDataRow>>(result);
     }
+
+    /// <inheritdoc />
+    public override bool SupportsDiscoveryEnumeration() => true;
 
     private static object[] ResolveParameters(SutFixture fixture, ParameterInfo[] parameters)
     {
