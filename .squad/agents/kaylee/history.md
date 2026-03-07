@@ -7,7 +7,32 @@
 
 ## Core Context
 
-My domain is the guts of the library: `SutFixture`, AutoFixture customizations, the `ISpecimenBuilder` that routes interface/abstract-class requests to NSubstitute. Key challenge: AutoFixture doesn't natively create substitutes for abstract/interface types; we bridge that via `AutoNSubstituteCustomization`.
+My domain is the guts of the library: AutoFixture customizations, the `ISpecimenBuilder` that routes interface/abstract-class requests to NSubstitute. Key challenge: AutoFixture doesn't natively create substitutes for abstract/interface types; we bridge that via `AutoNSubstituteCustomization`.
+
+### Completed Phases (2026-03-07, Phases 1-10)
+
+**Library Architecture:**
+- `AutoNSubstituteCustomization` — routes interface/abstract-class requests to NSubstitute via `ConfigureMembers=true` + `GenerateDelegates=true`
+- `FixtureFactory.Create()` — static factory (replaces old SutFixture class); supports custom `ICustomization[]` parameter
+- Four data attributes: `AutoNSubstituteData`, `InlineAutoNSubstituteData`, `MemberAutoNSubstituteData`, `ClassAutoNSubstituteData`
+
+**Customizations Completed:**
+- `RecursionCustomization` — replaces throwing with omit-on-recursion behavior
+- `ImmutableCollectionCustomization` — handles all 8 immutable collection types (List, Array, Set, Queue, Stack, etc.)
+- `DateOnlyTimeOnlyCustomization` — generates valid DateOnly/TimeOnly from random DateTime (fixes AutoFixture gap)
+- `JsonElementCustomization` — creates cloned JsonElements (requires `.Clone()` for safety post-GC)
+- `TypeCustomization<T>` — generic factory pattern; `Add<T>(Func<IFixture, T>)` convenience method
+- `SpecimenRequestHelper` — extracted public static helper for pattern-matching request types
+
+**Defaults Seeding:**
+- `FixtureCustomizationCollection` now seeds: AutoNSubstitute, Recursion, ImmutableCollection, DateOnlyTimeOnly (5 items as of Phase 11)
+- `JsonElementCustomization` remains opt-in (not in defaults)
+
+**Refactoring Complete:**
+- Removed `SutFixture` class, `SutFixtureCustomizations` static class
+- Consolidated via `FixtureFactory` + `FixtureFactory.Customizations` (FixtureCustomizationCollection)
+- Applied organization-wide field naming: private fields/statics use plain camelCase (no `_`/`s_` prefix)
+- All tests migrated to `FixtureFactory` API; 111 tests passing (as of Phase 10)
 
 ## Learnings
 
