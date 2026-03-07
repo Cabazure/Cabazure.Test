@@ -47,7 +47,7 @@ public sealed class AutoNSubstituteDataAttribute : DataAttribute
     {
         ArgumentNullException.ThrowIfNull(testMethod);
 
-        var fixture = AutoNSubstituteDataHelper.CreateFixture(testMethod);
+        var fixture = FixtureFactory.Create(testMethod);
         var parameters = testMethod.GetParameters();
         var values = AutoNSubstituteDataHelper.MergeValues(fixture, parameters, []);
         disposalTracker.AddRange(values);

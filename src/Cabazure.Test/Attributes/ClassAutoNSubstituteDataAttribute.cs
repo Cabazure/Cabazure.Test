@@ -97,7 +97,7 @@ public sealed class ClassAutoNSubstituteDataAttribute : DataAttribute
         foreach (var item in dataInstance)
         {
             var row = item as object?[] ?? [(object?)item];
-            var fixture = AutoNSubstituteDataHelper.CreateFixture(testMethod);
+            var fixture = FixtureFactory.Create(testMethod);
             var values = AutoNSubstituteDataHelper.MergeValues(fixture, theoryParams, row);
             disposalTracker.AddRange(values);
             result.Add(new TheoryDataRow(values));

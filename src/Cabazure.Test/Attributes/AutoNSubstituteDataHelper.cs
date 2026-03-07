@@ -11,13 +11,6 @@ namespace Cabazure.Test.Attributes;
 internal static class AutoNSubstituteDataHelper
 {
     /// <summary>
-    /// Creates a configured <see cref="IFixture"/> for the given test method.
-    /// See <see cref="FixtureFactory.Create(MethodInfo)"/> for layering order.
-    /// </summary>
-    internal static IFixture CreateFixture(MethodInfo testMethod)
-        => FixtureFactory.Create(testMethod);
-
-    /// <summary>
     /// Resolves a complete set of theory parameter values by combining <paramref name="provided"/>
     /// values (left-aligned) with fixture-generated values for any remaining parameters.
     /// Parameters of type <see cref="IFixture"/> or <see cref="Fixture"/> receive the fixture
@@ -49,7 +42,9 @@ internal static class AutoNSubstituteDataHelper
 
                 if (frozenAttr is not null && value is not null && !parameter.ParameterType.IsValueType)
                 {
-                    FreezeValue(fixture, parameter.ParameterType, value);
+                    fixture.Customizations.Insert(
+                        0,
+                        SpecimenBuilderNodeFactory.CreateTypedNode(parameter.ParameterType, new FixedBuilder(value)));
                 }
             }
             else if (parameter.ParameterType.IsAssignableFrom(typeof(Fixture)))
@@ -61,34 +56,14 @@ internal static class AutoNSubstituteDataHelper
                 if (frozenAttr is not null)
                 {
                     // FreezeOnMatchCustomization creates the value AND registers it as frozen
-                    // in one step; CreateValue then returns the already-frozen instance.
+                    // in one step; the subsequent Resolve call returns the already-frozen instance.
                     fixture.Customize(frozenAttr.GetCustomization(parameter));
                 }
 
-                values[i] = CreateValue(fixture, parameter);
+                values[i] = new SpecimenContext(fixture).Resolve(parameter);
             }
         }
 
         return values;
-    }
-
-    /// <summary>
-    /// Resolves a value for the given parameter, passing the full <see cref="ParameterInfo"/>
-    /// to the specimen context so AutoFixture attribute processing (including
-    /// <c>[Substitute]</c> from <c>AutoFixture.AutoNSubstitute</c>) applies.
-    /// </summary>
-    internal static object CreateValue(IFixture fixture, ParameterInfo parameter)
-        => new SpecimenContext(fixture).Resolve(parameter);
-
-    internal static void FreezeValue(IFixture fixture, Type type, object value)
-    {
-        if (type.IsValueType)
-        {
-            return;
-        }
-
-        fixture.Customizations.Insert(
-            0,
-            SpecimenBuilderNodeFactory.CreateTypedNode(type, new FixedBuilder(value)));
     }
 }
