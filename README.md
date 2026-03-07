@@ -160,6 +160,7 @@ public class PaymentServiceTests
 | `CancellationTokenCustomization` | Provides non-cancelled `CancellationToken` parameters in theory tests (`new CancellationToken(false)`), fixing AutoFixture's default. |
 | `DateOnlyTimeOnlyCustomization` | Enables reliable creation of `DateOnly` and `TimeOnly` values derived from a random `DateTime`. |
 | `JsonElementCustomization` | Opt-in customization that enables creation of `System.Text.Json.JsonElement` instances. |
+| `InvokeProtected` / `InvokeProtectedAsync` | Extension methods for invoking protected instance methods via reflection — void, typed-return, and async variants. Useful for testing Template Method patterns and protected virtual hooks without subclassing. |
 | Auto-substitution | Interfaces and abstract classes are automatically replaced with NSubstitute substitutes everywhere — no manual `Substitute.For<T>()` required. |
 
 ---
@@ -304,14 +305,21 @@ All packages are exposed as transitive dependencies — you get full access to t
 
 ## Protected Methods
 
-The `ProtectedMethodExtensions` class provides extension methods for invoking protected instance methods on any object via reflection. This is useful for testing Template Method pattern implementations, protected virtual hooks, and other protected methods without subclassing.
+`ProtectedMethodExtensions` provides extension methods for invoking protected instance methods via reflection. This is useful when testing the [Template Method pattern](https://en.wikipedia.org/wiki/Template_method_pattern) or protected virtual hooks without creating a `TestableMyClass : MyClass` subclass per test.
 
-### Overloads
+```csharp
+// Invoke a protected void method
+sut.InvokeProtected("Reset");
 
-- **`InvokeProtected(target, methodName, args)`** — Invokes a protected void method.
-- **`InvokeProtected<TResult>(target, methodName, args)`** — Invokes a protected method that returns `TResult`.
-- **`InvokeProtectedAsync(target, methodName, args)`** — Invokes a protected async method that returns `Task`.
-- **`InvokeProtectedAsync<TResult>(target, methodName, args)`** — Invokes a protected async method that returns `Task<TResult>`.
+// Invoke a protected method with a return value
+var discount = sut.InvokeProtected<decimal>("CalculateDiscount", 100m);
+
+// Invoke a protected async method (returns Task)
+await sut.InvokeProtectedAsync("OnActivatedAsync", cancellationToken);
+
+// Invoke a protected async method with a typed return value
+var dto = await sut.InvokeProtectedAsync<OrderDto>("FetchOrderAsync", id, cancellationToken);
+```
 
 ### Example
 
@@ -322,16 +330,11 @@ using Xunit;
 
 public class OrderProcessorTests
 {
-    [Fact]
-    public void CalculateDiscount_Returns10Percent()
+    [Theory, AutoNSubstituteData]
+    public void CalculateDiscount_Returns10Percent(OrderProcessor sut)
     {
-        // Given a class with a protected virtual method
-        var sut = new OrderProcessor();
-
-        // Act
         var result = sut.InvokeProtected<decimal>("CalculateDiscount", 100m);
 
-        // Assert
         result.Should().Be(10m);
     }
 }
@@ -344,9 +347,10 @@ public class OrderProcessor
 
 ### Notes
 
-- **Base class methods** — Protected methods on base classes are found automatically; no need to cast or specify which class defines the method.
-- **Exception handling** — Original exceptions are surfaced directly (not wrapped in `TargetInvocationException`), making stack traces clear and assertion errors readable.
-- **Overload resolution** — Overloads are resolved by argument count and type compatibility. If a method is ambiguous, `AmbiguousMatchException` is thrown.
+- **Base class methods** — Methods are resolved with `FlattenHierarchy`, so protected methods defined on any base class in the hierarchy are found automatically.
+- **Overload resolution** — Overloads are matched by argument count and type compatibility.
+- **Missing methods** — Throws `MissingMethodException` with a descriptive message (including the expected parameter types) if no matching method is found.
+- **Exception transparency** — Original exceptions are surfaced directly via `ExceptionDispatchInfo`, not wrapped in `TargetInvocationException`, keeping stack traces and assertion errors intact.
 
 ---
 

@@ -136,4 +136,13 @@ public class FixtureFactoryTests
             Dependency = dependency;
         }
     }
+
+    public class MyServiceWithStringMessage
+    {
+        public string Message { get; }
+        public MyServiceWithStringMessage(string message)
+        {
+            Message = message;
+        }
+    }
 }

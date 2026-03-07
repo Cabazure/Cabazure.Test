@@ -46,3 +46,8 @@ My domain is xUnit 3 integration. Key difference from xUnit 2: `DataAttribute` i
 - Established directory structure: Attributes/, Customizations/, Fixture/
 - NuGet package metadata configured in main .csproj for future publishing
 
+### 2026-03-08: Protected Methods README Section
+- `ProtectedMethodExtensions` uses `BindingFlags.FlattenHierarchy` to resolve protected methods across the full type hierarchy — this is the key detail that makes it useful for base-class template method testing.
+- README "Protected Methods" section was already scaffolded as a stub (Overloads bulleted list + single sync example). Updated it to: lead with a 4-overload quick-reference code block (void/typed/async-void/async-typed), replace the stub example with `[Theory, AutoNSubstituteData]` style to match the library's own idioms, and rewrite Notes to explicitly name `MissingMethodException` and `ExceptionDispatchInfo`.
+- Added `InvokeProtected` / `InvokeProtectedAsync` row to the Features table so the API is discoverable from the features overview.
+- When documenting reflection-based helpers, always surface the binding flags used — `FlattenHierarchy` vs `DeclaredOnly` has a material impact on test utility that readers need to know.
