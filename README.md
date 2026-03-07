@@ -12,7 +12,7 @@
 
 **Cabazure.Test** is a spiritual successor to [Atc.Test](https://github.com/atc-net/atc-test), rebuilt from the ground up for xUnit 3. It bundles xUnit 3, NSubstitute, AutoFixture, and FluentAssertions into a single package so you can focus on writing tests instead of wiring up infrastructure.
 
-The key differentiator is xUnit 3's `[ModuleInitializer]` pattern — assembly-level setup is handled automatically, with no static constructors or manual bootstrapping required. Interfaces and abstract classes are substituted by NSubstitute automatically, everywhere.
+Two things set this library apart. First, project-wide fixture customizations are registered explicitly in a `[ModuleInitializer]` method — there is no reflection-based auto-discovery scanning assemblies for special attributes. This makes startup deterministic, fast, and straightforward to reason about. Second, interfaces and abstract classes are automatically substituted by NSubstitute everywhere — no manual `Substitute.For<T>()` calls required.
 
 ---
 
