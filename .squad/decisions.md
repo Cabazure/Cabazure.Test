@@ -503,3 +503,190 @@ Test coverage for type-specific AutoFixture customizations should verify:
 - All meaningful changes require team consensus
 - Document architectural decisions here
 - Keep history focused on work, decisions focused on direction
+
+## kaylee-type-customization
+
+# Decision: TypeCustomization<T> Factory Pattern
+
+**Date:** 2026-03-07  
+**Author:** Kaylee (Core .NET Developer)  
+**Status:** Implemented
+
+## Context
+
+Phase 9 required implementing a generic customization class that allows users to register factory functions for specific types. The key design question: should the factory receive `IFixture` (high-level API) or `ISpecimenContext` (low-level kernel API)?
+
+## Decision
+
+**The factory receives `IFixture`, not `ISpecimenContext`.**
+
+```csharp
+public sealed class TypeCustomization<T> : ICustomization
+{
+    private readonly Func<IFixture, T> factory;
+    
+    public TypeCustomization(Func<IFixture, T> factory)
+    {
+        ArgumentNullException.ThrowIfNull(factory);
+        this.factory = factory;
+    }
+    
+    public void Customize(IFixture fixture)
+    {
+        ArgumentNullException.ThrowIfNull(fixture);
+        fixture.Customizations.Add(new DelegateBuilder(fixture, factory));
+    }
+    
+    // DelegateBuilder stores the IFixture instance and passes it to the factory
+}
+```
+
+## Rationale
+
+1. **Ergonomics:** Users can write `f => DateOnly.FromDateTime(f.Create<DateTime>())` instead of wrestling with `context.Resolve(typeof(DateTime))` and casting.
+
+2. **Consistency:** All existing examples in the codebase use `IFixture` methods like `Create<T>()`, `Build<T>()`, `Freeze<T>()` — this keeps the same mental model.
+
+3. **Discoverability:** IDE autocomplete on `IFixture` exposes the full AutoFixture API; `ISpecimenContext` only shows `Resolve(object)` which is opaque to new users.
+
+4. **Safety:** The `IFixture` instance is captured during `Customize()`, ensuring the factory always operates on the correct fixture with all customizations applied.
+
+## Alternatives Considered
+
+**Option A: Factory receives `ISpecimenContext`**  
+- Pro: Matches AutoFixture kernel conventions  
+- Con: Requires users to know `context.Resolve(typeof(T))` and cast results  
+- Con: Loses access to fluent API like `Build<T>().With(...).Create()`  
+- **Rejected:** Too low-level for typical user needs
+
+**Option B: Factory receives both `IFixture` and `ISpecimenContext`**  
+- Pro: Maximum flexibility  
+- Con: Signature bloat; confuses users about which to use  
+- **Rejected:** Over-engineered for 99% of use cases
+
+## Impact
+
+- **FixtureCustomizationCollection:** Two new overloads added:
+  - `Add<T>(Func<IFixture, T> factory)` — inline factory registration
+  - `Add(ISpecimenBuilder builder)` — power-user escape hatch for full control
+  
+- **Power users:** Can still implement `ISpecimenBuilder` directly and register via the new `Add(ISpecimenBuilder)` overload if they need `ISpecimenContext` access.
+
+## Examples
+
+### Inline factory (simple)
+```csharp
+FixtureFactory.Customizations.Add<DateOnly>(f => 
+    DateOnly.FromDateTime(f.Create<DateTime>()));
+```
+
+### Subclassed customization (reusable)
+```csharp
+public sealed class JsonElementCustomization : TypeCustomization<JsonElement>
+{
+    public JsonElementCustomization()
+        : base(f =>
+        {
+            var json = $"{{\"id\":\"{f.Create<Guid>()}\"}}";
+            return JsonDocument.Parse(json).RootElement.Clone();
+        })
+    {
+    }
+}
+```
+
+### Power-user escape hatch
+```csharp
+public sealed class MyAdvancedBuilder : ISpecimenBuilder
+{
+    public object Create(object request, ISpecimenContext context)
+    {
+        // Full kernel control with ISpecimenContext
+    }
+}
+
+FixtureFactory.Customizations.Add(new MyAdvancedBuilder());
+```
+
+## Verification
+
+Build passed with 0 errors, 0 warnings in Release mode (TreatWarningsAsErrors=true).
+
+
+## zoe-type-customization-tests
+
+# Decision: TypeCustomization<T> Test Patterns
+
+**Date:** 2026-03-07  
+**Author:** Zoe (QA Lead)  
+**Status:** Implemented
+
+## Context
+
+Created comprehensive test coverage for `TypeCustomization<T>` and the two new `FixtureCustomizationCollection.Add()` overloads introduced in Phase 9. Discovered several test patterns unique to this generic, sealed customization type.
+
+## Decisions Made
+
+### 1. Avoid Namespace Collision with `new AutoFixture.Fixture()`
+
+**Problem:** Test namespace includes `Cabazure.Test.Tests.Fixture` which collides with `AutoFixture.Fixture` type.
+
+**Solution:** Use fully qualified `new AutoFixture.Fixture()` in test code when creating bare fixtures for isolated tests.
+
+**Rationale:** Clear, unambiguous, and avoids need for namespace aliases.
+
+### 2. Test Wrapping Pattern Instead of Subclassing
+
+**Problem:** `TypeCustomization<T>` is `sealed`, so subclassing tests are not possible.
+
+**Solution:** Created `TypeCustomization_CanBeWrappedInCustomClass()` test demonstrating composition via `ICustomization` wrapper.
+
+**Rationale:** Documents the intended reuse pattern — composition over inheritance aligns with the sealed design.
+
+### 3. Fix Ambiguous `Add(null!)` Calls
+
+**Problem:** With 3 overloads of `Add()` (`ICustomization`, `Func<IFixture, T>`, `ISpecimenBuilder`), `null!` parameter is ambiguous.
+
+**Solution:** Cast to the intended overload: `Add((ICustomization)null!)` in null-guard tests.
+
+**Impact:** Updated existing test in `FixtureCustomizationCollectionTests.cs` to fix compilation error.
+
+### 4. Use Local Fixtures to Avoid Global State Pollution
+
+**Pattern:** For tests of `TypeCustomization<T>` itself, create a bare `new AutoFixture.Fixture()` and call `sut.Customize(fixture)` directly.
+
+**Rationale:** Avoids modifying `FixtureFactory.Customizations` global registry in tests, preventing cross-test side effects.
+
+**Alternative:** For tests of the convenience method `FixtureCustomizationCollection.Add<T>(factory)`, create a local `new FixtureCustomizationCollection()` instance.
+
+### 5. Verify Factory Receives Working IFixture
+
+**Test:** `Factory_ReceivesIFixture_WithWorkingCreate()` — factory lambda calls `f.Create<string>()` and verifies result is non-null.
+
+**Rationale:** Ensures the `IFixture` passed to the factory is fully functional and not a stub/mock.
+
+### 6. Test Constructor Parameter Interception
+
+**Test:** `Create_UsesFactory_ForConstructorParameter()` — verify that `TypeCustomization<int>` intercepts `int` constructor parameters.
+
+**Rationale:** Demonstrates that factory-based customization applies to all specimen requests, not just direct `Create<T>()` calls.
+
+## Coverage Summary
+
+**15 tests total:**
+- 6 core `TypeCustomization<T>` tests (constructor, customize, factory behavior)
+- 1 wrapping pattern test (composition over inheritance)
+- 4 `FixtureCustomizationCollection` overload tests (factory + specimen builder)
+- 4 integration tests (Build<T>, constructor params, multiple calls, isolation)
+
+## Related Files
+
+- `tests/Cabazure.Test.Tests/Customizations/TypeCustomizationTests.cs`
+- `tests/Cabazure.Test.Tests/Customizations/FixtureCustomizationCollectionTests.cs` (1 line fix for ambiguous null)
+
+## Test Results
+
+✅ **106 tests passing** (15 new + 91 existing)  
+✅ **0 errors, 0 warnings**
+
+

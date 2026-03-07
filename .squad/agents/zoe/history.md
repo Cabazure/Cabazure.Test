@@ -48,6 +48,44 @@ My domain is the test project `Cabazure.Test.Tests`. The unique challenge: we're
 
 **Update:** Following the finalized field naming convention decision (camelCase, no prefix), the test project's field names have been aligned with the production codebase. This ensures consistency across the entire library.
 
+### Phase 9: TypeCustomization<T> Test Coverage
+
+**Date:** 2026-03-07
+
+**TypeCustomizationTests.cs Created:**
+- File: `tests/Cabazure.Test.Tests/Customizations/TypeCustomizationTests.cs`
+- **15 new comprehensive tests** covering all API surfaces
+- All tests passing (106 total: 15 new + 91 existing)
+
+**Test Coverage Areas:**
+1. Constructor validation (null-guard)
+2. Customize method with ICustomization compliance
+3. Factory receiving and invoking on IFixture
+4. Wrapping pattern demonstration (composition over inheritance)
+5. Add<T>(factory) overload with local fixture isolation
+6. Add(ISpecimenBuilder) overload for power users
+7. Build<T> integration with custom factories
+8. Constructor parameter interception
+9. Multiple customization calls
+10. Cross-fixture isolation
+
+**Key Test Patterns Established:**
+- Use fully qualified `AutoFixture.Fixture` to avoid namespace collision with `Cabazure.Test.Tests.Fixture`
+- For sealed classes: composition pattern replaces subclassing in tests
+- Explicit casting for ambiguous null parameters in overloaded APIs
+- Local fixtures for direct TypeCustomization<T> testing (no global state pollution)
+- Factory verification with actual IFixture calls (not stubs/mocks)
+
+**FixtureCustomizationCollectionTests.cs Update:**
+- Fixed ambiguous `Add(null!)` call by casting to `(ICustomization)null!`
+- Resolved 3-way overload ambiguity
+
+**Build Quality:**
+- 0 errors, 0 warnings
+- All tests run in isolation mode
+
+**Decision documented in:** `.squad/decisions.md` (TypeCustomization<T> Test Patterns)
+
 **Field Naming Convention (Organization-wide):**
 - **Private instance fields:** camelCase, no prefix (e.g., `fixture`, `customizations`)
 - **Private static fields:** camelCase, no prefix (no `s_` prefix)
@@ -246,3 +284,55 @@ My domain is the test project `Cabazure.Test.Tests`. The unique challenge: we're
 - Decision #11: Test Coverage for JsonElement and DateOnly/TimeOnly Customizations
 
 **Status:** Both customizations production-ready. Full alignment between implementation and test coverage achieved.
+
+### 2026-03-07: Phase 9 — TypeCustomization<T> Tests Completed
+
+**Task:** Write comprehensive tests for the new `TypeCustomization<T>` generic customization and the two new overloads in `FixtureCustomizationCollection`.
+
+**Implementation being tested:**
+- `src/Cabazure.Test/Customizations/TypeCustomization.cs` — sealed generic `TypeCustomization<T> : ICustomization` with factory function
+- `src/Cabazure.Test/FixtureCustomizationCollection.cs` — two new overloads: `Add<T>(Func<IFixture, T> factory)` and `Add(ISpecimenBuilder builder)`
+
+**Test File Created:**
+- `tests/Cabazure.Test.Tests/Customizations/TypeCustomizationTests.cs` (15 test methods)
+  
+**Coverage areas:**
+
+1. **TypeCustomization<T> Core Tests:**
+   - `Create_ReturnsDelegateResult_WhenTypeMatchesExactly` — factory returns 42, fixture creates 42
+   - `Create_ReturnsDelegateResult_ForReferenceType` — string factory with constant value
+   - `Create_ReturnsNoSpecimen_ForNonMatchingType` — int customization doesn't affect string creation
+   - `Customize_ThrowsArgumentNullException_WhenFixtureIsNull` — null guard on Customize
+   - `Constructor_ThrowsArgumentNullException_WhenFactoryIsNull` — null guard on constructor
+   - `Factory_ReceivesIFixture_WithWorkingCreate` — factory receives working IFixture instance
+
+2. **Wrapping Pattern Test:**
+   - `TypeCustomization_CanBeWrappedInCustomClass` — demonstrates wrapping in custom ICustomization (cannot subclass sealed class)
+
+3. **FixtureCustomizationCollection Overload Tests:**
+   - `Add_WithFactory_CreatesAndAddsTypeCustomization` — convenience method creates TypeCustomization<T>
+   - `Add_WithFactory_ThrowsArgumentNullException_WhenFactoryIsNull` — null guard
+   - `Add_WithSpecimenBuilder_RegistersBuilder` — NSubstitute mock builder registered and invoked
+   - `Add_WithSpecimenBuilder_ThrowsArgumentNullException_WhenBuilderIsNull` — null guard
+
+4. **Integration Tests:**
+   - `TypeCustomization_CanUseIFixture_Build_T` — factory uses `fixture.Build<T>().With(...).Create()` pattern
+   - `Create_UsesFactory_ForConstructorParameter` — factory intercepts constructor parameters
+   - `Create_UsesFactory_MultipleTimesForMultipleRequests` — factory invoked on each Create() call
+   - `Create_DoesNotInterfere_WithOtherCustomizations` — verify isolation from other types
+
+**Test Pattern Learnings:**
+- **Namespace collision avoided:** Must use `new AutoFixture.Fixture()` because there is a `Fixture` namespace in tests, causing ambiguity with `AutoFixture.Fixture` type
+- **Sealed class pattern:** `TypeCustomization<T>` is sealed (cannot subclass) — documented the wrapping pattern via `ICustomization` instead
+- **Overload ambiguity fix:** `FixtureCustomizationCollection` now has 3 overloads of `Add`, making `null!` parameter ambiguous. Fixed existing test in `FixtureCustomizationCollectionTests.cs` with explicit cast: `(ICustomization)null!`
+- **Local fixture creation:** Used `new AutoFixture.Fixture()` + direct `Customize()` calls to avoid polluting global `FixtureFactory.Customizations` state
+- **NSubstitute ISpecimenBuilder:** Used `Substitute.For<ISpecimenBuilder>()` to verify builder registration works correctly
+
+**Test Results:** ✅ All 106 tests passing (15 new + 91 existing)
+
+**Build Status:** ✅ Compiles clean with 0 errors, 0 warnings
+
+**Design Notes:**
+- TypeCustomization<T> is `sealed` by design — composition/wrapping pattern is the intended reuse mechanism
+- Factory receives a fully functional `IFixture` instance, enabling powerful patterns like `Build<T>().With(...).Create()`
+- Tests use dogfooding (`[AutoNSubstituteData]`) where applicable for theory tests

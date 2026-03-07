@@ -48,6 +48,33 @@ My domain is the guts of the library: `SutFixture`, AutoFixture customizations, 
 
 **CustomizeWithAttribute:**
 - `AllowMultiple = true` on `Method | Class` targets; `internal Instantiate()` validates type + parameterless ctor before calling `Activator.CreateInstance`
+
+### Phase 9: TypeCustomization<T> Generic Factory
+
+**Date:** 2026-03-07
+
+**TypeCustomization<T> Class:**
+- New sealed generic class in `src/Cabazure.Test/Customizations/TypeCustomization.cs`
+- Wraps `Func<IFixture, T>` factory for ergonomic type registration
+- Implements `ICustomization` interface with full null-safety
+- Factory receives `IFixture` (not `ISpecimenContext`) for high-level API access
+
+**Rationale for IFixture:**
+- Ergonomic: Users write `f => f.Create<DateOnly>()` instead of `context.Resolve(typeof(T))`
+- Consistent: Aligns with existing codebase conventions
+- Discoverable: IDE autocomplete exposes full AutoFixture fluent API
+- Safe: IFixture instance captured during Customize ensures correct state
+
+**FixtureCustomizationCollection API Extensions:**
+- `Add<T>(Func<IFixture, T> factory)` — inline factory registration (primary API)
+- `Add(ISpecimenBuilder builder)` — power-user escape hatch for kernel control
+- Backward compatible with existing `Add(ICustomization)` method
+
+**Build Results:**
+- Release mode: 0 errors, 0 warnings (TreatWarningsAsErrors=true)
+- Ready for QA testing
+
+**Decision documented in:** `.squad/decisions.md` (TypeCustomization<T> Factory Pattern)
 - Two validation checks produce `InvalidOperationException` with clear diagnostic messages: (1) does not implement `ICustomization`, (2) no public parameterless constructor
 
 **CreateFixture layering order (critical):**
@@ -233,3 +260,26 @@ Updated `.github/copilot-instructions.md` to reflect post-Phase-8 library state:
 - Decision #11: Test Coverage for JsonElement and DateOnly/TimeOnly Customizations
 
 **Status:** Both customizations ready for production. Code and tests fully aligned, no gaps.
+
+### Phase 9: TypeCustomization<T> (2026-03-07)
+
+**TypeCustomization<T> implementation:**
+- Created `src/Cabazure.Test/Customizations/TypeCustomization.cs` — a generic sealed class that wraps a factory function for creating instances of `T`.
+- Constructor accepts `Func<IFixture, T> factory` — the factory receives the actual `IFixture` instance (captured during `Customize()`), enabling users to call `f.Create<T>()`, `f.Build<T>().With(...).Create()`, etc.
+- Private nested `DelegateBuilder : ISpecimenBuilder` handles specimen creation; pattern matches request type via `ParameterInfo`, `PropertyInfo`, `FieldInfo`, or `Type` (same as other builders in this project).
+- Returns `new NoSpecimen()` for non-matching types; returns `factory(fixture)!` for matching types (non-null assertion needed since T could be value type).
+- Full XML documentation includes two `<example>` blocks: direct instantiation (`new TypeCustomization<JsonElement>(f => ...)`) and subclassing pattern (`public sealed class MyCustomization : TypeCustomization<MyType>`).
+
+**FixtureCustomizationCollection extensions:**
+- Added `Add<T>(Func<IFixture, T> factory)` overload — simplest way to register inline factory, wraps in `TypeCustomization<T>`.
+- Added `Add(ISpecimenBuilder builder)` overload — power-user API for full `ISpecimenBuilder` control, wraps in private `SpecimenBuilderCustomizationWrapper : ICustomization`.
+- Both overloads placed immediately after the existing `Add(ICustomization)` method, before `Remove` methods.
+- `SpecimenBuilderCustomizationWrapper` is a private sealed nested class at the bottom of the file (after enumerator methods).
+- Added `using AutoFixture.Kernel;` and ensured `using Cabazure.Test.Customizations;` present.
+
+**Design decision captured:**
+- The factory receives `IFixture` (not `ISpecimenContext`) — this gives users the familiar, high-level AutoFixture API instead of forcing them to use the low-level kernel API.
+- This is critical for ergonomics: `f => DateOnly.FromDateTime(f.Create<DateTime>())` is far cleaner than context resolution.
+
+**Build result:** 0 errors, 0 warnings (Release mode with TreatWarningsAsErrors on).
+
