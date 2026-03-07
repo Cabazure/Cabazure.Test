@@ -49,7 +49,18 @@ public sealed class InlineAutoNSubstituteDataAttribute : DataAttribute
     /// </summary>
     public object?[] Values { get; }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Returns a single theory data row that merges the inline <see cref="Values"/>
+    /// with fixture-generated values for any remaining parameters. Any disposable
+    /// arguments are registered with <paramref name="disposalTracker"/> so xUnit 3
+    /// disposes them automatically after the test case completes.
+    /// </summary>
+    /// <param name="testMethod">The theory method for which data is being provided.</param>
+    /// <param name="disposalTracker">
+    /// The xUnit 3 disposal tracker; disposable argument values are registered here
+    /// and cleaned up after each test case.
+    /// </param>
+    /// <returns>A single-element collection containing the merged <see cref="TheoryDataRow"/>.</returns>
     public override ValueTask<IReadOnlyCollection<ITheoryDataRow>> GetData(
         MethodInfo testMethod,
         DisposalTracker disposalTracker)
@@ -59,6 +70,7 @@ public sealed class InlineAutoNSubstituteDataAttribute : DataAttribute
         var fixture = AutoNSubstituteDataHelper.CreateFixture(testMethod);
         var parameters = testMethod.GetParameters();
         var values = AutoNSubstituteDataHelper.MergeValues(fixture, parameters, Values);
+        disposalTracker.AddRange(values);
         IReadOnlyCollection<ITheoryDataRow> result = [new TheoryDataRow(values)];
         return new ValueTask<IReadOnlyCollection<ITheoryDataRow>>(result);
     }

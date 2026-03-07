@@ -74,7 +74,20 @@ public sealed class MemberAutoNSubstituteDataAttribute : DataAttribute
     /// </summary>
     public Type? MemberType { get; set; }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Returns one theory data row per row supplied by the named member, each merged
+    /// with fixture-generated values for any remaining parameters. Any disposable
+    /// arguments in each row are registered with <paramref name="disposalTracker"/>
+    /// so xUnit 3 disposes them automatically after the corresponding test case completes.
+    /// </summary>
+    /// <param name="testMethod">The theory method for which data is being provided.</param>
+    /// <param name="disposalTracker">
+    /// The xUnit 3 disposal tracker; disposable argument values are registered here
+    /// and cleaned up after each test case.
+    /// </param>
+    /// <returns>
+    /// A collection of <see cref="TheoryDataRow"/> instances, one per row from the member.
+    /// </returns>
     public override ValueTask<IReadOnlyCollection<ITheoryDataRow>> GetData(
         MethodInfo testMethod,
         DisposalTracker disposalTracker)
@@ -93,6 +106,7 @@ public sealed class MemberAutoNSubstituteDataAttribute : DataAttribute
         {
             var fixture = AutoNSubstituteDataHelper.CreateFixture(testMethod);
             var values = AutoNSubstituteDataHelper.MergeValues(fixture, theoryParams, row);
+            disposalTracker.AddRange(values);
             result.Add(new TheoryDataRow(values));
         }
 
