@@ -147,3 +147,15 @@ My domain is the test project `Cabazure.Test.Tests`. The unique challenge: we're
 
 **Status:** File edits complete. Build verification pending Kaylee's `FixtureFactory` source changes.
 
+
+### README Rewritten -- Reflects FixtureFactory API (Phase 8+)
+
+**Task:** Rewrite README.md to accurately reflect the current public API after Phase 8 removed SutFixture.
+
+**What changed:**
+- Replaced SutFixture / new SutFixture() / using Cabazure.Test.Fixture; with FixtureFactory.Create() / using Cabazure.Test;
+- Added Quick Start examples for InlineAutoNSubstituteData, SutFixtureCustomizations + [ModuleInitializer], and [CustomizeWith]
+- Expanded Features table to cover all 11 public API surface items: FixtureFactory, all four data attributes, [Frozen], SutFixtureCustomizations, [CustomizeWith], RecursionCustomization, ImmutableCollectionCustomization, and auto-substitution
+- Packages and Compatibility sections preserved unchanged
+
+**Key lesson:** README drift is a real risk after refactors. The Phase 8 API change (SutFixture to FixtureFactory) was not reflected in the README -- always treat the README as a deliverable alongside any public API change.
