@@ -968,3 +968,14 @@ Future Cabazure.Test developers will:
 - Any theory parameter whose type satisfies IsAssignableFrom(typeof(Fixture)) will receive the fixture, not a generated specimen
 - [Frozen] on an IFixture parameter is a no-op (fixture is injected, not frozen into the specimen container)
 - Do not use this pattern for other AutoFixture types — only the live fixture root object is special-cased
+
+### 2026-03-07: [Substitute] parameter attribute
+**By:** Ricky Kaare Engelharth
+**What:** New SubstituteAttribute forces NSubstitute.Substitute.For() creation for any auto-generated theory parameter, including concrete classes. Ignored for value types (falls through to CreateValue). Can be combined with [Frozen].
+**Why:** Allows explicit substitution of concrete classes where AutoNSubstituteCustomization would otherwise create real instances.
+
+### 2026-03-07T17:41Z: [Substitute] uses AutoNSubstitute.SubstituteAttribute via ParameterInfo
+**By:** Ricky Kaare Engelharth
+**What:** Removed duplicate SubstituteAttribute. Fixed CreateValue to accept ParameterInfo and call SpecimenContext.Resolve(parameter) so AutoFixture attribute processing applies naturally. AutoFixture.AutoNSubstitute.SubstituteAttribute is the canonical attribute.
+**Why:** SubstituteAttribute already exists in AutoFixture.AutoNSubstitute — do not duplicate framework attributes.
+

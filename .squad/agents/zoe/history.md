@@ -68,3 +68,22 @@ My domain is the test project `Cabazure.Test.Tests`. The unique challenge: we're
 **Test Results:** 122/122 passing (6 new + 116 existing)
 
 **Key Pattern:** Test 3 is highest-value: proves injected fixture is the shared instance, not a new one. Uses `FixtureFactoryTests.IMyInterface` as the frozen type (no new infrastructure needed).
+
+### Phase 13: Substitute Attribute Refactor Tests (2026-03-07T18:44:29Z)
+
+**Task:** Verify Substitute attribute behavior after Kaylee's ParameterInfo refactor.
+
+**Test File Updated:** `tests/Cabazure.Test.Tests/Attributes/SubstituteAttributeTests.cs`
+
+**Changes:**
+- Updated to use canonical `using AutoFixture.AutoNSubstitute` (no custom SubstituteAttribute import)
+- Tests now validate that AutoFixture.AutoNSubstitute.SubstituteAttribute fires naturally via ParameterInfo resolution
+
+**Coverage:**
+1. `Theory_SubstituteAttributeNull_CreatesParameterDefault` — null parameter passes through
+2. `Theory_SubstituteAttributeInterface_CreatesSubstitute` — interface type substituted
+3. `Theory_SubstituteAttributeAbstractClass_CreatesSubstitute` — abstract class substituted
+4. `Theory_SubstituteAttributeConcreteNoInterface_CreatesSubstitute` — concrete type (non-substitutable) substituted
+5. `Theory_SubstituteAttributeConcreteSubclass_CreatesSubstitute` — concrete subclass case
+
+**Test Results:** 127/127 passing (5 tests validate refactor; 122 existing tests unaffected)

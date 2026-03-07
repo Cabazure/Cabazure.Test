@@ -66,3 +66,19 @@ My domain is the guts of the library: AutoFixture customizations, the `ISpecimen
 
 **Cross-team QA:** Zoe verified 6 new tests, all 122 passing.
 **Decision logged:** `.squad/decisions.md` — `IFixture/Fixture Parameter Injection in Theory Methods`
+
+### Phase 13: Substitute Attribute Refactor (2026-03-07T18:44:29Z)
+
+**Task:** Remove duplicate SubstituteAttribute, fix ParameterInfo passing to enable AutoFixture's attribute pipeline.
+
+**Implementation:**
+- **Deleted** `src/Cabazure.Test/Attributes/SubstituteAttribute.cs` — redundant (AutoFixture.AutoNSubstitute.SubstituteAttribute is canonical)
+- **Fixed** `AutoNSubstituteDataHelper.CreateValue` signature: `CreateValue(ParameterInfo)` instead of `CreateValue(Type)`
+- **Changed** specimen creation: `SpecimenContext.Resolve(parameter)` instead of `Resolve(type)` to trigger attribute processing
+- **Removed** isSubstitute check branch from `MergeValues` (no longer needed)
+- **Removed** NSubstitute using from MergeValues
+
+**Rationale:** ParameterInfo carries attribute metadata; Resolve(parameter) invokes AutoFixture's attribute resolution pipeline, naturally firing SubstituteAttribute without custom code.
+
+**Cross-team QA:** Zoe verified updated tests, all 127 passing.
+**Decision logged:** `.squad/decisions.md` — Substitute Attribute ParameterInfo refactor
