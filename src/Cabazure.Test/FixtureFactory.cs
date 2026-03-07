@@ -2,7 +2,6 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using AutoFixture;
 using Cabazure.Test.Attributes;
-using Cabazure.Test.Customizations;
 
 namespace Cabazure.Test;
 
@@ -33,18 +32,30 @@ namespace Cabazure.Test;
 public static class FixtureFactory
 {
     /// <summary>
-    /// Creates a new <see cref="IFixture"/> with <see cref="AutoNSubstituteCustomization"/> applied.
+    /// Gets the collection of customizations applied to every <see cref="IFixture"/>
+    /// created by this factory. Add project-wide customizations here from a
+    /// <c>[ModuleInitializer]</c>. The collection is pre-seeded with
+    /// <see cref="AutoFixture.AutoNSubstitute.AutoNSubstituteCustomization"/>.
+    /// </summary>
+    /// <remarks>
+    /// Customizations in this collection are applied before any per-test
+    /// <see cref="Attributes.CustomizeWithAttribute"/> overrides.
+    /// </remarks>
+    public static FixtureCustomizationCollection Customizations { get; } = new();
+
+    /// <summary>
+    /// Creates a new <see cref="IFixture"/> with <see cref="AutoFixture.AutoNSubstitute.AutoNSubstituteCustomization"/> applied.
     /// </summary>
     /// <returns>A configured <see cref="IFixture"/>.</returns>
     public static IFixture Create()
         => Create([]);
 
     /// <summary>
-    /// Creates a new <see cref="IFixture"/> with <see cref="AutoNSubstituteCustomization"/> applied,
+    /// Creates a new <see cref="IFixture"/> with all <see cref="Customizations"/> applied,
     /// followed by any additional <paramref name="customizations"/> in order.
     /// </summary>
     /// <param name="customizations">
-    /// Additional customizations to apply after <see cref="AutoNSubstituteCustomization"/>.
+    /// Additional customizations to apply after those in <see cref="Customizations"/>.
     /// </param>
     /// <returns>A configured <see cref="IFixture"/>.</returns>
     /// <exception cref="ArgumentNullException">
@@ -54,11 +65,10 @@ public static class FixtureFactory
     {
         ArgumentNullException.ThrowIfNull(customizations);
         var fixture = new Fixture();
-        fixture.Customize(new AutoNSubstituteCustomization());
-        foreach (var customization in customizations)
-        {
+        foreach (var customization in Customizations)
             fixture.Customize(customization);
-        }
+        foreach (var customization in customizations)
+            fixture.Customize(customization);
         return fixture;
     }
 
@@ -66,8 +76,7 @@ public static class FixtureFactory
     /// Creates a new <see cref="IFixture"/> for the given test method, applying all registered
     /// customizations in priority order:
     /// <list type="number">
-    ///   <item><description><see cref="AutoNSubstituteCustomization"/> — always first.</description></item>
-    ///   <item><description>Project-wide registrations from <see cref="SutFixtureCustomizations"/>.</description></item>
+    ///   <item><description>All customizations from <see cref="Customizations"/> (including <see cref="AutoFixture.AutoNSubstitute.AutoNSubstituteCustomization"/> which is always first).</description></item>
     ///   <item><description><see cref="CustomizeWithAttribute"/> instances on the test method.</description></item>
     ///   <item><description><see cref="CustomizeWithAttribute"/> instances on the declaring class.</description></item>
     /// </list>
@@ -83,12 +92,8 @@ public static class FixtureFactory
         }
 
         var fixture = new Fixture();
-        fixture.Customize(new AutoNSubstituteCustomization());
-
-        foreach (var customization in SutFixtureCustomizations.All)
-        {
+        foreach (var customization in Customizations)
             fixture.Customize(customization);
-        }
 
         foreach (var attr in testMethod.GetCustomAttributes<CustomizeWithAttribute>())
         {

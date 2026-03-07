@@ -1,6 +1,5 @@
 using System.Runtime.CompilerServices;
 using AutoFixture;
-using Cabazure.Test.Customizations;
 
 namespace Cabazure.Test.Tests;
 
@@ -9,7 +8,7 @@ internal static class TestAssemblyInitializer
     [ModuleInitializer]
     public static void Initialize()
     {
-        SutFixtureCustomizations.Add(new ProjectWideTestCustomization());
+        FixtureFactory.Customizations.Add(new ProjectWideTestCustomization());
     }
 }
 

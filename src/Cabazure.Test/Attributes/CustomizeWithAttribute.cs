@@ -3,8 +3,7 @@ using AutoFixture;
 namespace Cabazure.Test.Attributes;
 
 /// <summary>
-/// Applies a per-test or per-class <see cref="ICustomization"/> to the <see cref="Fixture.SutFixture"/>
-/// created for that test method.
+/// Applies a per-test or per-class <see cref="ICustomization"/> to the <see cref="IFixture"/> created for that test.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -14,7 +13,7 @@ namespace Cabazure.Test.Attributes;
 /// <para>
 /// Multiple attributes may be stacked on the same method or class; they are applied in
 /// declaration order after any project-wide customizations registered via
-/// <see cref="Customizations.SutFixtureCustomizations"/>.
+/// <see cref="FixtureFactory.Customizations"/>.
 /// </para>
 /// <example>
 /// <code>

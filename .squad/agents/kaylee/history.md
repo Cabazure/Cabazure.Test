@@ -144,6 +144,27 @@ My domain is the guts of the library: `SutFixture`, AutoFixture customizations, 
 
 **Build result:** 0 errors, 0 warnings, 71/71 tests green.
 
+### FixtureFactory.Customizations Refactor
+
+**FixtureCustomizationCollection (new public type):**
+- Thread-safe ordered collection in `Cabazure.Test` namespace; internal constructor, only `FixtureFactory` instantiates it.
+- Pre-seeded with `Cabazure.Test.Customizations.AutoNSubstituteCustomization` (not the raw AutoFixture.AutoNSubstitute one — important: uses ConfigureMembers+GenerateDelegates).
+- Private fields named with plain camelCase per team convention: `customizations`, `syncLock`.
+- `GetEnumerator()` returns a snapshot to prevent modification-during-enumeration issues.
+- `Clear()` intentionally exposed (unlike old `SutFixtureCustomizations` which had no `Clear`) — test isolation is possible with a local `new FixtureCustomizationCollection()`.
+
+**SutFixtureCustomizations deleted:**
+- `src/Cabazure.Test/Customizations/SutFixtureCustomizations.cs` removed; `FixtureFactory.Customizations` is the single entry point.
+
+**Test migration:**
+- `SutFixtureCustomizationsTests.cs` → `FixtureCustomizationCollectionTests.cs` with expanded coverage (Remove, Remove<T>, Clear, snapshot enumeration, per-attribute integration tests).
+- Uses static constructor (runs once per class, before any test) to register `GlobalCustomization`, avoiding module-initializer ordering issues in tests.
+
+**copilot-instructions.md updated:**
+- `SutFixtureCustomizations` section replaced with `FixtureFactory.Customizations` section.
+
+**Build result:** 0 errors, 0 warnings, 78/78 tests green.
+
 ### Copilot Instructions Update
 
 Updated `.github/copilot-instructions.md` to reflect post-Phase-8 library state:

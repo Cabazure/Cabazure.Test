@@ -61,18 +61,20 @@ All support `[Frozen]` parameters — a frozen parameter is registered in the fi
 - `RecursionCustomization` — replaces `ThrowingRecursionBehavior` with `OmitOnRecursionBehavior`; use when your domain has self-referencing types.
 - `ImmutableCollectionCustomization` — enables `ImmutableArray<T>`, `ImmutableList<T>`, `ImmutableDictionary<TKey,TValue>`, `ImmutableHashSet<T>`, `ImmutableSortedSet<T>`, `ImmutableSortedDictionary<TKey,TValue>`, `ImmutableQueue<T>`, and `ImmutableStack<T>`.
 
-### Project-Wide Customizations (`SutFixtureCustomizations`)
+### Project-Wide Customizations (`FixtureFactory.Customizations`)
 
-Register customizations for all tests in the assembly using `[ModuleInitializer]`:
+`FixtureFactory.Customizations` is an ordered `FixtureCustomizationCollection` pre-seeded with `AutoNSubstituteCustomization`. Register project-wide customizations using `[ModuleInitializer]`:
 
 ```csharp
 internal static class TestInitializer
 {
     [ModuleInitializer]
     public static void Initialize()
-        => SutFixtureCustomizations.Add(new MyProjectCustomization());
+        => FixtureFactory.Customizations.Add(new MyProjectCustomization());
 }
 ```
+
+The collection supports `Add`, `Remove(instance)`, `Remove<T>()`, `Clear`, `Count`, and `IEnumerable<ICustomization>`.
 
 ### Per-Test Customization (`[CustomizeWith]`)
 
