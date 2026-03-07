@@ -1,7 +1,5 @@
-using System.Reflection;
 using System.Text.Json;
 using AutoFixture;
-using AutoFixture.Kernel;
 
 namespace Cabazure.Test.Customizations;
 
@@ -16,39 +14,17 @@ namespace Cabazure.Test.Customizations;
 /// generated key/value string pair. The element is cloned so it is not tied to the
 /// lifetime of its backing <see cref="JsonDocument"/>.
 /// </remarks>
-public sealed class JsonElementCustomization : ICustomization
+public sealed class JsonElementCustomization : TypeCustomization<JsonElement>
 {
-    /// <inheritdoc />
-    public void Customize(IFixture fixture)
-    {
-        ArgumentNullException.ThrowIfNull(fixture);
-        fixture.Customizations.Add(new JsonElementBuilder());
-    }
-
-    private sealed class JsonElementBuilder : ISpecimenBuilder
-    {
-        public object Create(object request, ISpecimenContext context)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="JsonElementCustomization"/> class.
+    /// </summary>
+    public JsonElementCustomization()
+        : base(f =>
         {
-            if (GetRequestType(request) != typeof(JsonElement))
-            {
-                return new NoSpecimen();
-            }
-
-            var key = (string)context.Resolve(typeof(string));
-            var value = (string)context.Resolve(typeof(string));
-            var json = $"{{\"{key}\":\"{value}\"}}";
-
+            var json = $"{{\"{f.Create<string>()}\":\"{f.Create<string>()}\"}}";
             return JsonDocument.Parse(json).RootElement.Clone();
-        }
-
-        private static Type? GetRequestType(object request)
-            => request switch
-            {
-                ParameterInfo pi => pi.ParameterType,
-                PropertyInfo pi => pi.PropertyType,
-                FieldInfo fi => fi.FieldType,
-                Type t => t,
-                _ => null,
-            };
+        })
+    {
     }
 }

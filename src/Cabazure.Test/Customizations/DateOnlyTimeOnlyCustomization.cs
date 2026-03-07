@@ -1,4 +1,3 @@
-using System.Reflection;
 using AutoFixture;
 using AutoFixture.Kernel;
 
@@ -28,7 +27,7 @@ public sealed class DateOnlyTimeOnlyCustomization : ICustomization
     {
         public object Create(object request, ISpecimenContext context)
         {
-            var type = GetRequestType(request);
+            var type = SpecimenRequestHelper.GetRequestType(request);
 
             if (type == typeof(DateOnly))
             {
@@ -44,15 +43,5 @@ public sealed class DateOnlyTimeOnlyCustomization : ICustomization
 
             return new NoSpecimen();
         }
-
-        private static Type? GetRequestType(object request)
-            => request switch
-            {
-                ParameterInfo pi => pi.ParameterType,
-                PropertyInfo pi => pi.PropertyType,
-                FieldInfo fi => fi.FieldType,
-                Type t => t,
-                _ => null,
-            };
     }
 }

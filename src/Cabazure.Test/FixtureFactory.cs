@@ -65,10 +65,8 @@ public static class FixtureFactory
     {
         ArgumentNullException.ThrowIfNull(customizations);
         var fixture = new Fixture();
-        foreach (var customization in Customizations)
-            fixture.Customize(customization);
-        foreach (var customization in customizations)
-            fixture.Customize(customization);
+        ApplyCustomizations(fixture, Customizations);
+        ApplyCustomizations(fixture, customizations);
         return fixture;
     }
 
@@ -92,8 +90,7 @@ public static class FixtureFactory
         }
 
         var fixture = new Fixture();
-        foreach (var customization in Customizations)
-            fixture.Customize(customization);
+        ApplyCustomizations(fixture, Customizations);
 
         foreach (var attr in testMethod.GetCustomAttributes<CustomizeWithAttribute>())
         {
@@ -109,5 +106,11 @@ public static class FixtureFactory
         }
 
         return fixture;
+    }
+
+    private static void ApplyCustomizations(IFixture fixture, IEnumerable<ICustomization> customizations)
+    {
+        foreach (var customization in customizations)
+            fixture.Customize(customization);
     }
 }

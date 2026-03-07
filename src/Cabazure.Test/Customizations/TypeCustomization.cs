@@ -1,4 +1,3 @@
-using System.Reflection;
 using AutoFixture;
 using AutoFixture.Kernel;
 
@@ -45,7 +44,7 @@ namespace Cabazure.Test.Customizations;
 /// FixtureFactory.Customizations.Add(new DateOnlyCustomization());
 /// </code>
 /// </example>
-public sealed class TypeCustomization<T> : ICustomization
+public class TypeCustomization<T> : ICustomization
 {
     private readonly Func<IFixture, T> factory;
 
@@ -86,7 +85,7 @@ public sealed class TypeCustomization<T> : ICustomization
 
         public object Create(object request, ISpecimenContext context)
         {
-            var requestType = GetRequestType(request);
+            var requestType = SpecimenRequestHelper.GetRequestType(request);
             if (requestType != typeof(T))
             {
                 return new NoSpecimen();
@@ -94,14 +93,5 @@ public sealed class TypeCustomization<T> : ICustomization
 
             return factory(fixture)!;
         }
-
-        private static Type? GetRequestType(object request) => request switch
-        {
-            ParameterInfo pi => pi.ParameterType,
-            PropertyInfo pi => pi.PropertyType,
-            FieldInfo fi => fi.FieldType,
-            Type t => t,
-            _ => null,
-        };
     }
 }

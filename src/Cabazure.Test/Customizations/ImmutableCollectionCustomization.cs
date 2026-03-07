@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using System.Reflection;
 using AutoFixture;
 using AutoFixture.Kernel;
 
@@ -77,7 +76,7 @@ public sealed class ImmutableCollectionCustomization : ICustomization
     {
         public object Create(object request, ISpecimenContext context)
         {
-            if (GetRequestType(request) is { } type
+            if (SpecimenRequestHelper.GetRequestType(request) is { } type
                 && type.IsGenericType
                 && type.GetGenericTypeDefinition() == immutableType
                 && type.GetGenericArguments() is { Length: > 0 } args)
@@ -90,15 +89,5 @@ public sealed class ImmutableCollectionCustomization : ICustomization
 
             return new NoSpecimen();
         }
-
-        private static Type? GetRequestType(object request)
-            => request switch
-            {
-                ParameterInfo pi => pi.ParameterType,
-                PropertyInfo pi => pi.PropertyType,
-                FieldInfo fi => fi.FieldType,
-                Type t => t,
-                _ => null,
-            };
     }
 }
