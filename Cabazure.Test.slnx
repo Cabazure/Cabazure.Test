@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Cabazure.Test/Cabazure.Test.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Cabazure.Test.Tests/Cabazure.Test.Tests.csproj" />
+  </Folder>
+</Solution>
