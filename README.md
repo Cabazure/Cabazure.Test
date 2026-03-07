@@ -260,6 +260,9 @@ When the assertion fails, the FluentAssertions failure message is included in NS
 | `DateOnlyTimeOnlyCustomization` | Enables reliable creation of `DateOnly` and `TimeOnly` values derived from a random `DateTime`. |
 | `JsonElementCustomization` | Opt-in customization that enables creation of `System.Text.Json.JsonElement` instances. |
 | `InvokeProtected` / `InvokeProtectedAsync` | Extension methods for invoking protected instance methods via reflection — void, typed-return, and async variants. Useful for testing Template Method patterns and protected virtual hooks without subclassing. |
+| `BeSimilarTo<T>` | Whitespace-normalized string comparison (collapses whitespace/newlines) |
+| `BeXmlEquivalentTo<T>` | XML structural comparison ignoring formatting |
+| `BeJsonEquivalentTo<T>` | JSON structural comparison ignoring formatting |
 | Auto-substitution | Interfaces and abstract classes are automatically replaced with NSubstitute substitutes everywhere — no manual `Substitute.For<T>()` required. |
 
 ---
@@ -546,6 +549,68 @@ internal static class TestAssemblyInitializer
     }
 }
 ```
+
+---
+
+## String Content Assertions
+
+The `StringContentExtensions` class extends FluentAssertions' `StringAssertions` with three
+format-ignorant comparison methods, each with a positive and negative form.
+
+### Whitespace-Normalized Comparison
+
+Compare strings ignoring formatting differences — multiple spaces, tabs, and newlines are
+collapsed to a single space before comparison:
+
+```csharp
+using Cabazure.Test;
+using FluentAssertions;
+
+var subject = """
+    Hello
+    World
+    """;
+
+subject.Should().BeSimilarTo("Hello World");
+```
+
+### XML Content Comparison
+
+Compare XML strings by structure and content, ignoring indentation and line endings:
+
+```csharp
+using Cabazure.Test;
+using FluentAssertions;
+
+var subject = """
+    <root>
+      <child value="42" />
+    </root>
+    """;
+
+subject.Should().BeXmlEquivalentTo("<root><child value=\"42\" /></root>");
+```
+
+### JSON Content Comparison
+
+Compare JSON strings by value, ignoring formatting:
+
+```csharp
+using Cabazure.Test;
+using FluentAssertions;
+
+var subject = """
+    {
+        "name": "Alice",
+        "age": 30
+    }
+    """;
+
+subject.Should().BeJsonEquivalentTo("""{"name":"Alice","age":30}""");
+```
+
+Each method has a `Not` counterpart (`NotBeSimilarTo`, `NotBeXmlEquivalentTo`, `NotBeJsonEquivalentTo`)
+and supports the standard FluentAssertions `because`/`becauseArgs` parameters.
 
 ---
 

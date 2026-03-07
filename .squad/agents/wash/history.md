@@ -13,6 +13,13 @@ My domain is xUnit 3 integration. Key difference from xUnit 2: `DataAttribute` i
 
 📌 Team initialized on 2026-03-07 — Firefly cast: Mal (Lead), Kaylee (Core Dev), Wash (Integration Dev), Zoe (QA), Scribe (Memory).
 
+### StringContentExtensionsTests (parallel work with Kaylee)
+
+- Created `tests/Cabazure.Test.Tests/Assertions/StringContentExtensionsTests.cs` with 12 `[Fact]` tests covering all three new extension method groups: `BeSimilarTo`/`NotBeSimilarTo`, `BeXmlEquivalentTo`/`NotBeXmlEquivalentTo`, `BeJsonEquivalentTo`/`NotBeJsonEquivalentTo`.
+- Build currently fails with 12 CS1061 errors (one per call-site) because Kaylee's `StringContentExtensions` implementation does not exist yet — this is expected for parallel work and will be resolved once both files are in place.
+- Test patterns used: `[Fact]` only, `var act = () => subject.Should()...`, then `act.Should().NotThrow()` or `act.Should().Throw<Exception>()` with message assertions. Matches `JsonElementAssertionsTests` and `DateTimeOffsetExtensionsTests` conventions exactly.
+- Whitespace normalization tests use `\n` and double-spaces as subject to exercise the `\s+` → single-space collapse behaviour; XML tests use a raw string literal for indented XML vs. a compact single-line string; JSON tests mirror the same pattern with JSON object literals.
+
 ### 2026-03-07: README Authoring
 - `README.md` is wired as `PackageReadmeFile` in `Cabazure.Test.csproj` — it will appear on nuget.org automatically when the package is packed. The file must exist at the repo root for the pack step to succeed without warnings.
 - FluentAssertions 7.x migration note was included in the README under Compatibility. FA 7 contains breaking changes from 6.x; users migrating from Atc.Test or similar FA-6-based packages should be directed to the official migration guide.
@@ -124,3 +131,27 @@ Documentation Impact:
 Cross-team: Kaylee implemented JsonElementAssertions and DateTimeOffsetExtensions; Zoe provided comprehensive test coverage (19 tests, all passing).
 
 Decision logged: .squad/decisions.md - Phase 17 Decisions 1–3 (JsonElementAssertions, DateTimeOffsetExtensions, Documentation)
+
+### Phase 21: String Content Assertions Documentation (2026-03-10T22:00:00Z)
+
+Task: Update README.md to document three new string content assertion methods for format-ignorant comparison.
+
+Implementation:
+- Added three rows to the Features table documenting the new assertion methods:
+  - `BeSimilarTo<T>`: Whitespace-normalized string comparison
+  - `BeXmlEquivalentTo<T>`: XML structural comparison ignoring formatting
+  - `BeJsonEquivalentTo<T>`: JSON structural comparison ignoring formatting
+- Created new "## String Content Assertions" section after DateTimeOffset section, before Compatibility
+- Documented three distinct comparison scenarios with code examples:
+  - Whitespace normalization: collapses multiple spaces, tabs, and newlines to single space
+  - XML comparison: ignores indentation and line endings, focuses on structure/content
+  - JSON comparison: ignores formatting, compares by value
+- All code examples use `using Cabazure.Test;` only (minimal imports)
+- Documented negative counterparts (`NotBeSimilarTo`, `NotBeXmlEquivalentTo`, `NotBeJsonEquivalentTo`)
+- Noted support for standard FluentAssertions `because`/`becauseArgs` parameters
+
+Documentation Impact:
+- Users: Clear discovery path for string content assertion features
+- Examples: Runnable, idiomatic C# with proper patterns using raw string literals
+- Maintenance: Documented contract for future API changes
+- Discoverability: Seamlessly integrated between DateTimeOffset and Compatibility sections

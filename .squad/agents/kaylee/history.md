@@ -157,6 +157,22 @@ The `throw;` after `.Throw()` is unreachable at runtime but required so the comp
 
 ## Learnings
 
+### Phase 18: StringContentExtensions (2026-03-08)
+
+**Task:** Implement `src/Cabazure.Test/Assertions/StringContentExtensions.cs` — 6 extension methods on `StringAssertions` for format-ignorant string comparison.
+
+**Implementation:**
+- `BeSimilarTo` / `NotBeSimilarTo` — whitespace normalization via `Regex.Replace(s.Trim(), @"\s+", " ")`
+- `BeXmlEquivalentTo` / `NotBeXmlEquivalentTo` — XML normalization via `XDocument.Parse(s).ToString(SaveOptions.DisableFormatting)`
+- `BeJsonEquivalentTo` / `NotBeJsonEquivalentTo` — JSON normalization via `JsonSerializer.Serialize(JsonDocument.Parse(s).RootElement)`
+- All extend `StringAssertions` (concrete FA class), return `AndConstraint<StringAssertions>`
+- FA 7.x assertion pattern: `Execute.Assertion.BecauseOf(...).ForCondition(...).FailWith(...)`
+- Invalid XML/JSON propagates naturally as `XmlException`/`JsonException` — no try/catch
+- Private helpers `Normalize`, `NormalizeXml`, `NormalizeJson` keep the public methods clean
+- Both BCL dependencies (`System.Xml.Linq`, `System.Text.Json`) already in .NET 9 — no new NuGet references
+
+**Build:** Clean ✅
+
 ### AutoFixture.Xunit3.FrozenAttribute pattern (Phase 16)
 
 `AutoFixture.Xunit3.FrozenAttribute.GetCustomization(parameter)` returns a `FreezeOnMatchCustomization`. When applied via `fixture.Customize(...)` **before** `CreateValue`, it both creates the specimen internally and registers it at index 0 as a `FilteringSpecimenBuilder(FixedBuilder(value), Matcher)`. The subsequent `CreateValue` call therefore returns the already-frozen instance from the cache — no double creation, no extra registration step needed. For provided values (inline/class/member data), skip `GetCustomization` and use the existing `FreezeValue` path (`SpecimenBuilderNodeFactory.CreateTypedNode`) so we freeze the exact object in hand rather than letting AutoFixture create a new one.
@@ -228,3 +244,16 @@ The `throw;` after `.Throw()` is unreachable at runtime but required so the comp
 - 5 files changed, net −25 lines. Build clean, 184/184 tests passing.
 
 **Key principle:** When a helper method is a pure passthrough or a one-liner with no reuse value, inline it — the call site already has all the context needed and the indirection only obscures intent.
+
+### FixtureDataExtensions — MergeValues as IFixture Extension Method
+
+**Task:** Convert `AutoNSubstituteDataHelper` static helper to an `IFixture` extension class `FixtureDataExtensions`.
+
+**What changed:**
+- Deleted `src/Cabazure.Test/Attributes/AutoNSubstituteDataHelper.cs`
+- Created `src/Cabazure.Test/Attributes/FixtureDataExtensions.cs` — same logic, class renamed to `FixtureDataExtensions`, `MergeValues` gains `this IFixture fixture` as first parameter
+- `AutoNSubstituteDataAttribute` and `InlineAutoNSubstituteDataAttribute`: removed `var parameters = ...` local, inlined `testMethod.GetParameters()` into the `fixture.MergeValues(...)` call
+- `ClassAutoNSubstituteDataAttribute` and `MemberAutoNSubstituteDataAttribute`: `theoryParams` local retained (used across loop iterations); call site updated to `fixture.MergeValues(theoryParams, row)`
+- 6 files changed. Build clean, 184/184 tests passing.
+
+**Design note:** Extension method on `IFixture` reads more naturally at the call site (`fixture.MergeValues(...)`) and keeps the method discoverable via IDE autocomplete on fixture instances.
