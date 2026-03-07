@@ -42,6 +42,32 @@ My domain is the guts of the library: AutoFixture customizations, the `ISpecimen
 
 ## Learnings
 
+### Phase 14-15: DisposalTracker Integration (2026-03-07)
+
+**Task:** Register fixture-generated theory argument values with xUnit3's `DisposalTracker` so disposable objects are cleaned up after each test case.
+
+**Implementation (Phase 15):**
+- Added `disposalTracker.AddRange(values)` in all four `GetData()` methods:
+  - `AutoNSubstituteDataAttribute.GetData()`
+  - `InlineAutoNSubstituteDataAttribute.GetData()`
+  - `ClassAutoNSubstituteDataAttribute.GetData()`
+  - `MemberAutoNSubstituteDataAttribute.GetData()`
+- Call placed immediately after `AutoNSubstituteDataHelper.MergeValues()` and before constructing `TheoryDataRow`
+- Registration happens once per row (inside loop for multi-row attributes)
+
+**Outcome:**
+- All fixture-generated `IDisposable`/`IAsyncDisposable` values now disposed deterministically after each test
+- No API changes visible to consumers
+- Build clean, no regressions
+- `AutoNSubstituteDataHelper` itself was **not** changed — the tracker registration lives at the call site in each attribute.
+- For multi-row attributes (`MemberAutoNSubstituteData`, `ClassAutoNSubstituteData`), `AddRange` is called once per row inside the loop.
+- `DisposalTracker.AddRange` silently skips non-disposable values — no need to filter first.
+- Replaced `/// <inheritdoc />` on each `GetData()` with explicit XML doc that documents the `disposalTracker` parameter and disposal behaviour.
+
+**Key insight:** `DisposalTracker` is in `Xunit.Sdk` (already imported); it aggregates disposal exceptions rather than failing fast, so multiple disposables per row are all attempted.
+
+**Cross-team:** Zoe writing disposal tests in parallel.
+
 📌 Team initialized on 2026-03-07 — Firefly cast: Mal (Lead), Kaylee (Core Dev), Wash (Integration Dev), Zoe (QA), Scribe (Memory).
 
 ### Key Patterns (Phases 1-11)

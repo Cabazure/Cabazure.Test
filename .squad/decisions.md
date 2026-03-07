@@ -979,3 +979,86 @@ Future Cabazure.Test developers will:
 **What:** Removed duplicate SubstituteAttribute. Fixed CreateValue to accept ParameterInfo and call SpecimenContext.Resolve(parameter) so AutoFixture attribute processing applies naturally. AutoFixture.AutoNSubstitute.SubstituteAttribute is the canonical attribute.
 **Why:** SubstituteAttribute already exists in AutoFixture.AutoNSubstitute — do not duplicate framework attributes.
 
+---
+
+## Phase 15: DisposalTracker Integration Fix
+
+### 17. DisposalTracker Integration in GetData()
+
+**Author:** Kaylee (Core .NET Developer)  
+**Date:** 2026-03-07  
+**Status:** Approved
+
+#### Context
+
+xUnit 3 passes a `DisposalTracker disposalTracker` argument to every `IDataAttribute.GetData()` call. After each test case completes, xUnit 3 calls `DisposeAsync()` on the tracker, which disposes all registered objects. Our four `AutoNSubstituteData*` attributes were ignoring this tracker, leaving any `IDisposable` / `IAsyncDisposable` values created by AutoFixture to be collected by the GC with no deterministic cleanup.
+
+#### Decision
+
+All four `GetData()` implementations now call `disposalTracker.AddRange(values)` after `AutoNSubstituteDataHelper.MergeValues()` and before constructing `TheoryDataRow`. Registration happens once per row (inside the loop for multi-row attributes).
+
+#### Rationale
+
+- **Correctness:** Substitutes and other objects created by NSubstitute/AutoFixture may hold unmanaged resources; deterministic disposal prevents leaks.
+- **No false positives:** `DisposalTracker.AddRange` silently skips values that are not `IDisposable`/`IAsyncDisposable` — no filtering needed on our side.
+- **Robustness:** xUnit 3's tracker aggregates disposal exceptions, so a single failing disposable does not block cleanup of the others.
+- **Minimal footprint:** The fix is entirely at the `GetData()` call site. `AutoNSubstituteDataHelper.MergeValues` signature is unchanged.
+
+#### Affected Attributes
+
+- `AutoNSubstituteDataAttribute`
+- `InlineAutoNSubstituteDataAttribute`
+- `ClassAutoNSubstituteDataAttribute`
+- `MemberAutoNSubstituteDataAttribute`
+
+#### Consequences
+
+- All fixture-generated argument values that implement `IDisposable` or `IAsyncDisposable` are now disposed deterministically after each test case.
+- No API changes visible to consumers of the library.
+
+---
+
+### 18. DisposalTracker Integration Test Coverage
+
+**Author:** Zoe (QA & Testing Lead)  
+**Date:** 2026-03-07  
+**Status:** Approved
+
+#### Context
+
+Verified that `DisposalTracker.AddRange(values)` is correctly integrated into all four `GetData()` methods via comprehensive integration testing. Discovered and documented edge cases in disposal behavior and test patterns.
+
+#### Observations
+
+1. **Disposal Flow per Attribute Type:**
+   - `AutoNSubstituteData` single-row: `AddRange(values)` once, then `DisposeAsync()` disposes all
+   - `InlineAutoNSubstituteData` with explicit values: values added to tracker along with auto-generated ones
+   - `ClassAutoNSubstituteData` multi-row: `AddRange(values)` called once per row inside enumeration loop; single `DisposeAsync()` call disposes all rows (LIFO order)
+
+2. **ITheoryDataRow.GetData() Nullable Context:**
+   When extracting values from rows via `rows.Single().GetData()[0]`, the compiler emits CS8600 in nullable context because the indexer returns `object?`. Use the null-forgiving operator `[0]!` — safe because the fixture never produces null for concrete class parameters.
+
+3. **TrackableDisposable Pattern:**
+   For testing disposal, a concrete `TrackableDisposable : IDisposable` class with an `IsDisposed` flag is cleaner than NSubstitute mocks:
+   - No NSubstitute import needed in the test
+   - No risk of `ValueTask` return-type ambiguity for `IAsyncDisposable.DisposeAsync()`
+   - `IsDisposed.Should().BeTrue()` reads exactly like the scenario
+
+4. **MemberAutoNSubstituteData Disposal:**
+   `MemberAutoNSubstituteDataAttribute` has `AddRange` integrated but not directly tested in `DisposalTrackerIntegrationTests.cs` to avoid combinatorial redundancy — the `ClassAutoNSubstituteData` multi-row test is structurally identical to what a `Member` test would be.
+
+#### Test Suite
+
+Created `DisposalTrackerIntegrationTests.cs` with 5 focused tests:
+1. `AutoNSubstituteData_SingleRow_ValueDisposedAfterTest`
+2. `InlineAutoNSubstituteData_ExplicitDisposable_Disposed`
+3. `ClassAutoNSubstituteData_AsyncDisposable_DisposedAsync`
+4. `ClassAutoNSubstituteData_MultipleRows_EachRowDisposablesTrackedAndDisposedIndependently`
+5. `FrozenParameter_RegisteredButNotDoubleDisposed`
+
+#### Result
+
+✅ All 5 new tests passing  
+✅ 132/132 total tests (127 existing + 5 new)  
+✅ No regressions
+

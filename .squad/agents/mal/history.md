@@ -94,3 +94,26 @@ xUnit 3 advantages we're leveraging: module initializers via `[ModuleInitializer
 - Established pattern: default customizations fix framework gaps; opt-in customizations handle specialized use cases
 
 **Status:** Library feature-complete with best-practice defaults. Pattern documented for future team members.
+
+### xUnit3 and AutoFixture Disposal Behavior Investigation
+
+**Date:** 2026-03-XX
+
+**Key Findings:**
+
+1. **xUnit3 has built-in disposal for theory arguments** via `Xunit.Sdk.DisposalTracker`:
+   - Passed to `IDataAttribute.GetData(MethodInfo, DisposalTracker)`
+   - Data attributes are expected to call `disposalTracker.AddRange(values)` for any `IDisposable`/`IAsyncDisposable` values
+   - Disposed in LIFO order when test case completes via `XunitTestCase.DisposeAsync()`
+   - Prefers `IAsyncDisposable` when both interfaces are implemented
+   - Swallows individual exceptions and aggregates them
+
+2. **AutoFixture.Xunit3 ignores the `disposalTracker` parameter** — specimens are not registered for disposal
+
+3. **Our implementation also ignores it** — all four `AutoNSubstituteData*` attributes ignore the tracker
+
+4. **Test class instances** are separately disposed by `TestRunner.DisposeTestClass()` if they implement `IDisposable`/`IAsyncDisposable`
+
+5. **xUnit2 had no disposal mechanism** for theory data — this is a xUnit3 improvement
+
+**Conclusion:** No `[Dispose]` attribute needed. Fix is to call `disposalTracker.AddRange(values)` in each attribute's `GetData()` method. One line per attribute.
