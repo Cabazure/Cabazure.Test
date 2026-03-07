@@ -117,3 +117,23 @@ xUnit 3 advantages we're leveraging: module initializers via `[ModuleInitializer
 5. **xUnit2 had no disposal mechanism** for theory data — this is a xUnit3 improvement
 
 **Conclusion:** No `[Dispose]` attribute needed. Fix is to call `disposalTracker.AddRange(values)` in each attribute's `GetData()` method. One line per attribute.
+
+---
+
+### Phase 15: DisposalTracker Integration Completion (2026-03-07T18:29:07Z)
+
+**Status:** ✅ Complete
+
+**Execution:**
+- **Kaylee (Agent-38):** Implemented `disposalTracker.AddRange(values)` in all four `GetData()` methods. Build clean, no regressions.
+- **Zoe (Agent-39):** Created `DisposalTrackerIntegrationTests.cs` with 5 comprehensive tests. All 132 tests passing (127 existing + 5 new).
+
+**Outcome:**
+All fixture-generated `IDisposable`/`IAsyncDisposable` values now disposed deterministically after each test case via xUnit3's `DisposalTracker`. Substitutes and other managed resources are cleaned up immediately, not deferred to GC collection.
+
+**Decisions Merged:**
+- Decision 17: DisposalTracker Integration in GetData()
+- Decision 18: DisposalTracker Integration Test Coverage
+
+**Phase Rationale Validated:**
+xUnit3's `DisposalTracker` is a first-class framework facility designed precisely for this use case. Using it aligns with xUnit3 conventions and eliminates a subtle resource management gap in the previous implementation.
