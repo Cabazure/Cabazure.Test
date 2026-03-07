@@ -1062,3 +1062,63 @@ Created `DisposalTrackerIntegrationTests.cs` with 5 focused tests:
 ✅ 132/132 total tests (127 existing + 5 new)  
 ✅ No regressions
 
+
+
+---
+
+# Decision: FluentArg and ReceivedCallExtensions Implementation
+
+**Author:** Kaylee (Core .NET Developer)  
+**Date:** 2026-03-07  
+**Status:** Implemented
+
+---
+
+## Decision 1: `FluentAssertionArgumentMatcher<T>` is `internal sealed`
+
+The public API surface is only `FluentArg.Matching<T>`. The matcher implementation class is `internal sealed` — consumers never need to reference it directly, and keeping it internal prevents subclassing and misuse.
+
+## Decision 2: `IsSatisfiedBy` uses `T?` (nullable) parameter
+
+`IArgumentMatcher<T>.IsSatisfiedBy` is declared with a nullable parameter `T?`. The assertion action is declared as `Action<T>` (non-nullable). The forwarding call uses `!` null-forgiving operator (`assertion(argument!)`) which is safe because NSubstitute only calls `IsSatisfiedBy` with actual argument values from real calls — a `null` value for a non-nullable `T` would itself be a legitimate mismatch caught by the assertion.
+
+## Decision 3: `DescribeFor` type-checks before re-running assertion
+
+Rather than unconditionally casting `object? argument` to `T`, `DescribeFor` uses `is T typed` to guard against type mismatches and returns a descriptive type mismatch string. This prevents unexpected `InvalidCastException`s in NSubstitute's error formatting path.
+
+## Decision 4: `ReceivedCallExtensions` throws `InvalidOperationException` (not `ArgumentException`) for missing args
+
+`ReceivedArg<T>` throws `InvalidOperationException` for both "no calls received" and "argument not found" cases. This is consistent with LINQ's `First()` / `Single()` semantics and NSubstitute's own exception style — the substitute is in a bad state from the test's perspective, not receiving a bad argument.
+
+## Decision 5: `ReceivedArgs<T>` never throws
+
+`ReceivedArgs<T>` returns an empty enumerable when no calls have been received, aligning with LINQ's `Where()` / `SelectMany()` style. Callers can chain `.Should().NotBeEmpty()` or `.Should().Contain(...)` for assertions.
+
+
+---
+
+# Decision: FluentArg & ReceivedCallExtensions Test Design
+
+**Author:** Zoe (QA Lead)
+**Date:** 2026-03-07
+**Status:** For Review
+
+## Decision: No `[AutoNSubstituteData]` for Argument Matcher Tests
+
+These tests deliberately use `Substitute.For<T>()` directly instead of `[AutoNSubstituteData]`, even though that's the library's dogfooding style.
+
+**Rationale:** `FluentArg.Matching<T>()` calls `ArgumentMatcher.Enqueue<T>(...)` inside NSubstitute's argument-recording pipeline. This pipeline is tied to the exact call context. Using AutoFixture to create the substitute as a theory parameter doesn't interfere with the *calls* themselves, but using the argument matcher outside of a direct substitute interaction (e.g., in a helper method) can cause NSubstitute to misattribute the enqueued matcher. To keep tests unambiguous and not accidentally rely on call-stack depth or theory parameter ordering, plain `Substitute.For<T>()` is used.
+
+## Decision: `TestRequest` Declared Locally in Each File
+
+Both `FluentArgTests.cs` and `ReceivedCallExtensionsTests.cs` declare their own `TestRequest` class in the local namespace rather than sharing one.
+
+**Rationale:** These are test support types — minimal, purposeful. Sharing them would introduce file coupling with no benefit. If the shape of one test's supporting type needs to diverge, it can do so without affecting the other.
+
+## Edge Case: `ReceivedArgs` vs `ReceivedArg` Asymmetry
+
+- `ReceivedArg<T>()` — throws `InvalidOperationException` when no calls or no matching arg
+- `ReceivedArgs<T>()` — returns empty enumerable when no calls (never throws)
+
+This asymmetry mirrors LINQ's `.First()` vs `.Where()` — singular expects one, plural tolerates zero. This is the correct design and is verified by tests.
+

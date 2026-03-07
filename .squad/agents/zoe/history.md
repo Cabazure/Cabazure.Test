@@ -42,6 +42,39 @@ My domain is the test project `Cabazure.Test.Tests`. The unique challenge: we're
 
 ## Learnings
 
+### Phase 16: FluentArg & ReceivedCallExtensions Tests (2026-03-07)
+
+**Task:** Write tests for `FluentArg` and `ReceivedCallExtensions` — Kaylee's new argument-matching utilities.
+
+**Test Files Created:**
+- `tests/Cabazure.Test.Tests/FluentArgTests.cs` (4 tests)
+- `tests/Cabazure.Test.Tests/ReceivedCallExtensionsTests.cs` (8 tests)
+
+**FluentArgTests Coverage:**
+1. `Matching_PassingAssertion_ReceiveCheckSucceeds` — passing FA assertion doesn't throw
+2. `Matching_FailingAssertion_ReceiveCheckThrowsWithFAMessage` — FA failure surfaces in `ReceivedCallsException.Message` (via `IDescribeNonMatches`)
+3. `Matching_NullAssertion_ThrowsArgumentNullException` — null guard on assertion param
+4. `Matching_WhenNoCallsReceived_ThrowsReceivedCallsException` — no-call baseline
+
+**ReceivedCallExtensionsTests Coverage:**
+1. `ReceivedArg_SingleCall_ReturnsArgFromLastCall`
+2. `ReceivedArg_MultipleCalls_ReturnsArgFromLastCall` — last-call semantics
+3. `ReceivedArg_NoCalls_ThrowsInvalidOperationException`
+4. `ReceivedArg_ArgNotFoundInLastCall_ThrowsInvalidOperationException`
+5. `ReceivedArgs_MultipleCalls_ReturnsAllArgsInOrder`
+6. `ReceivedArgs_NoCalls_ReturnsEmptyEnumerable`
+7. `ReceivedArgs_MixedArgTypes_ReturnsOnlyMatchingType` — string/int filtering from same call
+8. `ReceivedArg_CombinedWithFluentAssertions_WorksEndToEnd` — integration
+
+**Test Results:** 144/144 passing (12 new + 132 existing). Zero regressions.
+
+**Key Patterns & Notes:**
+- **No `[AutoNSubstituteData]` for these tests:** They test NSubstitute argument-matcher infrastructure directly; using `Substitute.For<T>()` manually is clearer and avoids fixture interference with NSubstitute's argument enqueue pipeline.
+- **`IDescribeNonMatches` verification:** Test 2 checks `ex.Message.ContainAny("Bob", "Alice", "Expected")` — NSubstitute calls `DescribeFor()` and includes its return in the exception message, surfacing the FA diff.
+- **`TestRequest` redeclared per file:** Both test files declare their own `TestRequest` class in the local namespace to avoid cross-file coupling.
+- **`ReceivedArgs<int>()` on value types:** Works correctly — NSubstitute stores boxed `object?[]` args; `arg is T typed` unboxes correctly for `int`, `bool`, etc.
+- **Edge case found:** `ReceivedArgs` on a substitute with no calls returns an empty enumerable (not an exception) — verified by test 6. This asymmetry with `ReceivedArg` (which throws) is intentional and well-tested.
+
 ### Phase 15: DisposalTracker Integration Tests (2026-03-07)
 
 **Task:** Create integration tests verifying `DisposalTracker.AddRange(values)` disposal in all four attribute types.
@@ -125,3 +158,23 @@ My domain is the test project `Cabazure.Test.Tests`. The unique challenge: we're
 - **TrackableDisposable/TrackableAsyncDisposable helpers:** Prefer a concrete helper class over NSubstitute mock verification for disposal testing. `IsDisposed` property is far simpler to assert than `Received()` on `IDisposable.Dispose()`.
 - **Reflection host class:** A `DisposalTestMethodHost` class with stub methods (body `{ }`) provides `MethodInfo` to drive `GetData()` without any test-infrastructure overhead.
 - **Kaylee's fix was already applied:** All 5 tests passed immediately because `disposalTracker.AddRange(values)` was already in all four attribute implementations. The tests retroactively confirm the fix is correct.
+### Phase 16: FluentArg & ReceivedCallExtensions Test Coverage (2026-03-07)
+
+**Task:** Write comprehensive tests for Kaylee's FluentArg and ReceivedCallExtensions utilities.
+
+**Test Files Created:**
+- 	ests/Cabazure.Test.Tests/FluentArgTests.cs — tests for FluentArg.Matching<T>() matcher behavior
+- 	ests/Cabazure.Test.Tests/ReceivedCallExtensionsTests.cs — tests for ReceivedArg<T>() and ReceivedArgs<T>() extraction
+
+**Test Coverage:**
+- 144/144 tests passing
+- FluentArg matcher exception handling, success/failure diagnostics, integration with NSubstitute
+- ReceivedArg/ReceivedArgs extraction, edge cases (no calls, no matching arg)
+- IDescribeNonMatches integration with ReceivedCallsException
+
+**Design Notes:**
+1. Tests use plain Substitute.For<T>() (not [AutoNSubstituteData]) to avoid call-stack ambiguity in ArgumentMatcher.Enqueue pipeline
+2. TestRequest class declared locally in each file for isolation
+3. Verified asymmetry: ReceivedArg<T>() throws InvalidOperationException; ReceivedArgs<T>() returns empty enumerable (mirrors LINQ First() vs Where())
+
+**Commit:** 411c454 (feat: add FluentArg.Matching and ReceivedCallExtensions)

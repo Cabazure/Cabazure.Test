@@ -93,6 +93,31 @@ My domain is the guts of the library: AutoFixture customizations, the `ISpecimen
 **Cross-team QA:** Zoe verified 6 new tests, all 122 passing.
 **Decision logged:** `.squad/decisions.md` — `IFixture/Fixture Parameter Injection in Theory Methods`
 
+### Phase 16: FluentArg and ReceivedCallExtensions (2026-03-07)
+
+**Task:** Create `FluentArg.Matching<T>` (FluentAssertions-backed NSubstitute argument matcher) and `ReceivedCallExtensions` (`ReceivedArg<T>` / `ReceivedArgs<T>`).
+
+**New files:**
+- `src/Cabazure.Test/FluentArg.cs` — `FluentArg` static class + `FluentAssertionArgumentMatcher<T>` internal class
+- `src/Cabazure.Test/ReceivedCallExtensions.cs` — extension methods on `object` (the substitute)
+
+**Key NSubstitute internals confirmed:**
+- `ArgumentMatcher.Enqueue<T>(IArgumentMatcher<T>)` is the correct public registration point (namespace `NSubstitute.Core.Arguments`)
+- `IArgumentMatcher<T>.IsSatisfiedBy` signature is `bool IsSatisfiedBy(T? argument)` — nullable `T?`, not `T`
+- Exceptions in `IsSatisfiedBy` are silently swallowed; `IDescribeNonMatches.DescribeFor` is the only channel for surfacing failure messages in `ReceivedCallsException`
+- `ArgumentMatcher.Enqueue<T>` auto-wraps with `GenericToNonGenericMatcherProxyWithDescribe<T>` when matcher also implements `IDescribeNonMatches` — no extra registration needed
+- `IDescribeNonMatches` is in namespace `NSubstitute.Core` (not `NSubstitute.Core.Arguments`)
+
+**`ReceivedCallExtensions` API:**
+- `ReceivedArg<T>(this object substitute)` — last call, first arg of type T; throws `InvalidOperationException` on no-calls or not-found
+- `ReceivedArgs<T>(this object substitute)` — all args of type T across all calls; returns empty enumerable (never throws)
+- Uses `substitute.ReceivedCalls()` (NSubstitute extension, `using NSubstitute;`) returning `IEnumerable<ICall>`
+
+**Build:** Clean, 0 warnings, 0 errors.
+
+**Skill extracted:** `.squad/skills/nsubstitute-custom-matcher/SKILL.md`
+**Decisions logged:** `.squad/decisions/inbox/kaylee-fluentarg-impl.md`
+
 ### Phase 13: Substitute Attribute Refactor (2026-03-07T18:44:29Z)
 
 **Task:** Remove duplicate SubstituteAttribute, fix ParameterInfo passing to enable AutoFixture's attribute pipeline.
@@ -108,3 +133,20 @@ My domain is the guts of the library: AutoFixture customizations, the `ISpecimen
 
 **Cross-team QA:** Zoe verified updated tests, all 127 passing.
 **Decision logged:** `.squad/decisions.md` — Substitute Attribute ParameterInfo refactor
+### Phase 17: FluentArg & ReceivedCallExtensions Implementation (2026-03-07)
+
+**Task:** Create FluentArg.Matching<T>() and ReceivedCallExtensions — inline NSubstitute argument matcher with FluentAssertions integration.
+
+**Deliverables:**
+- src/Cabazure.Test/FluentArg.cs — public sealed class with static Matching<T>() method and internal FluentAssertionArgumentMatcher<T> implementation
+- src/Cabazure.Test/ReceivedCallExtensions.cs — public extension methods ReceivedArg<T>() and ReceivedArgs<T>() on object
+
+**Key Design Decisions:**
+1. Public API: FluentArg.Matching<T>(Action<T>) only; matcher class is internal sealed
+2. IsSatisfiedBy uses T? nullable parameter; forwarding action is Action<T>; null-forgiving operator ! is safe for NSubstitute's call context
+3. DescribeFor type-checks before re-running assertion to prevent InvalidCastException
+4. ReceivedArg<T>() throws InvalidOperationException (consistent with LINQ First() semantics)
+5. ReceivedArgs<T>() returns empty enumerable (never throws)
+
+**Build Status:** Clean
+**Commit:** 411c454 (feat: add FluentArg.Matching and ReceivedCallExtensions)
