@@ -13,7 +13,8 @@ namespace Cabazure.Test;
 /// <para>
 /// The collection is pre-seeded with <see cref="AutoNSubstituteCustomization"/>,
 /// <see cref="RecursionCustomization"/>, <see cref="ImmutableCollectionCustomization"/>,
-/// and <see cref="DateOnlyTimeOnlyCustomization"/> as the first four entries.
+/// <see cref="DateOnlyTimeOnlyCustomization"/>, and <see cref="CancellationTokenCustomization"/>
+/// as the first five entries.
 /// Customizations are applied in the order they appear in the collection.
 /// </para>
 /// <para>
@@ -43,6 +44,7 @@ public sealed class FixtureCustomizationCollection : IEnumerable<ICustomization>
             new RecursionCustomization(),
             new ImmutableCollectionCustomization(),
             new DateOnlyTimeOnlyCustomization(),
+            new CancellationTokenCustomization(),
         ];
     }
 
