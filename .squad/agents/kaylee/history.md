@@ -162,13 +162,15 @@ The `throw;` after `.Throw()` is unreachable at runtime but required so the comp
 **Task:** Implement `src/Cabazure.Test/Assertions/StringContentExtensions.cs` — 6 extension methods on `StringAssertions` for format-ignorant string comparison.
 
 **Implementation:**
-- `BeSimilarTo` / `NotBeSimilarTo` — whitespace normalization via `Regex.Replace(s.Trim(), @"\s+", " ")`
+- `BeSimilarTo` / `NotBeSimilarTo` — whitespace normalization via `NormalizeWhitespace(string? s)` using `Regex.Replace(s.Trim(), @"\s+", " ")`
 - `BeXmlEquivalentTo` / `NotBeXmlEquivalentTo` — XML normalization via `XDocument.Parse(s).ToString(SaveOptions.DisableFormatting)`
 - `BeJsonEquivalentTo` / `NotBeJsonEquivalentTo` — JSON normalization via `JsonSerializer.Serialize(JsonDocument.Parse(s).RootElement)`
 - All extend `StringAssertions` (concrete FA class), return `AndConstraint<StringAssertions>`
 - FA 7.x assertion pattern: `Execute.Assertion.BecauseOf(...).ForCondition(...).FailWith(...)`
 - Invalid XML/JSON propagates naturally as `XmlException`/`JsonException` — no try/catch
-- Private helpers `Normalize`, `NormalizeXml`, `NormalizeJson` keep the public methods clean
+- Private helpers `NormalizeWhitespace`, `NormalizeXml`, `NormalizeJson` all accept `string?` and return `string.Empty` for null
+- `BeSimilarTo`/`NotBeSimilarTo` `expected` params typed as `string?`; XML/JSON variants typed as `string`
+- Positive failure messages include both `{0}` (normalized expected) and `{1}` (normalized actual); negative messages include only `{0}` (normalized expected)
 - Both BCL dependencies (`System.Xml.Linq`, `System.Text.Json`) already in .NET 9 — no new NuGet references
 
 **Build:** Clean ✅

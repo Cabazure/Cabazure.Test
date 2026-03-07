@@ -136,3 +136,50 @@ DateTimeOffsetExtensions (9 tests):
 
 **Cross-team:** Kaylee implemented both extension modules; Wash added comprehensive README documentation.
 **Decision logged:** `.squad/decisions.md` — Phase 17 FluentAssertions Extensions test patterns and verification.
+
+### Phase 19: StringContentExtensions Tests (2026-03-07)
+
+**Task:** Write tests for `StringContentExtensions` — FluentAssertions extension methods on `StringAssertions`.
+
+**File created/augmented:** `tests/Cabazure.Test.Tests/Assertions/StringContentExtensionsTests.cs`
+
+**Coverage (19 tests across 6 method pairs):**
+
+BeSimilarTo (5):
+- `BeSimilarTo_WithIdenticalContent_Passes`
+- `BeSimilarTo_WithSameContentDifferentWhitespace_Passes` (pre-existing, "\n" + extra spaces)
+- `BeSimilarTo_WithLeadingAndTrailingWhitespace_Passes`
+- `BeSimilarTo_WithDifferentLineEndings_Passes`
+- `BeSimilarTo_WithDifferentContent_ThrowsWithMessage` — checks both values in message
+
+NotBeSimilarTo (2):
+- `NotBeSimilarTo_WithDifferentContent_Passes`
+- `NotBeSimilarTo_WithSameContentDifferentWhitespace_Throws`
+
+BeXmlEquivalentTo (4):
+- `BeXmlEquivalentTo_WithIdenticalXml_Passes`
+- `BeXmlEquivalentTo_WithSameXmlDifferentFormatting_Passes`
+- `BeXmlEquivalentTo_WithDifferentXmlContent_ThrowsWithMessage`
+- `BeXmlEquivalentTo_WithInvalidXml_ThrowsXmlException` — propagation of `XmlException`
+
+NotBeXmlEquivalentTo (2):
+- `NotBeXmlEquivalentTo_WithDifferentXmlContent_Passes`
+- `NotBeXmlEquivalentTo_WithSameXmlDifferentFormatting_Throws`
+
+BeJsonEquivalentTo (4):
+- `BeJsonEquivalentTo_WithIdenticalJson_Passes`
+- `BeJsonEquivalentTo_WithSameJsonDifferentFormatting_Passes`
+- `BeJsonEquivalentTo_WithDifferentJsonContent_ThrowsWithMessage`
+- `BeJsonEquivalentTo_WithInvalidJson_ThrowsJsonException` — propagation of `JsonException`
+
+NotBeJsonEquivalentTo (2):
+- `NotBeJsonEquivalentTo_WithDifferentJsonContent_Passes`
+- `NotBeJsonEquivalentTo_WithSameJsonDifferentFormatting_Throws`
+
+**Key Patterns:**
+- File already existed with 12 tests; augmented with 7 additional to reach full spec coverage.
+- Added `using System.Text.Json;` and `using System.Xml;` to existing usings.
+- Exception propagation tests (`XmlException`, `JsonException`) check the unwrapped type directly — the implementation should not swallow parse errors.
+- `[Fact]` throughout — no `[AutoNSubstituteData]` needed for pure string assertions.
+- All failure-message tests assert both the actual and expected values appear in the exception message.
+
