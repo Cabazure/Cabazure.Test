@@ -1,7 +1,6 @@
 using System.Reflection;
 using AutoFixture;
 using AutoFixture.Kernel;
-using NSubstitute;
 
 namespace Cabazure.Test.Attributes;
 
@@ -58,7 +57,7 @@ internal static class AutoNSubstituteDataHelper
             }
             else
             {
-                var value = CreateValue(fixture, parameter.ParameterType);
+                var value = CreateValue(fixture, parameter);
                 values[i] = value;
 
                 if (isFrozen && !parameter.ParameterType.IsValueType)
@@ -71,8 +70,13 @@ internal static class AutoNSubstituteDataHelper
         return values;
     }
 
-    internal static object CreateValue(IFixture fixture, Type type)
-        => new SpecimenContext(fixture).Resolve(type);
+    /// <summary>
+    /// Resolves a value for the given parameter, passing the full <see cref="ParameterInfo"/>
+    /// to the specimen context so AutoFixture attribute processing (including
+    /// <c>[Substitute]</c> from <c>AutoFixture.AutoNSubstitute</c>) applies.
+    /// </summary>
+    internal static object CreateValue(IFixture fixture, ParameterInfo parameter)
+        => new SpecimenContext(fixture).Resolve(parameter);
 
     internal static void FreezeValue(IFixture fixture, Type type, object value)
     {
