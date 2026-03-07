@@ -196,3 +196,34 @@ My domain is the test project `Cabazure.Test.Tests`. The unique challenge: we're
 - Packages and Compatibility sections preserved unchanged
 
 **Key lesson:** README drift is a real risk after refactors. The Phase 8 API change (SutFixture to FixtureFactory) was not reflected in the README -- always treat the README as a deliverable alongside any public API change.
+
+### 2026-03-07: JsonElement and DateOnly/TimeOnly Customization Tests Written
+
+**Task:** Write comprehensive tests for two new customizations being implemented by Kaylee.
+
+**Test Files Created:**
+1. `tests/Cabazure.Test.Tests/Customizations/JsonElementCustomizationTests.cs` (6 test methods)
+   - Covers: null guard, ValueKind verification, property enumeration, clone/standalone verification
+   - Tests: FixtureFactory integration and property-on-object scenarios
+   - Key assertion: `JsonElement` is cloned and survives GC (verified with GC.Collect())
+   
+2. `tests/Cabazure.Test.Tests/Customizations/DateOnlyTimeOnlyCustomizationTests.cs` (7 test methods)
+   - Covers: null guard, DateOnly non-default values, TimeOnly non-zero ticks
+   - Tests: FixtureFactory default integration (customization is in defaults)
+   - Tests: object with both properties populated correctly
+   - Key assertion pattern: `result.Year.Should().BeGreaterThan(1)` used instead of `BeGreaterThan(DateOnly.MinValue)` because `DateOnlyAssertions` doesn't have comparison operators
+
+**Test Pattern Learnings:**
+- **JsonElement testing:** Must verify `ValueKind`, property enumeration, and clone independence (GC-safe)
+- **DateOnly/TimeOnly testing:** FluentAssertions doesn't provide comparison operators for these types — use `.Year` property access or `NotBe(MinValue)` patterns
+- **Randomness verification:** Create multiple values and assert at least one differs from `MinValue` (TimeOnly) to verify non-trivial generation
+- **Nested test classes:** Used `HasJsonElementProperty` and `HasDateTimeOnlyProperties` to test property-on-object scenarios
+
+**Design decisions:**
+- JsonElementCustomization is opt-in (not in defaults) — tests explicitly add it via `FixtureFactory.Create(new JsonElementCustomization())`
+- DateOnlyTimeOnlyCustomization is in defaults — tests use `FixtureFactory.Create()` without explicit customization parameter
+- Both follow the pattern established in `ImmutableCollectionCustomizationTests.cs`
+
+**Build Status:** ✅ Compiles clean (`dotnet build tests\Cabazure.Test.Tests\Cabazure.Test.Tests.csproj`, 0 errors, 0 warnings after fixing FluentAssertions DateOnly comparison issue)
+
+**Not Run:** Tests not executed yet — Kaylee is implementing the customization source files in parallel.
