@@ -157,7 +157,44 @@ public class PaymentServiceTests
 | `[CustomizeWith]` | Per-method or per-class attribute that applies an `ICustomization` on top of any project-wide registrations. |
 | `RecursionCustomization` | Replaces `ThrowingRecursionBehavior` with `OmitOnRecursionBehavior` so recursive object graphs don't throw. |
 | `ImmutableCollectionCustomization` | Enables fixture creation of `ImmutableList<T>`, `ImmutableArray<T>`, `ImmutableDictionary<,>`, and other immutable collections. |
+| `DateOnlyTimeOnlyCustomization` | Enables reliable creation of `DateOnly` and `TimeOnly` values derived from a random `DateTime`. |
+| `JsonElementCustomization` | Opt-in customization that enables creation of `System.Text.Json.JsonElement` instances. |
 | Auto-substitution | Interfaces and abstract classes are automatically replaced with NSubstitute substitutes everywhere — no manual `Substitute.For<T>()` required. |
+
+---
+
+## Customizations
+
+### `RecursionCustomization`
+
+Replaces AutoFixture's default `ThrowingRecursionBehavior` with `OmitOnRecursionBehavior` so recursive object graphs don't throw. **Included by default.**
+
+### `ImmutableCollectionCustomization`
+
+Enables creation of `ImmutableList<T>`, `ImmutableArray<T>`, `ImmutableHashSet<T>`, `ImmutableDictionary<,>`, `ImmutableQueue<T>`, `ImmutableStack<T>`, and `ImmutableSortedSet<T>`. Without this customization, AutoFixture throws `ObjectCreationException` for most immutable types. **Included by default.**
+
+### `DateOnlyTimeOnlyCustomization`
+
+Enables reliable creation of `DateOnly` and `TimeOnly` values. AutoFixture cannot construct `DateOnly` by default (it generates invalid year/month/day combinations), and while `TimeOnly` technically works, AutoFixture produces near-zero tick values making it useless for tests. This customization derives both types from a randomly generated `DateTime`.
+
+**Included by default.** Remove it with `FixtureFactory.Customizations.Remove<DateOnlyTimeOnlyCustomization>()` if you need different behavior.
+
+### `JsonElementCustomization`
+
+Enables creation of `System.Text.Json.JsonElement` instances. AutoFixture cannot construct `JsonElement` by default because it requires a `ref Utf8JsonReader` parameter. This customization creates a `JsonElement` representing a JSON object with a randomly generated key/value pair.
+
+**Not included by default** — opt in via:
+
+```csharp
+FixtureFactory.Customizations.Add(new JsonElementCustomization());
+```
+
+Or apply per-test:
+
+```csharp
+var fixture = FixtureFactory.Create(new JsonElementCustomization());
+var element = fixture.Create<JsonElement>();
+```
 
 ---
 
