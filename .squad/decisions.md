@@ -1076,7 +1076,7 @@ Created `DisposalTrackerIntegrationTests.cs` with 5 focused tests:
 
 ## Decision 1: `FluentAssertionArgumentMatcher<T>` is `internal sealed`
 
-The public API surface is only `FluentArg.Matching<T>`. The matcher implementation class is `internal sealed` — consumers never need to reference it directly, and keeping it internal prevents subclassing and misuse.
+The public API surface is only `FluentArg.Match<T>`. The matcher implementation class is `internal sealed` — consumers never need to reference it directly, and keeping it internal prevents subclassing and misuse.
 
 ## Decision 2: `IsSatisfiedBy` uses `T?` (nullable) parameter
 
@@ -1107,7 +1107,7 @@ Rather than unconditionally casting `object? argument` to `T`, `DescribeFor` use
 
 These tests deliberately use `Substitute.For<T>()` directly instead of `[AutoNSubstituteData]`, even though that's the library's dogfooding style.
 
-**Rationale:** `FluentArg.Matching<T>()` calls `ArgumentMatcher.Enqueue<T>(...)` inside NSubstitute's argument-recording pipeline. This pipeline is tied to the exact call context. Using AutoFixture to create the substitute as a theory parameter doesn't interfere with the *calls* themselves, but using the argument matcher outside of a direct substitute interaction (e.g., in a helper method) can cause NSubstitute to misattribute the enqueued matcher. To keep tests unambiguous and not accidentally rely on call-stack depth or theory parameter ordering, plain `Substitute.For<T>()` is used.
+**Rationale:** `FluentArg.Match<T>()` calls `ArgumentMatcher.Enqueue<T>(...)` inside NSubstitute's argument-recording pipeline. This pipeline is tied to the exact call context. Using AutoFixture to create the substitute as a theory parameter doesn't interfere with the *calls* themselves, but using the argument matcher outside of a direct substitute interaction (e.g., in a helper method) can cause NSubstitute to misattribute the enqueued matcher. To keep tests unambiguous and not accidentally rely on call-stack depth or theory parameter ordering, plain `Substitute.For<T>()` is used.
 
 ## Decision: `TestRequest` Declared Locally in Each File
 

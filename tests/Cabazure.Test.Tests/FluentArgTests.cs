@@ -22,46 +22,46 @@ public class FluentArgTests
     }
 
     [Fact]
-    public void Matching_PassingAssertion_ReceiveCheckSucceeds()
+    public void Match_PassingAssertion_ReceiveCheckSucceeds()
     {
         var service = Substitute.For<ITestService>();
         service.Process(new TestRequest { Name = "Alice", Amount = 100 });
 
         var act = () => service.Received(1).Process(
-            FluentArg.Matching<TestRequest>(r => r.Name.Should().Be("Alice")));
+            FluentArg.Match<TestRequest>(r => r.Name.Should().Be("Alice")));
 
         act.Should().NotThrow();
     }
 
     [Fact]
-    public void Matching_FailingAssertion_ReceiveCheckThrowsWithFAMessage()
+    public void Match_FailingAssertion_ReceiveCheckThrowsWithFAMessage()
     {
         var service = Substitute.For<ITestService>();
         service.Process(new TestRequest { Name = "Bob", Amount = 50 });
 
         var ex = Assert.Throws<ReceivedCallsException>(() =>
             service.Received(1).Process(
-                FluentArg.Matching<TestRequest>(r => r.Name.Should().Be("Alice"))));
+                FluentArg.Match<TestRequest>(r => r.Name.Should().Be("Alice"))));
 
         ex.Message.Should().NotBeNullOrEmpty();
         ex.Message.Should().ContainAny("Bob", "Alice", "Expected");
     }
 
     [Fact]
-    public void Matching_NullAssertion_ThrowsArgumentNullException()
+    public void Match_NullAssertion_ThrowsArgumentNullException()
     {
-        var act = () => FluentArg.Matching<TestRequest>(null!);
+        var act = () => FluentArg.Match<TestRequest>(null!);
 
         act.Should().Throw<ArgumentNullException>();
     }
 
     [Fact]
-    public void Matching_WhenNoCallsReceived_ThrowsReceivedCallsException()
+    public void Match_WhenNoCallsReceived_ThrowsReceivedCallsException()
     {
         var service = Substitute.For<ITestService>();
 
         var act = () => service.Received(1).Process(
-            FluentArg.Matching<TestRequest>(_ => { }));
+            FluentArg.Match<TestRequest>(_ => { }));
 
         act.Should().Throw<ReceivedCallsException>();
     }

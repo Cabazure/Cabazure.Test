@@ -62,10 +62,10 @@ public static ref T? Match<T>(/* ... */)
 
 ## FluentAssertions Integration
 
-The `FluentArg.Matching<T>` pattern bridges FluentAssertions assertions into NSubstitute matchers:
+The `FluentArg.Match<T>` pattern bridges FluentAssertions assertions into NSubstitute matchers:
 
 ```csharp
-substitute.Received(1).Process(FluentArg.Matching<Request>(r =>
+substitute.Received(1).Process(FluentArg.Match<Request>(r =>
 {
     r.Name.Should().Be("Alice");
     r.Amount.Should().BeGreaterThan(0);

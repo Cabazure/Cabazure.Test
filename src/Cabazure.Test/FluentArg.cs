@@ -21,7 +21,7 @@ public static class FluentArg
     /// </param>
     /// <returns>A reference placeholder consumed by NSubstitute's argument matching pipeline.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="assertion"/> is <c>null</c>.</exception>
-    public static ref T? Matching<T>(Action<T> assertion)
+    public static ref T? Match<T>(Action<T> assertion)
     {
         ArgumentNullException.ThrowIfNull(assertion);
         return ref ArgumentMatcher.Enqueue<T>(new FluentAssertionArgumentMatcher<T>(assertion));
