@@ -9,7 +9,9 @@ public class SpecimenRequestHelperTests
     private class TestSubject
     {
         public string? SomeProperty { get; set; }
+#pragma warning disable CS0649 // Field is never assigned
         public int SomeField;
+#pragma warning restore CS0649
         public TestSubject(bool someParameter) { }
     }
 
