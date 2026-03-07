@@ -346,11 +346,34 @@ Every `SutFixture` created by the data attributes now uses `AutoNSubstituteDataH
 
 ---
 
+### 12. All Three Standard Customizations Seeded by Default
+
+**Author:** Kaylee (Core .NET Developer)  
+**Date:** 2026-03-07  
+**Status:** Approved
+
+**Decision:** All three standard customizations are now seeded by default in `FixtureCustomizationCollection`:
+
+1. `AutoNSubstituteCustomization` — NSubstitute integration (was already present)
+2. `RecursionCustomization` — replaces `ThrowingRecursionBehavior` with `OmitOnRecursionBehavior`
+3. `ImmutableCollectionCustomization` — full support for all eight `System.Collections.Immutable` types
+
+**Rationale:**
+Users of `FixtureFactory.Create()` with no arguments should get a fixture that works correctly for the most common test scenarios out of the box — including recursive object graphs and immutable collection properties. Previously, they had to opt-in to these customizations explicitly, which was a common source of confusion and boilerplate.
+
+**Consequences:**
+- `FixtureFactory.Create()` (no-arg) now produces a fixture with all three customizations applied.
+- `FixtureCustomizationCollection` default `Count` is now 3 (was 1).
+- Users who previously called `FixtureFactory.Customizations.Add(new RecursionCustomization())` or `FixtureFactory.Customizations.Add(new ImmutableCollectionCustomization())` globally may now have duplicates; they should remove those registrations.
+- All existing tests pass unchanged (78/78 green).
+
+---
+
 ### 10. Recursion Handling — RecursionCustomization
 
 **Date:** 2026-03-07  
 **Author:** Kaylee (Core Dev)  
-**Status:** Proposed
+**Status:** Approved
 
 **Decision:** `RecursionCustomization` is provided as a `public sealed class` following the same style as `AutoNSubstituteCustomization`.
 

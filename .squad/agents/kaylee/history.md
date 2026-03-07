@@ -173,3 +173,13 @@ Updated `.github/copilot-instructions.md` to reflect post-Phase-8 library state:
 - Replaced **`SutFixture` / `AutoNSubstituteDataAttribute`** concept docs with the current public API: `FixtureFactory`, all four Data Attributes, the three Customizations, `SutFixtureCustomizations`, and `[CustomizeWith]`.
 - Updated **Project Structure** tree: removed `Fixture/` directory (deleted in Phase 8), added `AssemblyInitializer.cs` and `FixtureFactory.cs` entries.
 - Updated **commit scope table**: `fixture` scope description changed from "SutFixture and fixture types" to "FixtureFactory and fixture configuration".
+
+### Default Customizations Expansion
+
+**FixtureCustomizationCollection now seeds all three standard customizations:**
+- Updated `FixtureCustomizationCollection` constructor to include `RecursionCustomization` and `ImmutableCollectionCustomization` alongside the existing `AutoNSubstituteCustomization`.
+- Updated XML `<remarks>` block to list all three pre-seeded customizations by name.
+- No test changes required — `FixtureCustomizationCollectionTests` uses relative count assertions (`countBefore + 2`) and the `Clear_RemovesAll` test checks post-clear count (0), both unaffected by seed count changing 1 → 3.
+- Tests for `RecursionCustomization` and `ImmutableCollectionCustomization` all pass unchanged (they use explicit `FixtureFactory.Create(new XxxCustomization())` so default seeding is irrelevant).
+
+**Build result:** 0 errors, 0 warnings, 78/78 tests green.
