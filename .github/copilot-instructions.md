@@ -10,6 +10,10 @@ This project uses Squad for AI team collaboration. Before working on any issue:
 2. Read `.squad/routing.md` for work routing rules.
 3. If the issue has a `squad:{member}` label, read `.squad/agents/{member}/charter.md` to understand their domain expertise and work in their voice.
 
+### Squad History Commit Rule
+
+**After every session, all `.squad/` changes must be committed to the repo.** This includes history files, decisions, orchestration logs, and session logs. The Scribe is responsible for staging and committing `.squad/` changes at the end of each agent batch. No agent session is complete until squad state is committed.
+
 ## Tech Stack
 
 | Concern | Package |
