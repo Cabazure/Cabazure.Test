@@ -104,3 +104,18 @@ My domain is the guts of the library: `SutFixture`, AutoFixture customizations, 
 - `AutoNSubstituteCustomization.cs` — replaced `Fixture.SutFixture` cref with `FixtureFactory`.
 
 **Build result:** 0 errors, 0 warnings (Release TreatWarningsAsErrors is on).
+
+### RecursionCustomization
+
+**RecursionCustomization (new public API):**
+- Created `src/Cabazure.Test/Customizations/RecursionCustomization.cs` in `Cabazure.Test.Customizations` namespace.
+- `public sealed class` — consistent with `AutoNSubstituteCustomization` pattern.
+- `Customize(IFixture)` uses `ArgumentNullException.ThrowIfNull(fixture)` — throws on null rather than silently ignoring it.
+- Core logic: remove all `ThrowingRecursionBehavior` instances from `fixture.Behaviors`, then add `OmitOnRecursionBehavior`.
+- XML doc on class; `/// <inheritdoc />` on `Customize` method.
+
+**Test file:** `tests/Cabazure.Test.Tests/Customizations/RecursionCustomizationTests.cs`
+- 5 `[Fact]` tests covering: null fixture throws, `ThrowingRecursionBehavior` removed, `OmitOnRecursionBehavior` added, recursive type does not throw, works with `FixtureFactory.Create(new RecursionCustomization())`.
+- Uses `AutoFixture.Fixture` (fully qualified) because `Fixture` is also a namespace in the test project — namespace collision pitfall to remember.
+
+**Build result:** 0 errors, 0 warnings, 61/61 tests green.
