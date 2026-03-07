@@ -10,8 +10,10 @@ namespace Cabazure.Test;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The collection is pre-seeded with <see cref="AutoNSubstituteCustomization"/> as the
-/// first entry. Customizations are applied in the order they appear in the collection.
+/// The collection is pre-seeded with <see cref="AutoNSubstituteCustomization"/>,
+/// <see cref="RecursionCustomization"/>, and <see cref="ImmutableCollectionCustomization"/>
+/// as the first three entries. Customizations are applied in the order they appear in
+/// the collection.
 /// </para>
 /// <para>
 /// Register project-wide customizations from a <c>[ModuleInitializer]</c>:
@@ -34,7 +36,12 @@ public sealed class FixtureCustomizationCollection : IEnumerable<ICustomization>
 
     internal FixtureCustomizationCollection()
     {
-        customizations = [new AutoNSubstituteCustomization()];
+        customizations =
+        [
+            new AutoNSubstituteCustomization(),
+            new RecursionCustomization(),
+            new ImmutableCollectionCustomization(),
+        ];
     }
 
     /// <summary>Gets the number of customizations currently in the collection.</summary>
