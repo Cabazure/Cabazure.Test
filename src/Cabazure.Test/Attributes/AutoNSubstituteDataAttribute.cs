@@ -39,51 +39,11 @@ public sealed class AutoNSubstituteDataAttribute : DataAttribute
 
         var fixture = new SutFixture();
         var parameters = testMethod.GetParameters();
-        var values = ResolveParameters(fixture, parameters);
+        var values = AutoNSubstituteDataHelper.MergeValues(fixture, parameters, []);
         IReadOnlyCollection<ITheoryDataRow> result = [new TheoryDataRow(values)];
         return new ValueTask<IReadOnlyCollection<ITheoryDataRow>>(result);
     }
 
     /// <inheritdoc />
     public override bool SupportsDiscoveryEnumeration() => true;
-
-    private static object[] ResolveParameters(SutFixture fixture, ParameterInfo[] parameters)
-    {
-        var values = new object[parameters.Length];
-
-        for (var i = 0; i < parameters.Length; i++)
-        {
-            var parameter = parameters[i];
-            var isFrozen = parameter.GetCustomAttribute<FrozenAttribute>() is not null;
-
-            var value = CreateValue(fixture, parameter.ParameterType);
-            values[i] = value;
-
-            if (isFrozen)
-            {
-                FreezeValue(fixture, parameter.ParameterType, value);
-            }
-        }
-
-        return values;
-    }
-
-    private static object CreateValue(SutFixture fixture, Type type)
-    {
-        var createMethod = typeof(SutFixture)
-            .GetMethod(nameof(SutFixture.Create))!
-            .MakeGenericMethod(type);
-        return createMethod.Invoke(fixture, null)!;
-    }
-
-    private static void FreezeValue(SutFixture fixture, Type type, object value)
-    {
-        var freezeMethod = typeof(SutFixture)
-            .GetMethods()
-            .First(m => m.Name == nameof(SutFixture.Freeze)
-                        && m.GetParameters().Length == 1
-                        && m.GetParameters()[0].ParameterType.IsGenericParameter)
-            .MakeGenericMethod(type);
-        freezeMethod.Invoke(fixture, [value]);
-    }
 }

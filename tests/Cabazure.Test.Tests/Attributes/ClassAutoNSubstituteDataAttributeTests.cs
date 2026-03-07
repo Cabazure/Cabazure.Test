@@ -1,0 +1,64 @@
+using System.Collections;
+using Cabazure.Test.Attributes;
+using Cabazure.Test.Tests.Fixture;
+using FluentAssertions;
+using Xunit;
+
+namespace Cabazure.Test.Tests.Attributes;
+
+public class ClassAutoNSubstituteDataAttributeTests
+{
+    [Theory]
+    [ClassAutoNSubstituteData(typeof(SingleColumnData))]
+    public void ClassData_ProvidesRows(
+        string value,
+        SutFixtureTests.IMyInterface service)
+    {
+        value.Should().BeOneOf("hello", "world");
+        service.Should().NotBeNull();
+    }
+
+    [Theory]
+    [ClassAutoNSubstituteData(typeof(MultiColumnData))]
+    public void ClassData_MultipleColumns_ArePassedThrough(
+        string message,
+        int count,
+        SutFixtureTests.IMyInterface service)
+    {
+        message.Should().BeOneOf("hello", "world");
+        count.Should().BeOneOf(1, 2);
+        service.Should().NotBeNull();
+    }
+
+    [Theory]
+    [ClassAutoNSubstituteData(typeof(SingleColumnData))]
+    public void FrozenAutoParameter_InjectsSameInstanceIntoSut(
+        string _,
+        [Frozen] SutFixtureTests.IMyInterface service,
+        SutFixtureTests.MyServiceWithDependency sut)
+    {
+        sut.Dependency.Should().BeSameAs(service);
+    }
+}
+
+public class SingleColumnData : IEnumerable<object[]>
+{
+    public IEnumerator<object[]> GetEnumerator()
+    {
+        yield return ["hello"];
+        yield return ["world"];
+    }
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+}
+
+public class MultiColumnData : IEnumerable<object[]>
+{
+    public IEnumerator<object[]> GetEnumerator()
+    {
+        yield return ["hello", 1];
+        yield return ["world", 2];
+    }
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+}
