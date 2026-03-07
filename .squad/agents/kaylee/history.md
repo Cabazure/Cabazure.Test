@@ -9,38 +9,11 @@
 
 My domain is the guts of the library: AutoFixture customizations, the `ISpecimenBuilder` that routes interface/abstract-class requests to NSubstitute. Key challenge: AutoFixture doesn't natively create substitutes for abstract/interface types; we bridge that via `AutoNSubstituteCustomization`.
 
-### Completed Phases (2026-03-07, Phases 1-12)
+**Completed Work Summary (Phases 1-13):**
 
-**Library Architecture:**
-- `AutoNSubstituteCustomization` — routes interface/abstract-class requests to NSubstitute via `ConfigureMembers=true` + `GenerateDelegates=true`
-- `FixtureFactory.Create()` — static factory (replaces old SutFixture class); supports custom `ICustomization[]` parameter
-- Four data attributes: `AutoNSubstituteData`, `InlineAutoNSubstituteData`, `MemberAutoNSubstituteData`, `ClassAutoNSubstituteData`
+Architecture: `FixtureFactory.Create()` static factory + 4 data attributes + 7 customizations (AutoNSubstitute, Recursion, ImmutableCollection, DateOnlyTimeOnly, JsonElement, TypeCustomization, CancellationToken, SpecimenRequestHelper). 5 registered as defaults. Refactored away `SutFixture`/`SutFixtureCustomizations` classes. Applied camelCase field naming. All tests migrated; 152+ tests passing. Data attribute pipeline: live fixture injection (Phase 12) + disposal tracking (Phase 15) + ParameterInfo refactor (Phase 13). NSubstitute integration: custom argument matchers (FluentArg + ReceivedCallExtensions, Phase 16) + async call waiting (WaitForReceivedExtensions, Phase 18). Key patterns: SpecimenContext for zero-reflection creation, CancellationToken(false) non-cancellation default, PropertyInfo requirement, JsonElement cloning, IFixture injection before CreateValue.
 
-**Customizations Completed:**
-- `RecursionCustomization` — replaces throwing with omit-on-recursion behavior
-- `ImmutableCollectionCustomization` — handles all 8 immutable collection types (List, Array, Set, Queue, Stack, etc.)
-- `DateOnlyTimeOnlyCustomization` — generates valid DateOnly/TimeOnly from random DateTime (fixes AutoFixture gap)
-- `JsonElementCustomization` — creates cloned JsonElements (requires `.Clone()` for safety post-GC)
-- `TypeCustomization<T>` — generic factory pattern; `Add<T>(Func<IFixture, T>)` convenience method
-- `SpecimenRequestHelper` — extracted public static helper for pattern-matching request types
-- `CancellationTokenCustomization` — returns `new CancellationToken(false)`; prevents AutoFixture dominant-value footgun (already-cancelled token); registered as 5th default
-
-**Defaults Seeding:**
-- `FixtureCustomizationCollection` seeds 5 defaults: AutoNSubstitute, Recursion, ImmutableCollection, DateOnlyTimeOnly, CancellationToken
-- `JsonElementCustomization` remains opt-in (not in defaults)
-
-**Refactoring Complete:**
-- Removed `SutFixture` class, `SutFixtureCustomizations` static class
-- Consolidated via `FixtureFactory` + `FixtureFactory.Customizations` (FixtureCustomizationCollection)
-- Applied organization-wide field naming: private fields/statics use plain camelCase (no `_`/`s_` prefix)
-- All tests migrated to `FixtureFactory` API; 122 tests passing (as of Phase 12)
-
-**Data Attribute Pipeline (Phase 12):**
-- `AutoNSubstituteDataHelper.MergeValues` injects live fixture instance when `parameter.ParameterType.IsAssignableFrom(typeof(Fixture))` — covers both `IFixture` and `Fixture`
-- `[Frozen]` on `IFixture` parameters is a no-op; fixture is injected, not frozen into the specimen container
-- Injection branch runs before `CreateValue`, ensuring fixture is always the actual live instance
-
-## Learnings
+## Recent Work
 
 ### Phase 14-15: DisposalTracker Integration (2026-03-07)
 
@@ -208,6 +181,38 @@ My domain is the guts of the library: AutoFixture customizations, the `ISpecimen
 - Orchestration logs: `.squad/orchestration-log/2026-03-07T20-22-30Z-kaylee.md` & `.squad/orchestration-log/2026-03-07T20-22-30Z-zoe.md`
 - Session log: `.squad/log/2026-03-07T20-22-30Z-phase-13-waitforreceived.md`
 - Decision merge: kaylee-waitforreceived.md → `.squad/decisions.md` (Decision #23)
+- Cross-agent history updates: Appended to both Kaylee and Zoe history
+
+### Phase 14: ProtectedMethodExtensions (2026-03-07T20:36:00Z)
+
+**Task:** Implement `ProtectedMethodExtensions` — reflection-based test utility for invoking protected instance methods.
+
+**Implementation:**
+- File: `src/Cabazure.Test/ProtectedMethodExtensions.cs` (~180 lines)
+- Four overloads: `InvokeProtected`, `InvokeProtected<TResult>`, `InvokeProtectedAsync`, `InvokeProtectedAsync<TResult>`
+- Single code path per arity: void delegates to `<object>`, async-void delegates to async-typed
+- ExceptionDispatchInfo unwrapping for clean exception stacks (no TargetInvocationException wrapper)
+- Two-stage overload resolution: parameter count → type compatibility
+- BindingFlags: NonPublic | Instance | FlattenHierarchy; filters `!IsPrivate` for inherited protected members
+
+**Design Decisions (Decision #24-25):**
+1. Void overload delegates to generic overload (single code path)
+2. ExceptionDispatchInfo for stack trace preservation
+3. Two-stage overload disambiguation (count → type compat)
+4. BindingFlags strategy for inclusive member lookup
+
+**Cross-team:** Zoe writing test coverage in parallel; wrote 162 tests, all passing (Zoe also created implementation as squad unblock, confirming the design).
+
+**Build:** Clean. Tests: 162/162 passing.
+
+### Phase 14 Orchestration (2026-03-07T20:36:00Z)
+
+**Task:** Scribe logging and decision merge for ProtectedMethodExtensions completion.
+
+**Deliverables:**
+- Orchestration logs: `.squad/orchestration-log/2026-03-07T20-36-00Z-kaylee.md` & `.squad/orchestration-log/2026-03-07T20-36-00Z-zoe.md`
+- Session log: `.squad/log/2026-03-07T20-36-00Z-phase14-protected-methods.md`
+- Decision merge: kaylee-protected-method-design.md & zoe-protected-method-tests.md → `.squad/decisions.md` (Decisions #24-25)
 - Cross-agent history updates: Appended to both Kaylee and Zoe history
 
 **Status:** ✅ Complete

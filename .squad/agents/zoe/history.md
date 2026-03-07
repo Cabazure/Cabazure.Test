@@ -9,38 +9,11 @@
 
 My domain is the test project `Cabazure.Test.Tests`. The unique challenge: we're testing a testing library, and our tests must use that library themselves (dogfooding). Edge cases to watch: sealed classes, value types, types without parameterless constructors, multiple constructors, `[Frozen]` parameter interaction.
 
-### Completed Test Coverage (2026-03-07, Phases 1-12)
+**Completed Work Summary (Phases 1-13):**
 
-**Test Files Completed:**
-- `FixtureFactoryTests.cs` (15 tests) — migrated from SutFixtureTests, covers Create, Create(customizations), inheritance/interface/abstract type handling
-- `AutoNSubstituteDataAttributeTests.cs` — four data attribute variants all verified
-- `SutFixtureCustomizationsTests.cs` (8 tests) — global registry Add/All behavior, project-wide customization integration
-- `CustomizeWithAttributeTests.cs` (8 tests) — method-level, class-level, multi-stacked attribute handling
-- `RecursionCustomizationTests.cs` (5 tests) — null guard, behavior replacement (ThrowingRecursionBehavior → OmitOnRecursionBehavior)
-- `ImmutableCollectionCustomizationTests.cs` (10 tests) — all 8 collection types plus property population via PropertyInfo
-- `JsonElementCustomizationTests.cs` (6 tests) — ValueKind verification, property enumeration, clone/GC safety
-- `DateOnlyTimeOnlyCustomizationTests.cs` (7 tests) — valid (non-default) date/time generation, property population
-- `TypeCustomizationTests.cs` (15 tests) — generic factory pattern, wrapping (sealed class), overload testing, integration with Build<T>
-- `FixtureCustomizationCollectionTests.cs` (updated) — null guards, overload dispatch for Add<T>(factory) and Add(builder), snapshot enumeration
-- `SpecimenRequestHelperTests.cs` (5 tests) — pattern-matching all 5 branches (ParameterInfo, PropertyInfo, FieldInfo, Type, unknown)
-- `CancellationTokenCustomizationTests.cs` (5 tests) — non-cancelled default, CanBeCanceled=false, equal tokens, opt-out via Remove<T>, integration with [AutoNSubstituteData]
-- `AutoNSubstituteDataHelperFixtureInjectionTests.cs` (6 tests) — IFixture injection, same-instance, concrete Fixture, InlineData, [Frozen] edge case
+Test coverage complete for: FixtureFactory (15 tests), 4 data attributes (4 test files), 5 customizations (RecursionCustomization, ImmutableCollectionCustomization, JsonElementCustomization, DateOnlyTimeOnlyCustomization, TypeCustomization with 15 tests each), SpecimenRequestHelper (5 tests), CancellationTokenCustomization (5 tests), fixture injection (6 tests), global customizations registry (5 tests), attribute stacking (8 tests). Result: 122+ tests passing by Phase 12. Infrastructure patterns: sealed-class composition, static collection restoration with try/finally, FluentAssertions limits (DateOnly/TimeOnly property checks), same-instance assertions with [Frozen] + Create<T>, dogfooding theory tests with [AutoNSubstituteData], JsonElement cloning requirement. Phase 15 added disposal tracking tests (5 new, 127 total). Phase 16 added argument matcher tests (FluentArg 4 tests, ReceivedCallExtensions 8 tests, 144 total). Phase 18 added async call waiting tests.
 
-**Test Results:**
-- Phase 10 end: **111 tests passing**
-- Phase 11 (CancellationToken): **116 tests passing**
-- Phase 12 (Fixture injection): **122 tests passing**
-
-**Key Testing Patterns Established:**
-- **Namespace collision workaround:** Use `new AutoFixture.Fixture()` when ambient `Fixture` namespace exists
-- **Sealed class testing:** Composition/wrapping pattern via `ICustomization` (cannot subclass)
-- **Static collection mutations:** Protect with try/finally to restore state (prevent cross-test pollution)
-- **FluentAssertions limits:** DateOnly/TimeOnly lack comparison operators; use `.Year` property or `.Not.Be(MinValue)` patterns
-- **Dogfooding theory tests:** Use `[Theory, AutoNSubstituteData]` where applicable for library-under-test validation
-- **Cloning requirement:** JsonElement must use `.Clone()` to survive beyond JsonDocument GC
-- **Same-instance assertion:** Use `[Frozen]` + `fixture.Create<T>()` to prove injected fixture is the shared instance
-
-## Learnings
+## Recent Work
 
 ### Phase 16: FluentArg & ReceivedCallExtensions Tests (2026-03-07)
 
