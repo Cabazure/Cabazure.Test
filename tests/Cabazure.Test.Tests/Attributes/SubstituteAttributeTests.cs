@@ -1,7 +1,6 @@
 using AutoFixture;
 using AutoFixture.AutoNSubstitute;
 using FrozenAttribute = AutoFixture.Xunit3.FrozenAttribute;
-using Cabazure.Test.Attributes;
 using Cabazure.Test.Tests.Fixture;
 using FluentAssertions;
 using NSubstitute;

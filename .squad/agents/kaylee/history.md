@@ -259,3 +259,26 @@ The `throw;` after `.Throw()` is unreachable at runtime but required so the comp
 - 6 files changed. Build clean, 184/184 tests passing.
 
 **Design note:** Extension method on `IFixture` reads more naturally at the call site (`fixture.MergeValues(...)`) and keeps the method discoverable via IDE autocomplete on fixture instances.
+
+### Phase 22 Part 1: Namespace Consolidation (2026-03-08)
+
+**Task:** Consolidate namespaces so `using Cabazure.Test;` is the only import needed for test authors.
+
+**Implementation (Part 1):**
+1. Changed namespace from `Cabazure.Test.Attributes` → `Cabazure.Test` in 5 public attribute files:
+   - `AutoNSubstituteDataAttribute.cs`
+   - `InlineAutoNSubstituteDataAttribute.cs`
+   - `MemberAutoNSubstituteDataAttribute.cs`
+   - `ClassAutoNSubstituteDataAttribute.cs`
+   - `CustomizeWithAttribute.cs`
+2. Added `using Cabazure.Test.Attributes;` to those 5 files to access internal `FixtureDataExtensions.MergeValues` extension method
+3. Moved `FixtureCustomizationCollection`:
+   - From: `src/Cabazure.Test/FixtureCustomizationCollection.cs` (namespace `Cabazure.Test`)
+   - To: `src/Cabazure.Test/Customizations/FixtureCustomizationCollection.cs` (namespace `Cabazure.Test.Customizations`)
+   - Updated `FixtureFactory.cs` using: `Cabazure.Test.Attributes` → `Cabazure.Test.Customizations`
+
+**Why:** FixtureCustomizationCollection is accessed via `FixtureFactory.Customizations` (module initializer pattern), not directly in test methods. Placing it in the `Customizations` sub-namespace reduces root-level noise while keeping the public types (attributes) in `Cabazure.Test` where test authors expect them.
+
+**Build:** Clean ✅ (src project verified; tests will need using updates in Part 2)
+
+**Internal detail preserved:** `FixtureDataExtensions` remains `internal` in `Cabazure.Test.Attributes` namespace — no user-visible impact. The public attributes now live in `Cabazure.Test` and explicitly import `Cabazure.Test.Attributes` to access the helper.

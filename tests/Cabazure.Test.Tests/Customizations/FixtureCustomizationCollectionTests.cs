@@ -1,7 +1,7 @@
 using System.Collections;
 using AutoFixture;
 using AutoFixture.AutoNSubstitute;
-using Cabazure.Test.Attributes;
+using Cabazure.Test.Customizations;
 using FluentAssertions;
 using Xunit;
 

@@ -1,9 +1,8 @@
 using System.Collections;
 using AutoFixture;
 using AutoFixture.Kernel;
-using Cabazure.Test.Customizations;
 
-namespace Cabazure.Test;
+namespace Cabazure.Test.Customizations;
 
 /// <summary>
 /// An ordered, thread-safe collection of <see cref="ICustomization"/> instances applied

@@ -1,10 +1,11 @@
 using System.Collections;
 using System.Reflection;
+using Cabazure.Test.Attributes;
 using Xunit;
 using Xunit.Sdk;
 using Xunit.v3;
 
-namespace Cabazure.Test.Attributes;
+namespace Cabazure.Test;
 
 /// <summary>
 /// An xUnit 3 data attribute that provides theory test method arguments by reading rows

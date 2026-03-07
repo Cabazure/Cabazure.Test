@@ -1,6 +1,6 @@
 using AutoFixture;
 
-namespace Cabazure.Test.Attributes;
+namespace Cabazure.Test;
 
 /// <summary>
 /// Applies a per-test or per-class <see cref="ICustomization"/> to the <see cref="IFixture"/> created for that test.

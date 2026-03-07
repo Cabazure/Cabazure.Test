@@ -1,7 +1,7 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using AutoFixture;
-using Cabazure.Test.Attributes;
+using Cabazure.Test.Customizations;
 
 namespace Cabazure.Test;
 

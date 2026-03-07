@@ -46,7 +46,7 @@ The returned `IFixture` supports the full AutoFixture API: `fixture.Create<T>()`
 
 ### Data Attributes
 
-Four xUnit 3 `DataAttribute` implementations for `[Theory]` tests, all backed by `FixtureFactory`:
+Four xUnit 3 `DataAttribute` implementations for `[Theory]` tests, all backed by `FixtureFactory`. All are in the `Cabazure.Test` namespace:
 
 - `[AutoNSubstituteData]` — all parameters auto-generated from the fixture.
 - `[InlineAutoNSubstituteData(value1, value2)]` — leading parameters provided inline, rest auto-generated.
@@ -71,9 +71,11 @@ All support `[Frozen]` parameters — a frozen parameter is registered in the fi
 
 ### Project-Wide Customizations (`FixtureFactory.Customizations`)
 
-`FixtureFactory.Customizations` is an ordered `FixtureCustomizationCollection` pre-seeded with `AutoNSubstituteCustomization`. Register project-wide customizations using `[ModuleInitializer]`:
+`FixtureFactory.Customizations` is an ordered `FixtureCustomizationCollection` (in `Cabazure.Test.Customizations`) pre-seeded with `AutoNSubstituteCustomization`. Register project-wide customizations using `[ModuleInitializer]`:
 
 ```csharp
+using Cabazure.Test;
+
 internal static class TestInitializer
 {
     [ModuleInitializer]
@@ -93,6 +95,8 @@ Apply a customization to a specific test method or class:
 [Theory, AutoNSubstituteData]
 public void MyTest(MyService sut) { ... }
 ```
+
+`[CustomizeWith]` is in the `Cabazure.Test` namespace.
 
 ### FluentAssertions Extensions (`Assertions/`)
 
@@ -187,11 +191,10 @@ Extensions for invoking `protected` methods on substitutes via reflection, enabl
 src/
   Cabazure.Test/
     Assertions/          ← FA extension methods (JsonElementAssertions, DateTimeOffsetExtensions, StringContentExtensions)
-    Attributes/          ← [AutoNSubstituteData] family and supporting attributes
-    Customizations/      ← AutoFixture customizations (AutoNSubstituteCustomization, etc.)
+    Attributes/          ← Internal support (FixtureDataExtensions) — no public types
+    Customizations/      ← AutoFixture customizations, including FixtureCustomizationCollection
     AssemblyInfo.cs         ← [InternalsVisibleTo] declarations
     CabazureAssertionOptions.cs  ← Global precision options (lives in DateTimeOffsetExtensions.cs)
-    FixtureCustomizationCollection.cs
     FixtureFactory.cs       ← Public fixture factory
     FluentArg.cs            ← NSubstitute × FluentAssertions argument matcher
     ProtectedMethodExtensions.cs

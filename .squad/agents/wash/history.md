@@ -155,3 +155,24 @@ Documentation Impact:
 - Examples: Runnable, idiomatic C# with proper patterns using raw string literals
 - Maintenance: Documented contract for future API changes
 - Discoverability: Seamlessly integrated between DateTimeOffset and Compatibility sections
+
+### Phase 22: Namespace Consolidation (part 2 of 2) — Using Statement Updates (2026-03-10)
+
+Task: Update all `using` statements across the codebase after Kaylee moved 5 public attribute types from `Cabazure.Test.Attributes` → `Cabazure.Test` and `FixtureCustomizationCollection` to `Cabazure.Test.Customizations`.
+
+Implementation:
+- Identified 15 test files with stale `using Cabazure.Test.Attributes;` statements
+- Removed `using Cabazure.Test.Attributes;` from all test files (no longer needed since attribute types are now in `Cabazure.Test`)
+- Removed `using Cabazure.Test.Attributes;` from 3 code examples in README.md
+- Added `using Cabazure.Test.Customizations;` to `FixtureCustomizationCollectionTests.cs` (needed for direct `FixtureCustomizationCollection` usage)
+- Preserved `using Cabazure.Test.Attributes;` in the 4 attribute source files themselves (AutoNSubstituteDataAttribute, ClassAutoNSubstituteDataAttribute, InlineAutoNSubstituteDataAttribute, MemberAutoNSubstituteDataAttribute) — they need it to access internal `FixtureDataExtensions.MergeValues` helper
+- Verified that all files using `FixtureCustomizationCollection` have `using Cabazure.Test.Customizations;`
+
+Build Result: ✅ GREEN — `dotnet build` succeeded with no errors
+
+Key Insight:
+- The 4 public attribute classes that now live in `Cabazure.Test` namespace still need `using Cabazure.Test.Attributes;` internally to access the internal `FixtureDataExtensions` helper that remained in the `Attributes` namespace
+- User-facing code (tests, documentation examples) no longer needs `using Cabazure.Test.Attributes;` — all public types are in `Cabazure.Test`
+- `FixtureCustomizationCollection` moved to `Cabazure.Test.Customizations` and required adding that using directive where directly referenced
+
+Cross-team: Kaylee completed Phase 22 part 1 (namespace declarations); this work completes part 2 (using statements).

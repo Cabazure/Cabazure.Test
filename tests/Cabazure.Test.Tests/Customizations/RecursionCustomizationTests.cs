@@ -1,5 +1,4 @@
 using AutoFixture;
-using Cabazure.Test.Attributes;
 using Cabazure.Test.Customizations;
 using FluentAssertions;
 using Xunit;

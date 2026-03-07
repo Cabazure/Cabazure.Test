@@ -71,7 +71,6 @@ For theory-driven tests, `[AutoNSubstituteData]` resolves all parameters from a 
 
 ```csharp
 using AutoFixture.Xunit3;
-using Cabazure.Test.Attributes;
 using FluentAssertions;
 using NSubstitute;
 using Xunit;
@@ -101,7 +100,6 @@ Combine explicit inline values with auto-generated parameters. Inline values fil
 
 ```csharp
 using AutoFixture.Xunit3;
-using Cabazure.Test.Attributes;
 using FluentAssertions;
 using NSubstitute;
 using Xunit;
@@ -144,7 +142,6 @@ Apply a customization to a single test method or an entire test class without to
 
 ```csharp
 using AutoFixture.Xunit3;
-using Cabazure.Test.Attributes;
 using Cabazure.Test.Customizations;
 using FluentAssertions;
 using NSubstitute;
