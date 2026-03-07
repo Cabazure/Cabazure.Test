@@ -422,6 +422,102 @@ public class OrderProcessor
 
 ---
 
+## FluentAssertions Extensions
+
+**Cabazure.Test** extends FluentAssertions with domain-specific assertions for JSON and datetime operations. All extensions are available via `using Cabazure.Test;` — no additional using directives are required.
+
+### JsonElement Comparison
+
+`JsonElementAssertions` provides methods to compare `System.Text.Json.JsonElement` instances against other elements or raw JSON strings. Comparisons are performed by normalizing both sides through serialization, ensuring structure equivalence regardless of whitespace or key ordering in the source.
+
+#### Comparing two JsonElements
+
+```csharp
+using Cabazure.Test;
+using FluentAssertions;
+using System.Text.Json;
+
+var element1 = JsonDocument.Parse("""{"name":"Alice","age":30}""").RootElement;
+var element2 = JsonDocument.Parse("""{"age":30,"name":"Alice"}""").RootElement;
+
+element1.Should().BeEquivalentTo(element2);  // ✓ Passes — same content, different key order
+```
+
+#### Comparing a JsonElement against a JSON string
+
+```csharp
+using Cabazure.Test;
+using FluentAssertions;
+using System.Text.Json;
+
+var element = JsonDocument.Parse("""{"status":"active"}""").RootElement;
+
+element.Should().BeEquivalentTo("""{"status":"active"}""");  // ✓ Passes — direct comparison
+```
+
+#### Important notes
+
+- **Array order is significant** — `[1, 2, 3]` and `[3, 2, 1]` are not equivalent.
+- **Object key order is preserved** — Key order from the serialized JSON is maintained during comparison, but does not affect equivalence (only content matters).
+
+### DateTimeOffset Precision
+
+`DateTimeOffsetExtensions` provides `BeCloseTo` and `NotBeCloseTo` methods for asserting that two `DateTimeOffset` values are within a specified precision tolerance. A project-wide default precision can be configured once using `[ModuleInitializer]`.
+
+#### Using default precision
+
+By default, `CabazureAssertionOptions.DateTimeOffsetPrecision` is set to **1 second**. Assert two values without specifying a tolerance:
+
+```csharp
+using Cabazure.Test;
+using FluentAssertions;
+
+[Fact]
+public void OrderTimestamp_IsRecent()
+{
+    var now = DateTimeOffset.UtcNow;
+    var order = new Order { CreatedAt = now.AddMilliseconds(500) };
+
+    order.CreatedAt.Should().BeCloseTo(now);  // ✓ Passes — within default 1 second
+}
+```
+
+#### Using explicit precision
+
+Provide a custom precision in milliseconds for a single assertion:
+
+```csharp
+using Cabazure.Test;
+using FluentAssertions;
+
+var time1 = new DateTimeOffset(2026, 3, 10, 12, 0, 0, TimeSpan.Zero);
+var time2 = new DateTimeOffset(2026, 3, 10, 12, 0, 0, 100, TimeSpan.Zero);
+
+time1.Should().BeCloseTo(time2, 200);  // ✓ Passes — within 200 milliseconds
+time1.Should().NotBeCloseTo(time2, 50);  // ✓ Passes — difference is 100ms, beyond 50ms
+```
+
+#### Configuring project-wide precision
+
+Set `CabazureAssertionOptions.DateTimeOffsetPrecision` once in a `[ModuleInitializer]` to change the default for all tests in the assembly:
+
+```csharp
+using System.Runtime.CompilerServices;
+using Cabazure.Test;
+
+internal static class TestAssemblyInitializer
+{
+    [ModuleInitializer]
+    public static void Initialize()
+    {
+        // All BeCloseTo/NotBeCloseTo calls now default to 100ms tolerance
+        CabazureAssertionOptions.DateTimeOffsetPrecision = 100;
+    }
+}
+```
+
+---
+
 ## Compatibility
 
 - **.NET 9+** (`net9.0`)
