@@ -227,3 +227,22 @@ My domain is the test project `Cabazure.Test.Tests`. The unique challenge: we're
 **Build Status:** ✅ Compiles clean (`dotnet build tests\Cabazure.Test.Tests\Cabazure.Test.Tests.csproj`, 0 errors, 0 warnings after fixing FluentAssertions DateOnly comparison issue)
 
 **Not Run:** Tests not executed yet — Kaylee is implementing the customization source files in parallel.
+
+### Session Integration — JsonElement & DateOnly/TimeOnly Customizations (2026-03-07)
+
+**Cross-Team Update from Kaylee:**
+- Kaylee completed implementation of both customizations (`JsonElementCustomization` and `DateOnlyTimeOnlyCustomization`)
+- Updated `FixtureCustomizationCollection` to seed `DateOnlyTimeOnlyCustomization` by default (opt-in for `JsonElementCustomization`)
+- Updated README with full documentation and usage examples
+- Committed: `feat(customizations): add JsonElementCustomization and DateOnlyTimeOnlyCustomization`
+
+**Test Execution Result:**
+- All 91 tests passing (13 new from this session + 78 existing)
+- No test failures or gaps detected
+- Code/test alignment is complete
+
+**Decisions Merged into `.squad/decisions.md`:**
+- Decision #10: DateOnly/TimeOnly and JsonElement Customization Defaults
+- Decision #11: Test Coverage for JsonElement and DateOnly/TimeOnly Customizations
+
+**Status:** Both customizations production-ready. Full alignment between implementation and test coverage achieved.

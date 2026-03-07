@@ -219,3 +219,17 @@ Updated `.github/copilot-instructions.md` to reflect post-Phase-8 library state:
 - Documented default vs opt-in behavior and provided usage examples for `JsonElementCustomization`.
 
 **Build result:** 0 errors, 0 warnings. Tests pending Zoe's completion.
+
+### Session Integration — JsonElement & DateOnly/TimeOnly Customizations (2026-03-07)
+
+**Cross-Team Update from Zoe:**
+- Zoe completed comprehensive test coverage (13 new test methods) for both customizations
+- All 91 tests passing (13 new + 78 existing)
+- Test files created: `JsonElementCustomizationTests.cs` and `DateOnlyTimeOnlyCustomizationTests.cs`
+- Key learning shared: FluentAssertions 7.0 lacks DateOnly/TimeOnly comparison operators; workarounds documented
+
+**Decisions Merged into `.squad/decisions.md`:**
+- Decision #10: DateOnly/TimeOnly and JsonElement Customization Defaults
+- Decision #11: Test Coverage for JsonElement and DateOnly/TimeOnly Customizations
+
+**Status:** Both customizations ready for production. Code and tests fully aligned, no gaps.

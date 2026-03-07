@@ -419,6 +419,85 @@ Users of `FixtureFactory.Create()` with no arguments should get a fixture that w
 
 ---
 
+### 10. DateOnly/TimeOnly and JsonElement Customization Defaults
+
+**Date:** 2026-03-07  
+**Author:** Kaylee (Core Dev)  
+**Status:** Approved
+
+#### Decision
+
+`DateOnlyTimeOnlyCustomization` is added to the default seed in `FixtureCustomizationCollection`.  
+`JsonElementCustomization` is opt-in only (not seeded by default).
+
+#### Rationale
+
+**DateOnlyTimeOnlyCustomization → Default:**
+- `DateOnly` and `TimeOnly` are part of the core .NET API surface (introduced .NET 6, now in .NET 9)
+- AutoFixture **cannot** create `DateOnly` without a customization (throws `ArgumentOutOfRangeException`)
+- `TimeOnly` technically works but produces useless values (ticks ≈ 0, always midnight)
+- These types are common in modern .NET codebases (date-only fields, time-of-day properties)
+- Adding this to defaults aligns with `RecursionCustomization` and `ImmutableCollectionCustomization` — all three fix AutoFixture gaps that affect broad categories of types
+
+**JsonElementCustomization → Opt-In:**
+- `JsonElement` is a specialized type from `System.Text.Json` — not everyone uses it
+- Adding it to defaults would add `System.Text.Json` namespace references and processing to every fixture even if the project doesn't use `JsonElement`
+- Keeping it opt-in follows the principle of least surprise — users explicitly add it when they need it
+
+#### Alternatives Considered
+
+1. **Make both opt-in:** Rejected — `DateOnly`/`TimeOnly` are core .NET types, not optional like `JsonElement`
+2. **Make both default:** Rejected — pollutes fixtures for projects that don't use `JsonElement`
+
+#### Implementation
+
+- `FixtureCustomizationCollection` constructor now seeds four customizations: `AutoNSubstituteCustomization`, `RecursionCustomization`, `ImmutableCollectionCustomization`, `DateOnlyTimeOnlyCustomization`
+- `JsonElementCustomization` is documented in README with opt-in instructions
+- Users can remove `DateOnlyTimeOnlyCustomization` via `FixtureFactory.Customizations.Remove<DateOnlyTimeOnlyCustomization>()` if needed
+
+---
+
+### 11. Test Coverage for JsonElement and DateOnly/TimeOnly Customizations
+
+**Proposed by:** Zoe (QA & Testing Lead)  
+**Date:** 2026-03-07  
+**Status:** Approved
+
+#### Decision
+
+Test coverage for type-specific AutoFixture customizations should verify:
+
+1. **Null guard** — `Customize(null!)` throws `ArgumentNullException`
+2. **Type-specific behavior** — Created value meets type semantics (e.g., `JsonElement.ValueKind == Object`, `DateOnly` is not `MinValue`)
+3. **Non-trivial randomness** — Generated values are meaningfully populated (e.g., JsonElement has properties, TimeOnly has non-zero ticks)
+4. **Integration with FixtureFactory** — Customization works via `FixtureFactory.Create(customization)` or `FixtureFactory.Create()` (if in defaults)
+5. **Property-on-object scenario** — Fixture can create an object that has the customized type as a property
+
+#### Rationale
+
+**JsonElementCustomization specific:**
+- `JsonElement` is a struct wrapper around `JsonDocument` — must verify the element is cloned and survives GC
+- Used `GC.Collect()` + `GC.WaitForPendingFinalizers()` to test clone independence
+- Verified `ValueKind` and property enumeration to ensure meaningful content
+
+**DateOnly/TimeOnly specific:**
+- FluentAssertions 7.0 does not provide comparison operators for `DateOnly`/`TimeOnly` types
+- Used workarounds: `result.Year.Should().BeGreaterThan(1)` or `NotBe(MinValue)` patterns
+- Multiple-value randomness check: create 3 values, assert at least one differs from `MinValue`
+
+**General pattern:**
+- Followed `ImmutableCollectionCustomizationTests.cs` structure for consistency
+- Nested test classes (`HasJsonElementProperty`, `HasDateTimeOnlyProperties`) keep helper types scoped
+- Clear test names describe the scenario completely (e.g., `Create_JsonElement_IsClonedAndStandalone`)
+
+#### Impact
+
+- **Coverage:** 13 new test methods across 2 files
+- **Build:** Tests compile successfully (verified with `dotnet build`)
+- **Execution:** All tests passing (91/91)
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus
