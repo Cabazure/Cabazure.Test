@@ -5,15 +5,13 @@
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- CA2255: ModuleInitializer is intentionally used for global xUnit 3 config registration -->
     <NoWarn>$(NoWarn);CA2255</NoWarn>
-    
+
     <!-- NuGet Package Metadata -->
     <PackageId>Cabazure.Test</PackageId>
     <Version>0.1.0</Version>
-    <Authors>Ricky Kaare Engelharth</Authors>
-    <Description>A .NET testing library combining xUnit 3, NSubstitute, AutoFixture, and FluentAssertions for ergonomic unit testing.</Description>
     <PackageTags>testing;xunit;nsubstitute;autofixture;fluentassertions</PackageTags>
-    <RepositoryUrl>https://github.com/Cabazure/Cabazure.Test</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>

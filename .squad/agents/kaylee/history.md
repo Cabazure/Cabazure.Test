@@ -42,7 +42,7 @@ My domain is the guts of the library: `SutFixture`, AutoFixture customizations, 
 ### Phase 7: User-Defined Fixture Customizations
 
 **SutFixtureCustomizations (global registry):**
-- `static class SutFixtureCustomizations` in `Customizations/` namespace — thread-safe via `lock` on a private `object _lock`
+- `static class SutFixtureCustomizations` in `Customizations/` namespace — thread-safe via `lock` on a private `object syncLock`
 - `Add(ICustomization)` is the public surface; `All` is `internal` returning a snapshot copy so callers can't mutate the list
 - Users call `Add()` from `[ModuleInitializer]` for assembly-wide effect
 
@@ -60,3 +60,17 @@ My domain is the guts of the library: `SutFixture`, AutoFixture customizations, 
 **All 4 data attributes updated:**
 - `AutoNSubstituteDataAttribute`, `InlineAutoNSubstituteDataAttribute`, `MemberAutoNSubstituteDataAttribute`, `ClassAutoNSubstituteDataAttribute` all replaced `new SutFixture()` with `AutoNSubstituteDataHelper.CreateFixture(testMethod)`
 - Per-row fixture creation in `Member` and `Class` variants also updated — each row gets its own fully-customized fixture (no cross-row state leakage)
+
+### Coding Style Alignment (Cabazure sibling repos)
+
+**editorconfig / Directory.Build.props / LICENSE:**
+- Replaced root `.editorconfig` with the full Cabazure style (matches Cabazure.Client), with one key difference: private fields use plain `camelcase` (no `_` prefix), private static fields also use `camelcase` (no `s_` prefix).
+- Created `tests/.editorconfig` suppressing test-friendly diagnostics (CA1707, xUnit1051, CA2007, etc.) — keeps test code readable without noise.
+- Created `Directory.Build.props` at repo root providing company-wide metadata (`Authors=Cabazure`, `Description`, `RepositoryUrl`, `DebugSymbols`, `DebugType`, `TreatWarningsAsErrors` in Release, deterministic build on CI).
+- Created `LICENSE` (MIT, Copyright 2024 Cabazure).
+- Removed duplicated properties from `Cabazure.Test.csproj` (`Authors`, `Description`, `RepositoryUrl`) now provided by `Directory.Build.props`. Kept `PackageId`, `Version`, `PackageTags`, `PackageLicenseExpression`, `PackageReadmeFile`, `NoWarn` (CA2255).
+
+**Field naming convention enforced:**
+- `SutFixture.cs`: `_fixture` → `fixture`
+- `SutFixtureCustomizations.cs`: `_customizations` → `customizations`, `_lock` → `syncLock` (reserved keyword avoidance)
+- Build: 0 warnings, 56/56 tests green after all changes.

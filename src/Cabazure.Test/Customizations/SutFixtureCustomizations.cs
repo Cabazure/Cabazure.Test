@@ -26,8 +26,8 @@ namespace Cabazure.Test.Customizations;
 /// </remarks>
 public static class SutFixtureCustomizations
 {
-    private static readonly List<ICustomization> _customizations = [];
-    private static readonly object _lock = new();
+    private static readonly List<ICustomization> customizations = [];
+    private static readonly object syncLock = new();
 
     /// <summary>
     /// Registers a project-wide <see cref="ICustomization"/> that will be applied to every
@@ -44,9 +44,9 @@ public static class SutFixtureCustomizations
     public static void Add(ICustomization customization)
     {
         ArgumentNullException.ThrowIfNull(customization);
-        lock (_lock)
+        lock (syncLock)
         {
-            _customizations.Add(customization);
+            customizations.Add(customization);
         }
     }
 
@@ -55,9 +55,9 @@ public static class SutFixtureCustomizations
     {
         get
         {
-            lock (_lock)
+            lock (syncLock)
             {
-                return [.._customizations];
+                return [..customizations];
             }
         }
     }

@@ -24,7 +24,7 @@ namespace Cabazure.Test.Fixture;
 /// </remarks>
 public sealed class SutFixture
 {
-    private readonly IFixture _fixture;
+    private readonly IFixture fixture;
 
     /// <summary>
     /// Initializes a new instance of <see cref="SutFixture"/> with default configuration.
@@ -46,10 +46,10 @@ public sealed class SutFixture
     public SutFixture(params ICustomization[] customizations)
     {
         ArgumentNullException.ThrowIfNull(customizations);
-        _fixture = new AutoFixture.Fixture();
+        fixture = new AutoFixture.Fixture();
         foreach (var customization in customizations)
         {
-            _fixture.Customize(customization);
+            fixture.Customize(customization);
         }
     }
 
@@ -59,7 +59,7 @@ public sealed class SutFixture
     /// </summary>
     /// <typeparam name="T">The type to create.</typeparam>
     /// <returns>A new instance of <typeparamref name="T"/>.</returns>
-    public T Create<T>() => _fixture.Create<T>();
+    public T Create<T>() => fixture.Create<T>();
 
     /// <summary>
     /// Creates a sequence of instances of <typeparamref name="T"/>.
@@ -67,7 +67,7 @@ public sealed class SutFixture
     /// <typeparam name="T">The type to create.</typeparam>
     /// <param name="count">The number of instances to create. Defaults to 3.</param>
     /// <returns>A sequence of <typeparamref name="T"/> instances.</returns>
-    public IEnumerable<T> CreateMany<T>(int count = 3) => _fixture.CreateMany<T>(count);
+    public IEnumerable<T> CreateMany<T>(int count = 3) => fixture.CreateMany<T>(count);
 
     /// <summary>
     /// Registers a single instance of <typeparamref name="T"/> so that all subsequent
@@ -79,7 +79,7 @@ public sealed class SutFixture
     /// The frozen instance. If <typeparamref name="T"/> is an interface or abstract class,
     /// the returned value is an NSubstitute substitute.
     /// </returns>
-    public T Freeze<T>() where T : class => _fixture.Freeze<T>();
+    public T Freeze<T>() where T : class => fixture.Freeze<T>();
 
     /// <summary>
     /// Registers the specified <paramref name="instance"/> so that all subsequent
@@ -95,7 +95,7 @@ public sealed class SutFixture
     public T Freeze<T>(T instance) where T : class
     {
         ArgumentNullException.ThrowIfNull(instance);
-        _fixture.Inject(instance);
+        fixture.Inject(instance);
         return instance;
     }
 
@@ -111,7 +111,7 @@ public sealed class SutFixture
         Func<ICustomizationComposer<T>, ISpecimenBuilder> composerTransformation)
     {
         ArgumentNullException.ThrowIfNull(composerTransformation);
-        _fixture.Customize<T>(composerTransformation);
+        fixture.Customize<T>(composerTransformation);
     }
 
     /// <summary>
