@@ -64,6 +64,11 @@ All support `[Frozen]` parameters — a frozen parameter is registered in the fi
 - `ImmutableCollectionCustomization` — enables `ImmutableArray<T>`, `ImmutableList<T>`, `ImmutableDictionary<TKey,TValue>`, `ImmutableHashSet<T>`, `ImmutableSortedSet<T>`, `ImmutableSortedDictionary<TKey,TValue>`, `ImmutableQueue<T>`, and `ImmutableStack<T>`.
 - `CancellationTokenCustomization` — applied automatically by `FixtureFactory`; provides non-cancelled `CancellationToken` parameters (`new CancellationToken(false)`). Use `TestContext.Current.CancellationToken` for runner-scoped cancellation in test code; use `CancellationTokenSource` in test body for per-test cancellation scenarios.
 
+### Additional Customizations
+
+- `JsonElementCustomization` — enables AutoFixture to create random `JsonElement` values.
+- `DateOnlyTimeOnlyCustomization` — enables AutoFixture to create `DateOnly` and `TimeOnly` values.
+
 ### Project-Wide Customizations (`FixtureFactory.Customizations`)
 
 `FixtureFactory.Customizations` is an ordered `FixtureCustomizationCollection` pre-seeded with `AutoNSubstituteCustomization`. Register project-wide customizations using `[ModuleInitializer]`:
@@ -89,6 +94,87 @@ Apply a customization to a specific test method or class:
 public void MyTest(MyService sut) { ... }
 ```
 
+### FluentAssertions Extensions (`Assertions/`)
+
+The library extends FluentAssertions with custom assertion methods. All live in `src/Cabazure.Test/Assertions/` and are in the `Cabazure.Test` namespace (no extra `using` needed beyond `using Cabazure.Test;`).
+
+#### `JsonElementAssertions`
+
+Assertions for `System.Text.Json.JsonElement`, accessed via `.Should()` on a `JsonElement`:
+
+- `.BeEquivalentTo(JsonElement expected)` — compares serialized JSON representations (whitespace-normalized).
+- `.NotBeEquivalentTo(JsonElement expected)` — inverse.
+
+```csharp
+jsonElement.Should().BeEquivalentTo(expectedElement);
+```
+
+#### `DateTimeOffsetExtensions` + `CabazureAssertionOptions`
+
+Overloads of `BeCloseTo`/`NotBeCloseTo` that use a configurable default precision instead of requiring an explicit `TimeSpan`:
+
+- `.BeCloseTo(DateTimeOffset nearbyTime)` — uses `CabazureAssertionOptions.DateTimeOffsetPrecision` (default: 1 second).
+- `.BeCloseTo(DateTimeOffset nearbyTime, int precisionMilliseconds)` — explicit millisecond precision.
+- `.NotBeCloseTo(DateTimeOffset distantTime)` — inverse, default precision.
+- `.NotBeCloseTo(DateTimeOffset distantTime, int precisionMilliseconds)` — inverse, explicit.
+
+Configure the default precision in a `[ModuleInitializer]`:
+
+```csharp
+CabazureAssertionOptions.DateTimeOffsetPrecision = TimeSpan.FromMilliseconds(100);
+```
+
+#### `StringContentExtensions`
+
+Format-ignorant string comparison on `StringAssertions` (call `.Should()` on any `string`):
+
+| Method | Normalisation |
+|--------|---------------|
+| `.BeSimilarTo(string expected)` | Trim + collapse `\s+` → single space |
+| `.NotBeSimilarTo(string expected)` | Inverse |
+| `.BeXmlEquivalentTo(string expected)` | `XDocument.Parse` → `ToString(SaveOptions.DisableFormatting)` |
+| `.NotBeXmlEquivalentTo(string expected)` | Inverse |
+| `.BeJsonEquivalentTo(string expected)` | `JsonDocument.Parse` → `JsonSerializer.Serialize` |
+| `.NotBeJsonEquivalentTo(string expected)` | Inverse |
+
+`BeXmlEquivalentTo`/`BeJsonEquivalentTo` propagate `XmlException`/`JsonException` on invalid input — they do **not** swallow parse errors.
+
+```csharp
+responseBody.Should().BeJsonEquivalentTo("""{"name":"Alice","age":30}""");
+xmlPayload.Should().BeXmlEquivalentTo("<root><item>1</item></root>");
+"hello   world".Should().BeSimilarTo("hello world");
+```
+
+### NSubstitute Helpers
+
+#### `FluentArg.Match<T>()`
+
+Creates a NSubstitute argument matcher backed by a FluentAssertions assertion. Use in `Received()` call verifications:
+
+```csharp
+substitute.Received().Process(FluentArg.Match<Request>(r =>
+    r.Name.Should().Be("Alice")));
+```
+
+The method is `Match<T>` (not `Matching`). Assertion failures surface in `ReceivedCallsException` via `IDescribeNonMatches`.
+
+#### `WaitForReceivedExtensions`
+
+Async helpers for verifying calls in concurrent/async code:
+
+- `substitute.WaitForReceived(x => x.Method(args), timeout?)` — waits until the call is received.
+- `substitute.WaitForReceivedWithAnyArgs(x => x.Method(default), timeout?)` — any-args variant.
+
+Default timeout: `WaitForReceivedExtensions.DefaultTimeout` (10 seconds). Override in a `[ModuleInitializer]`.
+
+#### `ReceivedCallExtensions`
+
+Extensions on `ICall` for inspecting received calls (argument extraction, etc.).
+
+#### `ProtectedMethodExtensions`
+
+Extensions for invoking `protected` methods on substitutes via reflection, enabling assertion on protected virtual behaviour.
+
 ### xUnit 3 Specifics
 
 - Prefer `[ModuleInitializer]` (via `AssemblyInitializer`) over `IClassFixture` static constructors for global test setup.
@@ -100,10 +186,17 @@ public void MyTest(MyService sut) { ... }
 ```
 src/
   Cabazure.Test/
+    Assertions/          ← FA extension methods (JsonElementAssertions, DateTimeOffsetExtensions, StringContentExtensions)
     Attributes/          ← [AutoNSubstituteData] family and supporting attributes
     Customizations/      ← AutoFixture customizations (AutoNSubstituteCustomization, etc.)
-    AssemblyInitializer.cs  ← [ModuleInitializer] entry point
+    AssemblyInfo.cs         ← [InternalsVisibleTo] declarations
+    CabazureAssertionOptions.cs  ← Global precision options (lives in DateTimeOffsetExtensions.cs)
+    FixtureCustomizationCollection.cs
     FixtureFactory.cs       ← Public fixture factory
+    FluentArg.cs            ← NSubstitute × FluentAssertions argument matcher
+    ProtectedMethodExtensions.cs
+    ReceivedCallExtensions.cs
+    WaitForReceivedExtensions.cs
 tests/
   Cabazure.Test.Tests/   ← Library's own tests — uses the library (dogfooding required)
 ```
@@ -136,6 +229,7 @@ All commits must follow [Conventional Commits](https://www.conventionalcommits.o
 **Types:** `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `perf`, `ci`
 
 **Scopes** (use the relevant one):
+- `assertions` — FluentAssertions extension methods (`Assertions/` folder)
 - `fixture` — FixtureFactory and fixture configuration
 - `attributes` — DataAttribute and xUnit 3 integration
 - `customizations` — AutoFixture customizations
