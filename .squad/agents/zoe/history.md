@@ -217,6 +217,44 @@ Test coverage complete for: FixtureFactory (15 tests), 4 data attributes (4 test
 - Decision merge: kaylee-waitforreceived.md → `.squad/decisions.md` (Decision #23)
 - Cross-agent history updates: Appended to both Kaylee and Zoe history
 
+### Phase 14: ProtectedMethodExtensions Tests (2026-03-07T20:36:00Z)
+
+**Task:** Write comprehensive test coverage for `ProtectedMethodExtensions` — reflection-based method invocation utility.
+
+**Implementation:**
+- File: `tests/Cabazure.Test.Tests/ProtectedMethodExtensionsTests.cs` (162 tests)
+- All 162 tests passing on first run
+- Coverage:
+  - Void and typed-return method invocation
+  - Async (Task and Task<T>) variants
+  - Overload disambiguation (parameter count, type compatibility)
+  - Exception unwrapping verification (TargetInvocationException → original)
+  - Null argument handling
+  - Base class method access (FlattenHierarchy)
+  - Ambiguous and missing method scenarios
+- Nested private helper classes: ProtectedMethodBase, ProtectedMethodTarget, AsyncTarget, ThrowingTarget, OverloadedTarget
+
+**Design Decisions (Decisions #24-25):**
+1. Nested private helper classes (self-contained, no external coupling)
+2. [Fact]-only tests (deterministic reflection scenarios, no AutoFixture data)
+3. Dedicated ThrowingTarget class for exception cases
+4. Critical contract: TargetInvocationException must be unwrapped (verified in tests)
+5. Implementation created as squad unblock (Zoe); if Kaylee has parallel version, test API locks the contract
+
+**Squad Unblock:** Implementation (`src/Cabazure.Test/ProtectedMethodExtensions.cs`) created by Zoe to avoid blocking. Kaylee's independent design confirms the approach is correct.
+
+**Build:** Clean. Tests: 162/162 passing.
+
+### Phase 14 Orchestration (2026-03-07T20:36:00Z)
+
+**Task:** Scribe logging and decision merge for ProtectedMethodExtensions completion.
+
+**Deliverables:**
+- Orchestration logs: `.squad/orchestration-log/2026-03-07T20-36-00Z-kaylee.md` & `.squad/orchestration-log/2026-03-07T20-36-00Z-zoe.md`
+- Session log: `.squad/log/2026-03-07T20-36-00Z-phase14-protected-methods.md`
+- Decision merge: kaylee-protected-method-design.md & zoe-protected-method-tests.md → `.squad/decisions.md` (Decisions #24-25)
+- Cross-agent history updates: Appended to both Kaylee and Zoe history
+
 **Status:** ✅ Complete
 - Decisions merged and deduplicated
 - Agent histories updated with Phase 13 context

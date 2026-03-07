@@ -1345,3 +1345,106 @@ Test 10 (`InvokeProtected_MethodThrows_SurfacesOriginalException`) explicitly as
 
 `ProtectedMethodExtensions.cs` was not present when tests were written. Rather than blocking, a full implementation was created in `src/Cabazure.Test/`. If Kaylee has a parallel version, this file can be replaced with no test changes required — the API contract is locked by the tests.
 
+---
+
+# Decision: ProtectedMethodExtensions Design
+
+**Proposed by:** Kaylee (Core Dev)  
+**Date:** 2026-03-07  
+**Status:** Approved
+
+## Context
+
+Tests for code that inherits from abstract base classes often need to exercise protected methods (lifecycle hooks, template method pattern, etc.) without making those methods public. We need a reflection-based test utility that is ergonomic, handles async naturally, and doesn't obscure test failure stack traces.
+
+## Decisions
+
+### 1. Void overload delegates to generic overload
+
+`InvokeProtected(target, name, args)` simply calls `InvokeProtected<object>(target, name, args)` and discards the result. No duplicated reflection or exception-handling logic.
+
+**Rationale:** Single implementation path reduces bugs. Void methods return `null` from `MethodInfo.Invoke`; the `object` cast of `null` is a no-op.
+
+### 2. Async void overload delegates to async typed overload
+
+`InvokeProtectedAsync(target, name, args)` calls `InvokeProtectedAsync<object>(target, name, args)`. `Task<object>` is covariant with `Task` so the return is implicit.
+
+**Rationale:** Same single-path benefit. The typed async overload handles all three result shapes (`Task<TResult>`, `Task`, synchronous) so the non-generic overload gets that for free.
+
+### 3. ExceptionDispatchInfo for stack trace preservation
+
+```csharp
+catch (TargetInvocationException ex) when (ex.InnerException is not null)
+{
+    ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+    throw; // unreachable; satisfies the compiler
+}
+```
+
+`MethodInfo.Invoke` wraps all exceptions in `TargetInvocationException`. Without unwrapping, test assertion failures and domain exceptions show a reflection call stack instead of the original. `ExceptionDispatchInfo.Throw()` re-throws with the original stack trace preserved.
+
+**Rationale:** Tests should see real exceptions from domain code, not reflection artifacts.
+
+### 4. Two-stage overload disambiguation
+
+1. **Parameter count** — eliminates most overloads with zero type analysis.
+2. **Type compatibility** — `paramType.IsAssignableFrom(arg?.GetType() ?? typeof(object))` for each position.
+   - Null args use `typeof(object)` as the probe type: only matches `object`-typed parameters, intentionally strict.
+3. **AmbiguousMatchException** if still multiple candidates after stage 2, listing all candidate signatures.
+4. **MissingMethodException** (with type name, method name, arg types) if zero candidates at any stage.
+
+**Rationale:** Count-first disambiguation is O(n) and handles the overwhelming majority of real-world cases. Type-compatibility is the right semantic for the remaining cases. Surfacing ambiguity as an exception is better than silently picking the wrong overload.
+
+### 5. BindingFlags choice
+
+`BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy`
+
+`FlattenHierarchy` primarily affects static members but is included per convention for intent clarity. `NonPublic | Instance` is what actually causes `GetMethods` to return inherited protected members. Post-filter uses `!m.IsPrivate` to include `protected`, `protected internal`, and `internal` members while excluding private ones from base classes.
+
+**Rationale:** Inclusive by default — test utilities should reach protected and internal-protected members equally. Private methods are not part of the type's contract even for testing.
+
+## Related Files
+
+- `src/Cabazure.Test/ProtectedMethodExtensions.cs`
+- `tests/Cabazure.Test.Tests/ProtectedMethodExtensionsTests.cs`
+
+---
+
+# Decision: ProtectedMethodExtensions Test Patterns
+
+**Agent:** Zoe (QA & Testing Lead)  
+**Date:** 2026-03-08  
+**Status:** Approved
+
+## Context
+
+Writing test coverage for `ProtectedMethodExtensions` — reflection-based utilities that invoke protected methods on objects under test without exposing them as public.
+
+## Decisions
+
+### D1. Use nested private helper classes (not real production types)
+
+All test fixtures (base class, derived class, overloaded class, async class, throwing class) are declared as private nested classes inside the test class. This keeps tests fully self-contained and avoids coupling to external test infrastructure.
+
+**Rationale:** Same pattern as `ReceivedCallExtensionsTests.cs` and `WaitForReceivedExtensionsTests.cs`.
+
+### D2. Use `[Fact]` only — no AutoFixture data
+
+All 10 tests use `[Fact]` and construct inputs directly. The scenarios test deterministic reflection behavior (specific method names, arg types, return values) that don't benefit from randomized data generation.
+
+### D3. ThrowingTarget with a fresh class (not reusing ProtectedMethodBase)
+
+The "method throws" scenario uses a separate `ThrowingTarget` class. Using `ProtectedMethodBase.ThrowingMethod()` on a `DerivedClass` instance would also work, but having a dedicated class makes the failing-case intent immediately obvious.
+
+### D4. TargetInvocationException unwrapping must be verified
+
+Test 10 (`InvokeProtected_MethodThrows_SurfacesOriginalException`) explicitly asserts that `InvalidOperationException` is thrown — not a `TargetInvocationException`. This is a critical contract: callers should never need to unwrap reflection exceptions when using these utilities.
+
+### D5. Implementation created as a squad unblock (not Zoe's usual scope)
+
+`ProtectedMethodExtensions.cs` was not present when tests were written. Rather than blocking, a full implementation was created in `src/Cabazure.Test/`. If Kaylee has a parallel version, this file can be replaced with no test changes required — the API contract is locked by the tests.
+
+## Related Files
+
+- `tests/Cabazure.Test.Tests/ProtectedMethodExtensionsTests.cs`
+
