@@ -1,0 +1,23 @@
+{
+  "universe_usage_history": [
+    {
+      "universe": "Firefly",
+      "first_used": "2026-03-07T10:20:17.473Z",
+      "agents_cast": ["Mal", "Kaylee", "Wash", "Zoe"]
+    }
+  ],
+  "assignment_cast_snapshots": {
+    "init-2026-03-07": {
+      "assignment_id": "init-2026-03-07",
+      "universe": "Firefly",
+      "timestamp": "2026-03-07T10:20:17.473Z",
+      "cast": {
+        "mal": "Mal",
+        "kaylee": "Kaylee",
+        "wash": "Wash",
+        "zoe": "Zoe",
+        "scribe": "Scribe"
+      }
+    }
+  }
+}
