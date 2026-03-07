@@ -215,3 +215,16 @@ The `throw;` after `.Throw()` is unreachable at runtime but required so the comp
 
 **Cross-team:** Zoe provided test coverage (19 tests, 19 passing); Wash added comprehensive README documentation with examples.
 **Decision logged:** `.squad/decisions.md` — Phase 17 FluentAssertions Extensions (Decisions 1–3: JsonElementAssertions, DateTimeOffsetExtensions, Documentation)
+
+### AutoNSubstituteDataHelper Refactor — Inline Trivial Helpers
+
+**Task:** Remove three wrapper methods from `AutoNSubstituteDataHelper` and inline their logic at the call sites.
+
+**What changed:**
+- `CreateFixture` removed; all four attribute `GetData()` methods now call `FixtureFactory.Create(testMethod)` directly.
+- `CreateValue` one-liner inlined into `MergeValues` as `new SpecimenContext(fixture).Resolve(parameter)`.
+- `FreezeValue` body inlined into `MergeValues`; the redundant `IsValueType` guard inside `FreezeValue` was dropped because the call site already has `!parameter.ParameterType.IsValueType` as a condition.
+- `using System.Reflection;` kept in `AutoNSubstituteDataHelper.cs` — `ParameterInfo` still requires it.
+- 5 files changed, net −25 lines. Build clean, 184/184 tests passing.
+
+**Key principle:** When a helper method is a pure passthrough or a one-liner with no reuse value, inline it — the call site already has all the context needed and the indirection only obscures intent.

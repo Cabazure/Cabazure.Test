@@ -105,7 +105,7 @@ public sealed class MemberAutoNSubstituteDataAttribute : DataAttribute
         foreach (var row in rows)
         {
             var fixture = FixtureFactory.Create(testMethod);
-            var values = AutoNSubstituteDataHelper.MergeValues(fixture, theoryParams, row);
+            var values = fixture.MergeValues(theoryParams, row);
             disposalTracker.AddRange(values);
             result.Add(new TheoryDataRow(values));
         }

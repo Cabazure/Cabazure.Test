@@ -6,9 +6,10 @@ using AutoFixture.Xunit3;
 namespace Cabazure.Test.Attributes;
 
 /// <summary>
-/// Shared helper for merging explicit theory data rows with fixture-generated values.
+/// Extension methods on <see cref="IFixture"/> for merging explicit theory data rows
+/// with fixture-generated values.
 /// </summary>
-internal static class AutoNSubstituteDataHelper
+internal static class FixtureDataExtensions
 {
     /// <summary>
     /// Resolves a complete set of theory parameter values by combining <paramref name="provided"/>
@@ -24,7 +25,7 @@ internal static class AutoNSubstituteDataHelper
     /// </param>
     /// <returns>An array containing one resolved value per parameter.</returns>
     internal static object?[] MergeValues(
-        IFixture fixture,
+        this IFixture fixture,
         ParameterInfo[] parameters,
         object?[] provided)
     {

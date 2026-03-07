@@ -98,7 +98,7 @@ public sealed class ClassAutoNSubstituteDataAttribute : DataAttribute
         {
             var row = item as object?[] ?? [(object?)item];
             var fixture = FixtureFactory.Create(testMethod);
-            var values = AutoNSubstituteDataHelper.MergeValues(fixture, theoryParams, row);
+            var values = fixture.MergeValues(theoryParams, row);
             disposalTracker.AddRange(values);
             result.Add(new TheoryDataRow(values));
         }

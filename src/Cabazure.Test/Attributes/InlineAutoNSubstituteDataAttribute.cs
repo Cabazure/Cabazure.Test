@@ -68,8 +68,7 @@ public sealed class InlineAutoNSubstituteDataAttribute : DataAttribute
         ArgumentNullException.ThrowIfNull(testMethod);
 
         var fixture = FixtureFactory.Create(testMethod);
-        var parameters = testMethod.GetParameters();
-        var values = AutoNSubstituteDataHelper.MergeValues(fixture, parameters, Values);
+        var values = fixture.MergeValues(testMethod.GetParameters(), Values);
         disposalTracker.AddRange(values);
         IReadOnlyCollection<ITheoryDataRow> result = [new TheoryDataRow(values)];
         return new ValueTask<IReadOnlyCollection<ITheoryDataRow>>(result);
