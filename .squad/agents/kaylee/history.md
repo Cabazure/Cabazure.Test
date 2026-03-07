@@ -183,3 +183,39 @@ Updated `.github/copilot-instructions.md` to reflect post-Phase-8 library state:
 - Tests for `RecursionCustomization` and `ImmutableCollectionCustomization` all pass unchanged (they use explicit `FixtureFactory.Create(new XxxCustomization())` so default seeding is irrelevant).
 
 **Build result:** 0 errors, 0 warnings, 78/78 tests green.
+
+### DateOnlyTimeOnlyCustomization and JsonElementCustomization
+
+**AutoFixture 4.18.1 on .NET 9 behaviour (verified):**
+- `DateOnly`: **FAILS** — throws `ArgumentOutOfRangeException` because AutoFixture generates invalid year/month/day combos via the `(int, int, int)` constructor (e.g., month=13, day=32).
+- `TimeOnly`: Technically does not throw, but generates near-zero tick values (ticks=61, 64, 17 etc.) — essentially always midnight, which is useless for tests requiring varied times.
+- `JsonElement`: **FAILS** — AutoFixture cannot construct the `ref Utf8JsonReader` parameter required by `JsonElement` constructors.
+
+**DateOnlyTimeOnlyCustomization implementation:**
+- Created `src/Cabazure.Test/Customizations/DateOnlyTimeOnlyCustomization.cs` with a single `DateTimeOnlyBuilder : ISpecimenBuilder`.
+- Derives both `DateOnly` and `TimeOnly` from a randomly generated `DateTime` via `context.Resolve(typeof(DateTime))`.
+- Uses `DateOnly.FromDateTime(dateTime)` and `TimeOnly.FromDateTime(dateTime)` for conversion — ensures valid, well-distributed results.
+- Pattern matches request type via `ParameterInfo`, `PropertyInfo`, `FieldInfo`, or `Type` — same approach as `ImmutableCollectionCustomization`.
+- **Added to default seed** in `FixtureCustomizationCollection` alongside `AutoNSubstituteCustomization`, `RecursionCustomization`, and `ImmutableCollectionCustomization`.
+
+**JsonElementCustomization implementation:**
+- Created `src/Cabazure.Test/Customizations/JsonElementCustomization.cs` with a single `JsonElementBuilder : ISpecimenBuilder`.
+- Creates a `JsonElement` by parsing a JSON object with a randomly generated key/value string pair: `{"key":"value"}`.
+- **CRITICAL: `.Clone()` is required.** `JsonElement` backed by an un-cloned `JsonDocument` becomes invalid when the document is garbage-collected. `.Clone()` creates a document-independent copy that survives past the `JsonDocument`'s lifetime.
+- Pattern matches request type via `ParameterInfo`, `PropertyInfo`, `FieldInfo`, or `Type` — consistent with other specimen builders.
+- **NOT added to defaults** — opt-in only. `JsonElement` is a specialized type not everyone uses; adding it to defaults would pollute the fixture for projects that don't need it.
+
+**Scope decision:**
+- `DateOnlyTimeOnlyCustomization`: default — addresses a broad .NET 9+ API gap (AutoFixture can't handle .NET 6+ date/time types).
+- `JsonElementCustomization`: opt-in — specialized use case (System.Text.Json serialization tests).
+
+**FixtureCustomizationCollection update:**
+- Constructor now seeds four customizations: `AutoNSubstituteCustomization`, `RecursionCustomization`, `ImmutableCollectionCustomization`, `DateOnlyTimeOnlyCustomization`.
+- XML `<remarks>` updated to list all four by name.
+
+**README.md update:**
+- Added both customizations to the Features table.
+- Added dedicated "## Customizations" section with full documentation for all four default customizations plus `JsonElementCustomization`.
+- Documented default vs opt-in behavior and provided usage examples for `JsonElementCustomization`.
+
+**Build result:** 0 errors, 0 warnings. Tests pending Zoe's completion.
