@@ -470,6 +470,128 @@ Test coverage for type-specific AutoFixture customizations should verify:
 1. **Null guard** — `Customize(null!)` throws `ArgumentNullException`
 2. **Type-specific behavior** — Created value meets type semantics (e.g., `JsonElement.ValueKind == Object`, `DateOnly` is not `MinValue`)
 3. **Non-trivial randomness** — Generated values are meaningfully populated (e.g., JsonElement has properties, TimeOnly has non-zero ticks)
+
+---
+
+## Phase 10: Readability Refactoring & DRY Elimination
+
+### 12. SpecimenRequestHelper Extracted as Public API
+
+**Proposed by:** Kaylee (Core Developer)  
+**Date:** 2026-03-07  
+**Status:** Approved
+
+#### Decision
+
+Extract the repeated `GetRequestType(object request)` switch logic from four private copies into a **single public static class `SpecimenRequestHelper`** in `Cabazure.Test.Customizations`:
+
+```csharp
+public static class SpecimenRequestHelper
+{
+    public static Type? GetRequestType(object request) => request switch
+    {
+        ParameterInfo pi => pi.ParameterType,
+        PropertyInfo pr => pr.PropertyType,
+        FieldInfo fi => fi.FieldType,
+        Type t => t,
+        _ => null,
+    };
+}
+```
+
+#### Rationale
+
+1. **DRY**: Eliminates copy-paste from `TypeCustomization<T>.DelegateBuilder`, `DateTimeOnlyBuilder`, `ImmutableCollectionBuilder`, and the old `JsonElementBuilder`
+2. **Public API value**: Library users implementing custom `ISpecimenBuilder` can reuse the pattern without reimplementation
+3. **Reflection module cleanup**: Removes `using System.Reflection;` from three downstream files; types now referenced only inside SpecimenRequestHelper
+
+#### Related Changes
+
+- **TypeCustomization<T> unsealed**: Enables JsonElementCustomization to subclass instead of wrapping
+- **JsonElementCustomization simplified**: Now `public sealed class JsonElementCustomization : TypeCustomization<JsonElement>`, eliminating the private nested `JsonElementBuilder` class
+
+### 13. TypeCustomization<T> Unsealed for Composition Patterns
+
+**Proposed by:** Kaylee  
+**Date:** 2026-03-07  
+**Status:** Approved
+
+#### Decision
+
+Remove the `sealed` modifier from `TypeCustomization<T>` to allow direct subclassing.
+
+#### Rationale
+
+1. **Documentation integrity**: XML `<example>` block already documented the subclassing pattern (now realizable)
+2. **JsonElementCustomization simplification**: Allows `JsonElementCustomization : TypeCustomization<JsonElement>` instead of wrapping with a nested builder
+3. **Composition over inheritance**: Sealed constraint was not load-bearing; unsealing enables a cleaner, more direct design
+
+### 14. JsonElementCustomization Simplified via TypeCustomization Inheritance
+
+**Proposed by:** Kaylee  
+**Date:** 2026-03-07  
+**Status:** Approved
+
+#### Decision
+
+Replace `JsonElementCustomization : ICustomization` with private nested `JsonElementBuilder : ISpecimenBuilder` pattern with direct inheritance: `public sealed class JsonElementCustomization : TypeCustomization<JsonElement>`.
+
+Creation logic becomes a single constructor lambda:
+```csharp
+public sealed class JsonElementCustomization : TypeCustomization<JsonElement>
+{
+    public JsonElementCustomization() : base(fixture => fixture.Create<JsonElement>()) { }
+}
+```
+
+#### Rationale
+
+1. **Code clarity**: Entire creation logic is now visible at a glance (single lambda vs nested class + method)
+2. **DRY**: Eliminates the private `JsonElementBuilder` class entirely
+3. **Consistency**: Uses the same factory pattern as other customizations
+4. **Reduced scope**: Removes unnecessary `using System.Reflection;` and `using AutoFixture.Kernel;`
+
+### 15. FixtureFactory.ApplyCustomizations Helper Extracted
+
+**Proposed by:** Kaylee  
+**Date:** 2026-03-07  
+**Status:** Approved
+
+#### Decision
+
+Extract a private helper method `ApplyCustomizations(IFixture fixture, IEnumerable<ICustomization> customizations)` in `FixtureFactory` to consolidate two identical `foreach` loops:
+
+```csharp
+private static void ApplyCustomizations(IFixture fixture, IEnumerable<ICustomization> customizations)
+{
+    foreach (var customization in customizations)
+        fixture.Customize(customization);
+}
+```
+
+Replace both occurrences in `Create(params ICustomization[])` and `Create(MethodInfo)` with calls to this helper.
+
+#### Rationale
+
+1. **DRY**: Two identical loops → one helper
+2. **Clarity**: Reduces visual noise; intent is explicit via method name
+3. **Testability**: Easier to verify behavior in isolation
+
+### 16. SpecimenRequestHelper Edge Cases and Recommendations
+
+**Proposed by:** Zoe (QA Lead)  
+**Date:** 2026-03-07  
+**Status:** Documented (no action required for Phase 10 merge)
+
+#### Observations
+
+1. **Null input handling**: `GetRequestType(object request)` accepts non-nullable `object`, but unsafe code or reflection could pass `null!`. Current switch throws `NullReferenceException`. Recommendation: add null-guard or accept nullable input with null pattern arm.
+
+2. **MemberInfo subtypes**: `MethodInfo`, `EventInfo`, `ConstructorInfo` (subclasses of `MemberInfo`) fall through to `_ => null`. Probably intentional; document if so.
+
+3. **CS0649 warning**: Test's `TestSubject.SomeField` (never assigned) is harmless — accessed only via reflection. No action needed unless build treats warnings as errors.
+
+4. **ParameterInfo source**: Tests source `ParameterInfo` from constructors, consistent with AutoFixture's real customization pipeline behavior.
 4. **Integration with FixtureFactory** — Customization works via `FixtureFactory.Create(customization)` or `FixtureFactory.Create()` (if in defaults)
 5. **Property-on-object scenario** — Fixture can create an object that has the customized type as a property
 

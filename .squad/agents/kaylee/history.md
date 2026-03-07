@@ -283,3 +283,55 @@ Updated `.github/copilot-instructions.md` to reflect post-Phase-8 library state:
 
 **Build result:** 0 errors, 0 warnings (Release mode with TreatWarningsAsErrors on).
 
+### Phase 10: Readability Refactoring & DRY Cleanup (2026-03-07)
+
+**SpecimenRequestHelper extracted:**
+- Created `src/Cabazure.Test/Customizations/SpecimenRequestHelper.cs` — public static helper with a single `GetRequestType(object request)` method.
+- Eliminates 4 identical private `GetRequestType` copies from `TypeCustomization<T>.DelegateBuilder`, `DateTimeOnlyBuilder`, `ImmutableCollectionBuilder`, and `JsonElementBuilder`.
+- Public visibility adds user-facing value: anyone implementing a custom `ISpecimenBuilder` can use it without reimplementing the pattern-match switch.
+- Removed now-unused `using System.Reflection;` imports from `TypeCustomization.cs`, `DateOnlyTimeOnlyCustomization.cs`, and `ImmutableCollectionCustomization.cs` (reflection types accessed via the helper's namespace).
+
+**TypeCustomization<T> unsealed:**
+- Changed `public sealed class TypeCustomization<T>` to `public class TypeCustomization<T>` to allow subclassing.
+- This enables Refactoring 3 (JsonElementCustomization subclass) and opens a user extensibility pattern documented in the XML docs' `<example>` block.
+
+**JsonElementCustomization simplified:**
+- Replaced standalone `ICustomization` + `ISpecimenBuilder` implementation with `public sealed class JsonElementCustomization : TypeCustomization<JsonElement>`.
+- Constructor calls `base(f => ...)` — the entire creation logic becomes a single lambda, eliminating the private nested builder class entirely.
+- `using System.Reflection;` and `using AutoFixture.Kernel;` removed; `using AutoFixture;` added for `IFixture` (used in the lambda parameter type).
+
+**ApplyCustomizations helper extracted in FixtureFactory:**
+- Added `private static void ApplyCustomizations(IFixture fixture, IEnumerable<ICustomization> customizations)` method.
+- Replaced two identical `foreach (var customization in ...) fixture.Customize(customization);` loops in `Create(params ICustomization[])` and `Create(MethodInfo)` with calls to this helper.
+
+**Build result:** 0 errors, 0 warnings, all tests green.
+
+
+
+
+---
+
+## Phase 10: Readability Refactoring & DRY Elimination (2026-03-07)
+
+### SpecimenRequestHelper Public Static Helper
+- Extracted public static class SpecimenRequestHelper with GetRequestType(object request) method
+- Eliminated four identical private copies from inner builders
+- Enables library users to implement custom ISpecimenBuilder without code duplication
+- Removed unnecessary using directives from downstream files
+
+### TypeCustomization<T> Unsealed
+- Removed sealed modifier to enable subclassing
+- Enables JsonElementCustomization simplification
+- XML documentation already promised this pattern
+
+### JsonElementCustomization Simplified
+- Replaced ICustomization + private JsonElementBuilder : ISpecimenBuilder with direct inheritance
+- Now: public sealed class JsonElementCustomization : TypeCustomization<JsonElement>
+- Creation logic is a single constructor lambda
+- Private nested class eliminated
+
+### FixtureFactory.ApplyCustomizations Helper
+- Added private static void ApplyCustomizations(IFixture fixture, IEnumerable<ICustomization> customizations)
+- Removed loop duplication from Create(params ICustomization[]) and Create(MethodInfo)
+
+Build: 0 errors, 0 warnings. Tests: 111/111 passing.

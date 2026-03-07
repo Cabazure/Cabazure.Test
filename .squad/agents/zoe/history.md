@@ -336,3 +336,35 @@ My domain is the test project `Cabazure.Test.Tests`. The unique challenge: we're
 - TypeCustomization<T> is `sealed` by design — composition/wrapping pattern is the intended reuse mechanism
 - Factory receives a fully functional `IFixture` instance, enabling powerful patterns like `Build<T>().With(...).Create()`
 - Tests use dogfooding (`[AutoNSubstituteData]`) where applicable for theory tests
+
+## Learnings
+
+### SpecimenRequestHelperTests (2026-03-07)
+- Created 	ests/Cabazure.Test.Tests/Customizations/SpecimenRequestHelperTests.cs covering all 5 branches of SpecimenRequestHelper.GetRequestType
+- Used a private nested TestSubject class with a constructor parameter (ool someParameter), a property (string? SomeProperty), and a field (int SomeField) to provide reflection targets for all MemberInfo test cases
+- All 5 tests use [Fact] — pure static method, no AutoFixture/NSubstitute needed
+- Build fails with CS0103 (SpecimenRequestHelper not found) because Kaylee's src/Cabazure.Test/Customizations/SpecimenRequestHelper.cs does not yet exist — test file is written and ready to compile once it lands
+- CS0649 warning on SomeField (never assigned) is harmless — field is only accessed via reflection, not directly
+- **Static helper test pattern:** Pure static switch-expression helpers need no AutoFixture/NSubstitute setup — plain `[Fact]` with local reflection lookups is the correct pattern; dogfooding ([AutoNSubstituteData]) adds no value when there are no injectable parameters
+- **Self-contained test subject:** Defining a private nested class (`TestSubject`) inside the test class avoids importing external members; every MemberInfo branch (ParameterInfo, PropertyInfo, FieldInfo) is satisfied by a single small class
+- **No `using System.Reflection;` needed:** `ImplicitUsings` is enabled for the test project (net9.0), so `System.Reflection` types are globally available without an explicit using directive
+
+
+---
+
+## Phase 10: SpecimenRequestHelper Test Coverage & Edge Case Analysis (2026-03-07)
+
+### SpecimenRequestHelperTests Created
+- File: tests/Cabazure.Test.Tests/Customizations/SpecimenRequestHelperTests.cs
+- 5 tests covering all branches of SpecimenRequestHelper.GetRequestType
+- Branches: ParameterInfo, PropertyInfo, FieldInfo, Type, and unknown (falls to null)
+- Self-contained TestSubject nested class provides reflection targets
+- Pure static method testing: [Fact] with no AutoFixture/NSubstitute setup needed
+
+### Edge Cases Documented
+- Null input handling: noted potential NullReferenceException with unsafe code
+- MemberInfo subtypes (MethodInfo, EventInfo, ConstructorInfo) fall through to null
+- CS0649 warning on TestSubject.SomeField harmless (accessed only via reflection)
+- ParameterInfo sourced from constructors, consistent with AutoFixture pipeline
+
+All 111 tests passing. QA approval for Phase 10 integration.
