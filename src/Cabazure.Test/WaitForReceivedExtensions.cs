@@ -179,7 +179,7 @@ public static class WaitForReceivedExtensions
 }
 
 /// <summary>
-/// NSubstitute call handler that signals a <see cref="TaskCompletionSource"/> when a call
+/// NSubstitute call handler that signals a <see cref="TaskCompletionSource{T}"/> when a call
 /// matching the specified call specification is received. Used internally by
 /// <see cref="WaitForReceivedExtensions"/> to enable asynchronous call waiting.
 /// </summary>

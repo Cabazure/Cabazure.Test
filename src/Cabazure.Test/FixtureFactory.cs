@@ -40,7 +40,7 @@ public static class FixtureFactory
     /// </summary>
     /// <remarks>
     /// Customizations in this collection are applied before any per-test
-    /// <see cref="Attributes.CustomizeWithAttribute"/> overrides.
+    /// <see cref="CustomizeWithAttribute"/> overrides.
     /// </remarks>
     public static FixtureCustomizationCollection Customizations { get; } = new();
 

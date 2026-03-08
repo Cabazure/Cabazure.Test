@@ -29,7 +29,7 @@ namespace Cabazure.Test.Customizations;
 /// FixtureFactory.Customizations.Add(_ => new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 /// </code>
 /// <para>
-/// To override for a single fixture, use <see cref="IFixture.Inject{T}(T)"/>:
+/// To override for a single fixture, use <c>fixture.Inject()</c>:
 /// </para>
 /// <code>
 /// fixture.Inject(new JsonSerializerOptions(JsonSerializerDefaults.Web));
