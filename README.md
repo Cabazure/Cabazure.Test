@@ -754,6 +754,74 @@ internal static class TestAssemblyInitializer
 
 ---
 
+## Test Performance Tips
+
+Real-world usage reveals a few patterns that can subtly hurt test performance or discoverability. Here are three tips for keeping your test suite fast and maintainable.
+
+### 1. Prefer `[Frozen]` parameters over `FixtureFactory.Create()` in shared helpers
+
+When a private helper method calls `FixtureFactory.Create()` directly, it bypasses any `[CustomizeWith]` customizations on the test class and creates a bare, uncustomized fixture. Instead, declare your dependencies as `[Frozen]` parameters on the theory method and pass them into the shared helper.
+
+```csharp
+// ❌ Anti-pattern: bypasses [CustomizeWith] and creates unnecessary fixtures
+private static async Task VerifyProcessing<TRequest, TResponse>()
+{
+    var fixture = FixtureFactory.Create();
+    var request = fixture.Create<TRequest>();
+    var sut = new MyProcessor(fixture.Create<IDependency>());
+    // ...
+}
+
+// ✅ Preferred: inject via [Theory] parameters, share logic via helper
+[Theory, AutoNSubstituteData]
+public async Task ProcessAsync_ShouldHandle(
+    [Frozen] IDependency dep,
+    MyProcessor sut,
+    object request)
+    => await VerifyProcessing(sut, dep, request);
+
+private static async Task VerifyProcessing(MyProcessor sut, IDependency dep, object request) { ... }
+```
+
+### 2. Register domain-type customizations once via `[ModuleInitializer]`
+
+If tests frequently create complex domain objects (DTOs with many properties, nested types), registering a project-level customization via `[ModuleInitializer]` means the customization is applied once at startup — eliminating per-fixture resolution overhead on every test. See the [Project-wide customizations](#project-wide-customizations-via-fixturefactorycustomizations) section for the registration pattern.
+
+```csharp
+internal static class TestAssemblyInitializer
+{
+    [System.Runtime.CompilerServices.ModuleInitializer]
+    public static void Initialize()
+        => FixtureFactory.Customizations.Add(new MyDomainCustomization());
+}
+```
+
+Registered customizations are shared across every fixture created by any data attribute — no repeated setup, no per-test overhead.
+
+### 3. Consolidate repetitive `[Fact]` methods with `[MemberAutoNSubstituteData]`
+
+When a test class has many near-identical `[Fact]` methods that differ only in a type argument (e.g., verifying that a processor handles every request type), express them as a single `[Theory]` backed by a `TheoryData<Type>` member. This reduces test count in the runner output and makes the intent clearer.
+
+```csharp
+// ❌ Anti-pattern: 50 near-identical [Fact] methods
+[Fact] public async Task CanHandle_AuthorizeRequest() => await VerifyCanHandle<AuthorizeRequest>();
+[Fact] public async Task CanHandle_BootNotificationRequest() => await VerifyCanHandle<BootNotificationRequest>();
+// ... 48 more
+
+// ✅ Preferred: one [Theory] with typed member data
+public static TheoryData<Type> RequestTypes =>
+[
+    typeof(AuthorizeRequest),
+    typeof(BootNotificationRequest),
+    // ...
+];
+
+[Theory, MemberAutoNSubstituteData(nameof(RequestTypes))]
+public async Task CanHandle(Type requestType, MyProcessor sut) { ... }
+```
+
+---
+
 ## Compatibility
 
 - **.NET 9+** (`net9.0`)
