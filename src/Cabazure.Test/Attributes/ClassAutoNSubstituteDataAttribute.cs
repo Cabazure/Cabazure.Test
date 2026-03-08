@@ -76,7 +76,7 @@ public sealed class ClassAutoNSubstituteDataAttribute(Type dataClass) : ClassDat
         MethodInfo testMethod,
         DisposalTracker disposalTracker)
     {
-        ArgumentNullException.ThrowIfNull(testMethod);
+        if (testMethod is null) throw new ArgumentNullException(nameof(testMethod));
 
         var baseRows = await base.GetData(testMethod, disposalTracker);
         var theoryParams = testMethod.GetParameters();

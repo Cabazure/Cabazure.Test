@@ -66,7 +66,7 @@ public sealed class InlineAutoNSubstituteDataAttribute : DataAttribute
         MethodInfo testMethod,
         DisposalTracker disposalTracker)
     {
-        ArgumentNullException.ThrowIfNull(testMethod);
+        if (testMethod is null) throw new ArgumentNullException(nameof(testMethod));
 
         var fixture = FixtureFactory.Create(testMethod);
         var values = fixture.MergeValues(testMethod.GetParameters(), Values);

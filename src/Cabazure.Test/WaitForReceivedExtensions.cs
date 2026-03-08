@@ -39,8 +39,8 @@ public static class WaitForReceivedExtensions
     public static Task WaitForReceived<T>(this T substitute, Action<T> callSpec, TimeSpan? timeout = null)
         where T : class
     {
-        ArgumentNullException.ThrowIfNull(substitute);
-        ArgumentNullException.ThrowIfNull(callSpec);
+        if (substitute is null) throw new ArgumentNullException(nameof(substitute));
+        if (callSpec is null) throw new ArgumentNullException(nameof(callSpec));
 
         var capturedSpec = CaptureCallSpec(substitute, callSpec, withAnyArgs: false);
         return WaitForCallAsync(substitute, capturedSpec, timeout);
@@ -69,8 +69,8 @@ public static class WaitForReceivedExtensions
     public static Task WaitForReceivedWithAnyArgs<T>(this T substitute, Action<T> callSpec, TimeSpan? timeout = null)
         where T : class
     {
-        ArgumentNullException.ThrowIfNull(substitute);
-        ArgumentNullException.ThrowIfNull(callSpec);
+        if (substitute is null) throw new ArgumentNullException(nameof(substitute));
+        if (callSpec is null) throw new ArgumentNullException(nameof(callSpec));
 
         var capturedSpec = CaptureCallSpec(substitute, callSpec, withAnyArgs: true);
         return WaitForCallAsync(substitute, capturedSpec, timeout);
@@ -109,12 +109,12 @@ public static class WaitForReceivedExtensions
         return capturedSpec;
     }
 
-    private static Task WaitForCallAsync(object substitute, ICallSpecification spec, TimeSpan? timeout)
+    private static async Task WaitForCallAsync(object substitute, ICallSpecification spec, TimeSpan? timeout)
     {
         var context = SubstitutionContext.Current;
         var router = context.GetCallRouterFor(substitute);
 
-        var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var tcs = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         // Register handler for future calls (event-driven — works when no configured return)
         router.RegisterCustomCallHandlerFactory(state => new SignalingCallHandler(spec, tcs));
@@ -122,7 +122,7 @@ public static class WaitForReceivedExtensions
         // Pre-check already-received calls (race-free because handler is already registered)
         if (router.ReceivedCalls().Any(c => spec.IsSatisfiedBy(c)))
         {
-            tcs.TrySetResult();
+            tcs.TrySetResult(null);
         }
 
         var effectiveTimeout = timeout ?? DefaultTimeout;
@@ -134,7 +134,18 @@ public static class WaitForReceivedExtensions
         // This polling loop catches the case where the event-driven handler is never reached.
         _ = PollUntilSignaledAsync(router, spec, tcs, ct);
 
-        return tcs.Task.WaitAsync(effectiveTimeout, ct);
+#if NET6_0_OR_GREATER
+        await tcs.Task.WaitAsync(effectiveTimeout, ct).ConfigureAwait(false);
+#else
+        var delayTask = Task.Delay(effectiveTimeout, ct);
+        var completed = await Task.WhenAny(tcs.Task, delayTask).ConfigureAwait(false);
+        if (completed == delayTask)
+        {
+            ct.ThrowIfCancellationRequested();
+            throw new TimeoutException($"The operation did not complete within {effectiveTimeout}.");
+        }
+        await tcs.Task.ConfigureAwait(false);
+#endif
     }
 
     /// <summary>
@@ -146,7 +157,7 @@ public static class WaitForReceivedExtensions
     private static async Task PollUntilSignaledAsync(
         ICallRouter router,
         ICallSpecification spec,
-        TaskCompletionSource tcs,
+        TaskCompletionSource<object?> tcs,
         CancellationToken ct)
     {
         try
@@ -158,7 +169,7 @@ public static class WaitForReceivedExtensions
                     return;
                 if (router.ReceivedCalls().Any(c => spec.IsSatisfiedBy(c)))
                 {
-                    tcs.TrySetResult();
+                    tcs.TrySetResult(null);
                     return;
                 }
             }
@@ -168,16 +179,16 @@ public static class WaitForReceivedExtensions
 }
 
 /// <summary>
-/// NSubstitute call handler that signals a <see cref="TaskCompletionSource"/> when a call
+/// NSubstitute call handler that signals a <see cref="TaskCompletionSource{T}"/> when a call
 /// matching the specified call specification is received. Used internally by
 /// <see cref="WaitForReceivedExtensions"/> to enable asynchronous call waiting.
 /// </summary>
 internal sealed class SignalingCallHandler : ICallHandler
 {
     private readonly ICallSpecification spec;
-    private readonly TaskCompletionSource tcs;
+    private readonly TaskCompletionSource<object?> tcs;
 
-    public SignalingCallHandler(ICallSpecification spec, TaskCompletionSource tcs)
+    public SignalingCallHandler(ICallSpecification spec, TaskCompletionSource<object?> tcs)
     {
         this.spec = spec;
         this.tcs = tcs;
@@ -188,7 +199,7 @@ internal sealed class SignalingCallHandler : ICallHandler
     {
         if (spec.IsSatisfiedBy(call))
         {
-            tcs.TrySetResult();
+            tcs.TrySetResult(null);
         }
         return RouteAction.Continue();
     }

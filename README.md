@@ -123,7 +123,16 @@ public class DiscountServiceTests
 
 ### Project-wide customizations via `FixtureFactory.Customizations`
 
-Register a customization once for the whole test assembly using `[ModuleInitializer]`. It is applied to every fixture created by any data attribute.
+Register a customization once for the whole test assembly using `[ModuleInitializer]`. It is applied to every fixture created by any data attribute. `[ModuleInitializer]` requires .NET 5+; on older frameworks, call the initializer method manually from your test setup, or define the attribute yourself so the compiler accepts the syntax:
+
+```csharp
+// Only needed when targeting frameworks older than .NET 5
+namespace System.Runtime.CompilerServices
+{
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+    internal sealed class ModuleInitializerAttribute : Attribute { }
+}
+```
 
 ```csharp
 using System.Runtime.CompilerServices;
@@ -254,7 +263,7 @@ When the assertion fails, the FluentAssertions failure message is included in NS
 | `RecursionCustomization` | Replaces `ThrowingRecursionBehavior` with `OmitOnRecursionBehavior` so recursive object graphs don't throw. |
 | `ImmutableCollectionCustomization` | Enables fixture creation of `ImmutableList<T>`, `ImmutableArray<T>`, `ImmutableDictionary<,>`, and other immutable collections. |
 | `CancellationTokenCustomization` | Provides non-cancelled `CancellationToken` parameters in theory tests (`new CancellationToken(false)`), fixing AutoFixture's default. |
-| `DateOnlyTimeOnlyCustomization` | Enables reliable creation of `DateOnly` and `TimeOnly` values derived from a random `DateTime`. |
+| `DateOnlyTimeOnlyCustomization` | Enables reliable creation of `DateOnly` and `TimeOnly` values derived from a random `DateTime`. **Requires .NET 6+.** |
 | `JsonElementCustomization` | Included-by-default customization that enables creation of `System.Text.Json.JsonElement` instances. Produces a random JSON string by default; configurable via constructor overloads. |
 | `JsonSerializerOptionsCustomization` | Prevents `ArgumentOutOfRangeException` when AutoFixture tries to set `IndentCharacter` to a random char. Produces `new JsonSerializerOptions()` by default. |
 | `InvokeProtected` / `InvokeProtectedAsync` | Extension methods for invoking protected instance methods via reflection — void, typed-return, and async variants. Useful for testing Template Method patterns and protected virtual hooks without subclassing. |
@@ -299,7 +308,7 @@ Provides properly initialized `CancellationToken` parameters in theory tests. Au
 
 Enables reliable creation of `DateOnly` and `TimeOnly` values. AutoFixture cannot construct `DateOnly` by default (it generates invalid year/month/day combinations), and while `TimeOnly` technically works, AutoFixture produces near-zero tick values making it useless for tests. This customization derives both types from a randomly generated `DateTime`.
 
-**Included by default.** Remove it with `FixtureFactory.Customizations.Remove<DateOnlyTimeOnlyCustomization>()` if you need different behavior.
+**Included by default on .NET 6+.** Remove it with `FixtureFactory.Customizations.Remove<DateOnlyTimeOnlyCustomization>()` if you need different behavior. On netstandard2.1 targets, this customization is excluded from the default fixture because `DateOnly` and `TimeOnly` require .NET 6+.
 
 ### `JsonElementCustomization`
 

@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Reflection;
 using AutoFixture;
 using AutoFixture.Kernel;
 
@@ -17,61 +18,76 @@ public sealed class ImmutableCollectionCustomization : ICustomization
     /// <inheritdoc />
     public void Customize(IFixture fixture)
     {
-        ArgumentNullException.ThrowIfNull(fixture);
+        if (fixture is null) throw new ArgumentNullException(nameof(fixture));
 
         fixture.Customizations.Add(
             new ImmutableCollectionBuilder(
                 typeof(ImmutableArray<>),
                 typeof(List<>),
-                o => ImmutableArray.ToImmutableArray(o)));
+                FindConverter(typeof(ImmutableArray), "ToImmutableArray", 1)));
 
         fixture.Customizations.Add(
             new ImmutableCollectionBuilder(
                 typeof(ImmutableList<>),
                 typeof(List<>),
-                o => ImmutableList.ToImmutableList(o)));
+                FindConverter(typeof(ImmutableList), "ToImmutableList", 1)));
 
         fixture.Customizations.Add(
             new ImmutableCollectionBuilder(
                 typeof(ImmutableDictionary<,>),
                 typeof(Dictionary<,>),
-                o => ImmutableDictionary.ToImmutableDictionary(o)));
+                FindConverter(typeof(ImmutableDictionary), "ToImmutableDictionary", 2)));
 
         fixture.Customizations.Add(
             new ImmutableCollectionBuilder(
                 typeof(ImmutableHashSet<>),
                 typeof(HashSet<>),
-                o => ImmutableHashSet.ToImmutableHashSet(o)));
+                FindConverter(typeof(ImmutableHashSet), "ToImmutableHashSet", 1)));
 
         fixture.Customizations.Add(
             new ImmutableCollectionBuilder(
                 typeof(ImmutableSortedSet<>),
                 typeof(SortedSet<>),
-                o => ImmutableSortedSet.ToImmutableSortedSet(o)));
+                FindConverter(typeof(ImmutableSortedSet), "ToImmutableSortedSet", 1)));
 
         fixture.Customizations.Add(
             new ImmutableCollectionBuilder(
                 typeof(ImmutableSortedDictionary<,>),
                 typeof(SortedDictionary<,>),
-                o => ImmutableSortedDictionary.ToImmutableSortedDictionary(o)));
+                FindConverter(typeof(ImmutableSortedDictionary), "ToImmutableSortedDictionary", 2)));
 
         fixture.Customizations.Add(
             new ImmutableCollectionBuilder(
                 typeof(ImmutableQueue<>),
                 typeof(List<>),
-                o => ImmutableQueue.CreateRange(o)));
+                FindConverter(typeof(ImmutableQueue), "CreateRange", 1)));
 
         fixture.Customizations.Add(
             new ImmutableCollectionBuilder(
                 typeof(ImmutableStack<>),
                 typeof(List<>),
-                o => ImmutableStack.CreateRange(o)));
+                FindConverter(typeof(ImmutableStack), "CreateRange", 1)));
+    }
+
+    private static MethodInfo FindConverter(Type declaringType, string methodName, int typeArity)
+    {
+        var methods = declaringType.GetMethods(BindingFlags.Public | BindingFlags.Static);
+        return Array.Find(
+            methods,
+            m => m.Name == methodName
+                && m.IsGenericMethodDefinition
+                && m.GetGenericArguments().Length == typeArity
+                && m.GetParameters().Length == 1
+                && m.GetParameters()[0].ParameterType.IsGenericType
+                && m.GetParameters()[0].ParameterType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+            ?? throw new InvalidOperationException(
+                $"Could not find {declaringType.Name}.{methodName} with {typeArity} type argument(s) and an IEnumerable<> parameter.");
     }
 
     private sealed class ImmutableCollectionBuilder(
         Type immutableType,
         Type underlyingType,
-        Func<dynamic, object> converter)
+        MethodInfo converterMethod)
         : ISpecimenBuilder
     {
         public object Create(object request, ISpecimenContext context)
@@ -82,9 +98,8 @@ public sealed class ImmutableCollectionCustomization : ICustomization
                 && type.GetGenericArguments() is { Length: > 0 } args)
             {
                 var listType = underlyingType.MakeGenericType(args);
-                dynamic list = context.Resolve(listType);
-
-                return converter.Invoke(list);
+                var list = context.Resolve(listType);
+                return converterMethod.MakeGenericMethod(args).Invoke(null, new[] { list })!;
             }
 
             return new NoSpecimen();

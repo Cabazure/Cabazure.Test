@@ -16,7 +16,7 @@ public sealed class RecursionCustomization : ICustomization
     /// <inheritdoc />
     public void Customize(IFixture fixture)
     {
-        ArgumentNullException.ThrowIfNull(fixture);
+        if (fixture is null) throw new ArgumentNullException(nameof(fixture));
 
         foreach (var b in fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToArray())
             fixture.Behaviors.Remove(b);

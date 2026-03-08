@@ -40,7 +40,7 @@ public static class FixtureFactory
     /// </summary>
     /// <remarks>
     /// Customizations in this collection are applied before any per-test
-    /// <see cref="Attributes.CustomizeWithAttribute"/> overrides.
+    /// <see cref="CustomizeWithAttribute"/> overrides.
     /// </remarks>
     public static FixtureCustomizationCollection Customizations { get; } = new();
 
@@ -68,7 +68,7 @@ public static class FixtureFactory
     /// </exception>
     public static IFixture Create(params ICustomization[] customizations)
     {
-        ArgumentNullException.ThrowIfNull(customizations);
+        if (customizations is null) throw new ArgumentNullException(nameof(customizations));
         var fixture = new Fixture();
         ApplyCustomizations(fixture, Customizations);
         ApplyCustomizations(fixture, customizations);

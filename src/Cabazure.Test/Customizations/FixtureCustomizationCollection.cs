@@ -12,9 +12,9 @@ namespace Cabazure.Test.Customizations;
 /// <para>
 /// The collection is pre-seeded with <see cref="AutoNSubstituteCustomization"/>,
 /// <see cref="RecursionCustomization"/>, <see cref="ImmutableCollectionCustomization"/>,
-/// <see cref="DateOnlyTimeOnlyCustomization"/>, <see cref="CancellationTokenCustomization"/>,
-/// <see cref="JsonElementCustomization"/>, and <see cref="JsonSerializerOptionsCustomization"/>
-/// as the first seven entries.
+/// <see cref="CancellationTokenCustomization"/>, <see cref="JsonElementCustomization"/>,
+/// and <see cref="JsonSerializerOptionsCustomization"/> as the first entries
+/// (plus <c>DateOnlyTimeOnlyCustomization</c> on .NET 6+).
 /// Customizations are applied in the order they appear in the collection.
 /// </para>
 /// <para>
@@ -38,16 +38,18 @@ public sealed class FixtureCustomizationCollection : IEnumerable<ICustomization>
 
     internal FixtureCustomizationCollection()
     {
-        items =
-        [
+        items = new ICustomization[]
+        {
             new AutoNSubstituteCustomization(),
             new RecursionCustomization(),
             new ImmutableCollectionCustomization(),
+#if NET6_0_OR_GREATER
             new DateOnlyTimeOnlyCustomization(),
+#endif
             new CancellationTokenCustomization(),
             new JsonElementCustomization(),
             new JsonSerializerOptionsCustomization(),
-        ];
+        };
     }
 
     /// <summary>Gets the number of customizations currently in the collection.</summary>
@@ -62,9 +64,9 @@ public sealed class FixtureCustomizationCollection : IEnumerable<ICustomization>
     /// </exception>
     public void Add(ICustomization customization)
     {
-        ArgumentNullException.ThrowIfNull(customization);
+        if (customization is null) throw new ArgumentNullException(nameof(customization));
         lock (syncLock)
-            items = [.. items, customization];
+            items = items.Concat(new[] { customization }).ToArray();
     }
 
     /// <summary>
@@ -86,7 +88,7 @@ public sealed class FixtureCustomizationCollection : IEnumerable<ICustomization>
     /// </example>
     public void Add<T>(Func<IFixture, T> factory)
     {
-        ArgumentNullException.ThrowIfNull(factory);
+        if (factory is null) throw new ArgumentNullException(nameof(factory));
         Add(new TypeCustomization<T>(factory));
     }
 
@@ -107,7 +109,7 @@ public sealed class FixtureCustomizationCollection : IEnumerable<ICustomization>
     /// </example>
     public void Add(ISpecimenBuilder builder)
     {
-        ArgumentNullException.ThrowIfNull(builder);
+        if (builder is null) throw new ArgumentNullException(nameof(builder));
         Add(new SpecimenBuilderCustomizationWrapper(builder));
     }
 
@@ -123,7 +125,7 @@ public sealed class FixtureCustomizationCollection : IEnumerable<ICustomization>
     /// </exception>
     public bool Remove(ICustomization customization)
     {
-        ArgumentNullException.ThrowIfNull(customization);
+        if (customization is null) throw new ArgumentNullException(nameof(customization));
         lock (syncLock)
         {
             var current = items;
@@ -163,7 +165,7 @@ public sealed class FixtureCustomizationCollection : IEnumerable<ICustomization>
     public void Clear()
     {
         lock (syncLock)
-            items = [];
+            items = Array.Empty<ICustomization>();
     }
 
     /// <summary>

@@ -11,6 +11,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>embedded</DebugType>
     <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    <PackageProjectUrl>https://github.com/Cabazure/Cabazure.Test</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/Cabazure/Cabazure.Test</RepositoryUrl>
   </PropertyGroup>

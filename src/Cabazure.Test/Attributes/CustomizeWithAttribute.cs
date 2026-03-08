@@ -42,7 +42,7 @@ public sealed class CustomizeWithAttribute : Attribute
     /// </exception>
     public CustomizeWithAttribute(Type customizationType)
     {
-        ArgumentNullException.ThrowIfNull(customizationType);
+        if (customizationType is null) throw new ArgumentNullException(nameof(customizationType));
         CustomizationType = customizationType;
     }
 
