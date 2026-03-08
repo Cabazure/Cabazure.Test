@@ -147,7 +147,7 @@ Format-ignorant string comparison on `StringAssertions` (call `.Should()` on any
 | `.NotBeSimilarTo(string expected)` | Inverse |
 | `.BeXmlEquivalentTo(string expected)` | `XDocument.Parse` → `ToString(SaveOptions.DisableFormatting)` |
 | `.NotBeXmlEquivalentTo(string expected)` | Inverse |
-| `.BeJsonEquivalentTo(string expected)` | `JsonDocument.Parse` → `JsonSerializer.Serialize` |
+| `.BeJsonEquivalentTo(string expected)` | `JsonDocument.Parse` → `element.ToCompactString()` (via `Utf8JsonWriter`, reflection-free) |
 | `.NotBeJsonEquivalentTo(string expected)` | Inverse |
 
 `BeXmlEquivalentTo`/`BeJsonEquivalentTo` propagate `XmlException`/`JsonException` on invalid input — they do **not** swallow parse errors.
@@ -242,6 +242,17 @@ tests/
 - Follow Microsoft's C# naming conventions (PascalCase types/members, camelCase locals and private fields — no underscore prefix).
 - Avoid abbreviations in public APIs.
 - Target nullable reference types enabled (`<Nullable>enable</Nullable>`).
+- **Prefer extension methods over plain static helper methods** for internal utilities — call sites read more naturally (e.g. `element.ToCompactString()` instead of `JsonElementHelper.ToCompactString(element)`).
+
+## Reflection and JSON Serialization
+
+This library must work in test projects that set `<JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>`. When that MSBuild property is false, `JsonSerializer.Serialize<T>()` and `JsonSerializer.Deserialize<T>()` throw `NotSupportedException` at runtime because the type resolver is replaced with `JsonTypeInfoResolver.Empty`.
+
+**Rules:**
+- **Never call `JsonSerializer.Serialize` or `JsonSerializer.Deserialize`** anywhere in `src/Cabazure.Test/` (library source), not even for built-in types like `string` — the safety of any given type cannot be guaranteed.
+- For producing compact JSON from a `JsonElement`, use `element.ToCompactString()` (`JsonElementExtensions`) which writes via `Utf8JsonWriter` — a pure writer API with zero reflection.
+- For parsing JSON strings, `JsonDocument.Parse(s)` and `JsonDocument.Parse(s).RootElement` are safe — they are purely parser APIs.
+- When reviewing new features that touch JSON, explicitly verify that no `JsonSerializer` calls are introduced.
 
 ## Testing This Library
 
