@@ -183,3 +183,30 @@ NotBeJsonEquivalentTo (2):
 - `[Fact]` throughout — no `[AutoNSubstituteData]` needed for pure string assertions.
 - All failure-message tests assert both the actual and expected values appear in the exception message.
 
+
+### Phase 23: JsonElementEquivalencyStep Tests (2026-03-07)
+
+**Task:** Write comprehensive tests for JsonElementEquivalencyStep and JsonElementEquivalencyExtensions.
+
+**File Created:** 	ests/Cabazure.Test.Tests/Assertions/JsonElementEquivalencyStepTests.cs (5 tests)
+
+**Coverage:**
+
+1. UsingJsonElementComparison_WithIdenticalDtoJsonElements_Passes — identical JSON in both DTOs passes
+2. UsingJsonElementComparison_WithSemanticallyEqualButDifferentlyFormattedJson_Passes — whitespace-different JSON normalized and passes
+3. UsingJsonElementComparison_WithDifferentJsonValues_Throws — genuinely different JSON throws
+4. BeEquivalentTo_WithoutUsingJsonElementComparison_AndDifferentlyFormattedJson_Throws — regression/documentation: without the step, differently-formatted JSON fails structural comparison; documents WHY the feature exists
+5. UsingJsonElementComparison_WhenJsonDiffers_FailureMessageContainsBothJsonStrings — failure message includes both the expected and actual JSON strings
+
+**Skipped (per design decision):**
+- Direct JsonElement.Should().BeEquivalentTo() test: JsonElement.Should() resolves to JsonElementAssertions, not FA's generic ObjectAssertions.BeEquivalentTo. Covered by JsonElementAssertionsTests.cs.
+- Global AssertionOptions.AssertEquivalencyUsing registration test: FA 7.0.0 has no simple "reset to default"; global state isolation is risky. Exercised via user's module initializer in real usage.
+
+**Key Patterns:**
+- All tests use [Fact] — no auto-generated data needed for pure assertion logic
+- Private TestDto nested class with string Name and JsonElement Data as test fixture
+- Failure path tests use Action act = () => ... then ct.Should().Throw<Exception>()
+- Message assertions use .Which.Message.Should().Contain(...) (consistent with JsonElementAssertionsTests.cs)
+- No RootElement.Clone() needed since DTOs hold values by value type (JsonElement is a struct)
+
+**Test Result:** ✅ 208/208 passing — 203 existing + 5 new. No regressions.

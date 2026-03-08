@@ -282,3 +282,23 @@ The `throw;` after `.Throw()` is unreachable at runtime but required so the comp
 **Build:** Clean ✅ (src project verified; tests will need using updates in Part 2)
 
 **Internal detail preserved:** `FixtureDataExtensions` remains `internal` in `Cabazure.Test.Attributes` namespace — no user-visible impact. The public attributes now live in `Cabazure.Test` and explicitly import `Cabazure.Test.Attributes` to access the helper.
+
+### Phase 23: JsonElementEquivalencyStep (2026-03-08)
+
+**Task:** Implement `JsonElementEquivalencyStep` (FA 7.0.0 `IEquivalencyStep`) + `UsingJsonElementComparison` extension to handle `JsonElement` properties in `BeEquivalentTo` calls.
+
+**Key FA 7.0.0 types (confirmed by ILSpy decompilation):**
+- `IEquivalencyStep` — in `FluentAssertions.Equivalency` namespace
+- `Handle(Comparands, IEquivalencyValidationContext, IEquivalencyValidator)` — returns `EquivalencyResult`
+- `EquivalencyResult` — enum with `ContinueWithNext` and `AssertionCompleted` values
+- `Comparands` — class with `Subject` (`object`) and `Expectation` (`object`) properties
+- `IEquivalencyValidationContext.Reason` — type `FluentAssertions.Execution.Reason` with `FormattedMessage` (string) and `Arguments` (object[]) properties
+- `BeEquivalentTo` lambda uses `EquivalencyAssertionOptions<TExpectation>` (generic)
+- `AssertEquivalencyUsing` lambda uses `EquivalencyAssertionOptions` (non-generic)
+- Both inherit from `SelfReferenceEquivalencyAssertionOptions<TSelf>` which has `Using(IEquivalencyStep) → TSelf`
+
+**Extension method design:** Generic on `TSelf` extending `SelfReferenceEquivalencyAssertionOptions<TSelf>` — single method works for both per-call (`BeEquivalentTo` lambda) and global (`AssertEquivalencyUsing` lambda) registration. Returns `TSelf` to allow further chaining.
+
+**Step logic:** Pattern-match both `comparands.Subject` and `comparands.Expectation` to `JsonElement`; if either is not a `JsonElement`, return `ContinueWithNext`. Otherwise normalize both via `JsonSerializer.Serialize()`, assert string equality via `Execute.Assertion.BecauseOf(context.Reason.FormattedMessage, context.Reason.Arguments)`, return `AssertionCompleted`.
+
+**Build:** Clean ✅

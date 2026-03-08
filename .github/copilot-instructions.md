@@ -128,6 +128,10 @@ Configure the default precision in a `[ModuleInitializer]`:
 CabazureAssertionOptions.DateTimeOffsetPrecision = TimeSpan.FromMilliseconds(100);
 ```
 
+#### `JsonElementEquivalencyStep` / `UsingJsonElementComparison()`
+
+- `JsonElementEquivalencyStep` / `UsingJsonElementComparison()` — enable semantic JsonElement comparison inside `BeEquivalentTo` on DTOs; per-call via `opts.UsingJsonElementComparison()`, or globally via `AssertionOptions.AssertEquivalencyUsing(opts => opts.UsingJsonElementComparison())`
+
 #### `StringContentExtensions`
 
 Format-ignorant string comparison on `StringAssertions` (call `.Should()` on any `string`):

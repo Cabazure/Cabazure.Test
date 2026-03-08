@@ -547,6 +547,24 @@ internal static class TestAssemblyInitializer
 }
 ```
 
+### JsonElement Equivalency in DTOs
+
+When a DTO contains a `JsonElement` property, `BeEquivalentTo` falls back to reference equality by default, causing false failures for semantically identical JSON. Register `JsonElementEquivalencyStep` to enable proper semantic comparison:
+
+**Per-call:**
+```csharp
+result.Should().BeEquivalentTo(expected, opts => opts.UsingJsonElementComparison());
+```
+
+**Globally (in your module initializer):**
+```csharp
+[ModuleInitializer]
+public static void Initialize()
+{
+    AssertionOptions.AssertEquivalencyUsing(opts => opts.UsingJsonElementComparison());
+}
+```
+
 ---
 
 ## String Content Assertions
