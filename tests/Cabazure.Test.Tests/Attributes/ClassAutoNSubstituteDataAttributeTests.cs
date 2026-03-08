@@ -48,6 +48,18 @@ public class ClassAutoNSubstituteDataAttributeTests
     {
         sut.Dependency.Should().BeSameAs(service);
     }
+
+    [Theory]
+    [ClassAutoNSubstituteData(typeof(TypedTheoryData))]
+    public void ClassData_TheoryDataRows_AreUnpackedCorrectly(
+        string message,
+        int count,
+        FixtureFactoryTests.IMyInterface service)
+    {
+        message.Should().BeOneOf("hello", "world");
+        count.Should().BeOneOf(1, 2);
+        service.Should().NotBeNull();
+    }
 }
 
 public class SingleColumnData : IEnumerable<object[]>
@@ -80,4 +92,13 @@ public class InterfaceSubstituteData : IEnumerable<object[]>
     }
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+}
+
+public class TypedTheoryData : TheoryData<string, int>
+{
+    public TypedTheoryData()
+    {
+        Add("hello", 1);
+        Add("world", 2);
+    }
 }

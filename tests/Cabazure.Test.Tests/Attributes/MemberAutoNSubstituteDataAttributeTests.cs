@@ -24,6 +24,12 @@ public class MemberAutoNSubstituteDataAttributeTests
         [NSubstitute.Substitute.For<FixtureFactoryTests.IMyInterface>()],
     ];
 
+    public static TheoryData<string, int> TypedRows => new()
+    {
+        { "hello", 1 },
+        { "world", 2 },
+    };
+
     [Theory]
     [MemberAutoNSubstituteData(nameof(StringRows))]
     public void MemberProperty_ProvidesRows(
@@ -88,6 +94,18 @@ public class MemberAutoNSubstituteDataAttributeTests
         FixtureFactoryTests.IMyInterface service)
     {
         value.Should().BeOneOf("item1", "item2");
+        service.Should().NotBeNull();
+    }
+
+    [Theory]
+    [MemberAutoNSubstituteData(nameof(TypedRows))]
+    public void MemberProperty_TheoryDataRows_AreUnpackedCorrectly(
+        string message,
+        int count,
+        FixtureFactoryTests.IMyInterface service)
+    {
+        message.Should().BeOneOf("hello", "world");
+        count.Should().BeOneOf(1, 2);
         service.Should().NotBeNull();
     }
 }
