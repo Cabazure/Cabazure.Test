@@ -108,6 +108,30 @@ public class MemberAutoNSubstituteDataAttributeTests
         count.Should().BeOneOf(1, 2);
         service.Should().NotBeNull();
     }
+
+    public static async IAsyncEnumerable<object[]> AsyncRows()
+    {
+        await Task.Yield();
+        yield return ["async1"];
+        yield return ["async2"];
+    }
+
+    [Theory]
+    [MemberAutoNSubstituteData(nameof(AsyncRows))]
+    public void MemberMethod_AsyncEnumerable_ProvidesRows(
+        string value,
+        FixtureFactoryTests.IMyInterface service)
+    {
+        value.Should().BeOneOf("async1", "async2");
+        service.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void SupportsDiscoveryEnumeration_ReturnsTrue()
+    {
+        var sut = new MemberAutoNSubstituteDataAttribute(nameof(StringRows));
+        sut.SupportsDiscoveryEnumeration().Should().BeTrue();
+    }
 }
 
 public static class ExternalMemberData
