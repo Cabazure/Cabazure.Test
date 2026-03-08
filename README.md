@@ -565,6 +565,22 @@ public static void Initialize()
 }
 ```
 
+### Allowing Empty Objects in BeEquivalentTo
+
+When testing serialization round-trips across many DTO types, some may have no public properties. FluentAssertions 7.x throws `InvalidOperationException: "No members were found for comparison..."` in this case.
+
+Use `AllowingEmptyObjects()` to allow the assertion to pass for types with no public members:
+
+```csharp
+// Per-call
+result.Should().BeEquivalentTo(expected, opts => opts.AllowingEmptyObjects());
+
+// Global (in module initializer)
+AssertionOptions.AssertEquivalencyUsing(opts => opts.AllowingEmptyObjects());
+```
+
+Types with members continue through FluentAssertions' normal equivalency pipeline unchanged.
+
 ---
 
 ## String Content Assertions
