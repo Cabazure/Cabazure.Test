@@ -69,3 +69,16 @@ My domain is xUnit 3 integration. Key difference from xUnit 2: `DataAttribute` i
 **Result:** Clean conventional commit history. Single-concern separation enables clear bisect workflows. Licensing context preserved in commit message for future maintainers. All 217 tests passing.
 
 **Pattern:** Infrastructure upgrades separated from licensing constraints for decision clarity and maintainability.
+
+### Phase 38: Test Performance Tips Documentation (2026-03-11)
+
+**Task:** Add "## Test Performance Tips" section to README.md based on real-world usage patterns from ocpp-core (3,025 tests).
+
+**Section added:** After `## Test Timeouts`, before `## Compatibility` — three numbered tips:
+1. Prefer `[Frozen]` parameters over `FixtureFactory.Create()` in shared helpers (avoids bypassing `[CustomizeWith]` and creating bare fixtures)
+2. Register domain-type customizations once via `[ModuleInitializer]` (eliminates per-fixture resolution overhead; cross-references existing section)
+3. Consolidate repetitive `[Fact]` methods with `[MemberAutoNSubstituteData]` + `TheoryData<Type>` (reduces test count, improves clarity)
+
+**Pattern:** Doc sections use ❌/✅ code block pairs with a brief rationale sentence — consistent with FluentAssertions Extensions section style. Cross-references to existing sections preferred over duplicating examples.
+
+**Cross-Update (Scribe, 2026-03-08T15:12:21Z):** Kaylee's decision merged to decisions.md. Code commits: fc2f65b, b41c235. Squad files logged. Phase 38 ready for merge.

@@ -35,6 +35,7 @@ public sealed class FixtureCustomizationCollection : IEnumerable<ICustomization>
 {
     private readonly List<ICustomization> customizations;
     private readonly object syncLock = new();
+    private volatile ICustomization[]? _snapshot;
 
     internal FixtureCustomizationCollection()
     {
@@ -74,6 +75,7 @@ public sealed class FixtureCustomizationCollection : IEnumerable<ICustomization>
         ArgumentNullException.ThrowIfNull(customization);
         lock (syncLock)
         {
+            _snapshot = null;
             customizations.Add(customization);
         }
     }
@@ -137,6 +139,7 @@ public sealed class FixtureCustomizationCollection : IEnumerable<ICustomization>
         ArgumentNullException.ThrowIfNull(customization);
         lock (syncLock)
         {
+            _snapshot = null;
             return customizations.Remove(customization);
         }
     }
@@ -158,6 +161,7 @@ public sealed class FixtureCustomizationCollection : IEnumerable<ICustomization>
                 return false;
             }
 
+            _snapshot = null;
             customizations.RemoveAt(index);
             return true;
         }
@@ -168,6 +172,7 @@ public sealed class FixtureCustomizationCollection : IEnumerable<ICustomization>
     {
         lock (syncLock)
         {
+            _snapshot = null;
             customizations.Clear();
         }
     }
@@ -179,13 +184,15 @@ public sealed class FixtureCustomizationCollection : IEnumerable<ICustomization>
     /// <returns>An enumerator over a snapshot of the customizations.</returns>
     public IEnumerator<ICustomization> GetEnumerator()
     {
-        List<ICustomization> snapshot;
-        lock (syncLock)
+        var snapshot = _snapshot;
+        if (snapshot is null)
         {
-            snapshot = [..customizations];
+            lock (syncLock)
+            {
+                _snapshot = snapshot = [.. customizations];
+            }
         }
-
-        return snapshot.GetEnumerator();
+        return ((IEnumerable<ICustomization>)snapshot).GetEnumerator();
     }
 
     /// <inheritdoc/>
