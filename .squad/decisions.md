@@ -1954,3 +1954,36 @@ Mal researched test timeout patterns and found that xUnit 3 + BCL already provid
 
 **Commit:** `docs(assertions): document test timeout patterns`
 
+# Decision: Phase 38 Reflection-Caching Optimizations
+
+**Author:** Kaylee  
+**Date:** 2026-07-14  
+**Branch:** squad/38-perf-optimizations
+
+## Context
+
+Four internal perf optimizations to eliminate redundant reflection/allocation on every test invocation. All changes are internal-only with zero public API or behavioral impact.
+
+## Decisions Made
+
+### 1. `_snapshot` placement and invalidation strategy (Opt-C)
+
+Placed `_snapshot` as a `volatile` field alongside `syncLock`. Invalidation (`= null`) happens **inside the lock** in each mutation, immediately before the mutation itself. This ensures: (a) no test can observe a stale snapshot after a mutation returns, and (b) the volatile write on null-assignment provides the required memory barrier for the subsequent lock-free read path.
+
+The two delegating `Add` overloads (`Add<T>(Func<>)` and `Add(ISpecimenBuilder)`) do **not** need explicit invalidation — they delegate to `Add(ICustomization)` which already invalidates. Invalidating twice would be harmless but redundant.
+
+### 2. `RuntimeTypeHandle` as dictionary key for `InitializedTypes` (Opt-A)
+
+`RuntimeTypeHandle` is a value type that uniquely identifies a type at runtime, with correct equality semantics. Using it as the key (with `byte` as a zero-cost value) avoids boxing the `Type` object on every lookup that `ConcurrentDictionary<Type, byte>` would require.
+
+### 3. Shared `ICustomization[]` instances across fixture creations (Opt-A)
+
+Cached arrays are reused across all fixture creations for the same method/type. This is safe because `ICustomization.Customize(IFixture)` universally mutates the fixture passed to it, not the customization itself. No state is accumulated on the customization instance between calls. No comment needed in the code — this is standard library practice.
+
+### 4. `static` lambda in `ParameterCache.GetOrAdd` (Opt-B)
+
+Using `static p =>` for the factory lambda prevents the compiler from generating a closure object on every cache-miss call. For the common steady-state case (cache hit), this makes no difference. For the first call per parameter, it avoids one small allocation.
+
+### 5. `IRequestSpecification` (Matcher) sharing across fixtures (Opt-B)
+
+The `Matcher` extracted from `FreezeOnMatchCustomization` is a pure type predicate — it holds no fixture-specific state. Sharing it via the parameter cache is safe. It's used as the filter argument to `FilteringSpecimenBuilder`, which is constructed fresh per fixture call, so there is no aliasing risk.

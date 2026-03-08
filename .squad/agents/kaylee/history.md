@@ -404,3 +404,17 @@ The `throw;` after `.Throw()` is unreachable at runtime but required so the comp
 **Result:** Build clean, all 217 tests passing. Pure test-infrastructure dependency updates with no source-code compatibility impact. FluentAssertions pinning defers v8 licensing review to future phase — v7 remains stable across consumer ecosystem.
 
 **Note:** Conventional commit separation (Wash): build(deps): infrastructure upgrades, then build(deps): FA pinning with licensing context.
+
+### Phase 38: Reflection-Caching Optimizations (perf)
+
+Four internal-only perf optimizations to eliminate redundant reflection calls per test invocation. Zero public API changes, zero behavioral changes.
+
+Opt-C: Added volatile _snapshot field to FixtureCustomizationCollection. All four mutation methods nullify it inside the lock. GetEnumerator uses volatile double-checked locking - lock-free after first snapshot build.
+
+Opt-A: Added three ConcurrentDictionary statics to FixtureFactory (InitializedTypes keyed on RuntimeTypeHandle, MethodCustomizations, TypeCustomizations). Create(MethodInfo) uses TryAdd for one-time class constructor guard and GetOrAdd for attribute caching.
+
+Opt-B: Added CachedParameterAttributes sealed record and ParameterCache ConcurrentDictionary to FixtureDataExtensions. FreezeProvided and ResolveAuto now read from cache instead of calling GetCustomAttributes per invocation.
+
+Opt-D: Replaced .ToList().ForEach() with .ToArray() + foreach in RecursionCustomization, eliminating intermediate List allocation per fixture creation.
+
+Result: Build clean (0 errors). Zoe will run full test suite.
