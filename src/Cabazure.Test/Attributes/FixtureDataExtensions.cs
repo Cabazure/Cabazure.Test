@@ -30,39 +30,55 @@ internal static class FixtureDataExtensions
         object?[] provided)
     {
         var values = new object?[parameters.Length];
-
         for (var i = 0; i < parameters.Length; i++)
         {
             var parameter = parameters[i];
-
             if (i < provided.Length)
             {
-                var value = provided[i];
-                values[i] = value;
-
-                var frozenAttr = parameter.GetCustomAttribute<FrozenAttribute>();
-                if (frozenAttr is not null && value is not null && !parameter.ParameterType.IsValueType)
-                {
-                    fixture.Customizations.Insert(
-                        0,
-                        SpecimenBuilderNodeFactory.CreateTypedNode(parameter.ParameterType, new FixedBuilder(value)));
-                }
-            }
-            else if (parameter.ParameterType.IsAssignableFrom(typeof(Fixture)))
-            {
-                values[i] = fixture;
+                values[i] = provided[i];
+                fixture.FreezeProvided(parameter, provided[i]);
             }
             else
             {
-                foreach (var attr in parameter.GetCustomAttributes<CustomizeAttribute>())
-                {
-                    fixture.Customize(attr.GetCustomization(parameter));
-                }
-
-                values[i] = new SpecimenContext(fixture).Resolve(parameter);
+                values[i] = fixture.ResolveAuto(parameter);
             }
         }
 
         return values;
+    }
+
+    /// <summary>
+    /// Registers an already-provided value in the fixture when the parameter carries
+    /// <see cref="FrozenAttribute"/>, so subsequent parameters of the same type receive
+    /// the same instance.
+    /// </summary>
+    private static void FreezeProvided(this IFixture fixture, ParameterInfo parameter, object? value)
+    {
+        if (value is null || parameter.GetCustomAttribute<FrozenAttribute>() is null)
+            return;
+
+        fixture.Customizations.Insert(
+            0,
+            new FilteringSpecimenBuilder(
+                new FixedBuilder(value),
+                new OrRequestSpecification(
+                    new SeedRequestSpecification(parameter.ParameterType),
+                    new ExactTypeSpecification(parameter.ParameterType))));
+    }
+
+    /// <summary>
+    /// Applies parameter-level <see cref="CustomizeAttribute"/> annotations to the fixture
+    /// then resolves a value. Returns the fixture itself for <see cref="IFixture"/> or
+    /// <see cref="Fixture"/> parameters.
+    /// </summary>
+    private static object? ResolveAuto(this IFixture fixture, ParameterInfo parameter)
+    {
+        if (parameter.ParameterType.IsAssignableFrom(typeof(Fixture)))
+            return fixture;
+
+        foreach (var attr in parameter.GetCustomAttributes<CustomizeAttribute>())
+            fixture.Customize(attr.GetCustomization(parameter));
+
+        return new SpecimenContext(fixture).Resolve(parameter);
     }
 }
