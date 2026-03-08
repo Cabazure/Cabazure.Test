@@ -10,7 +10,6 @@
 
     <!-- NuGet Package Metadata -->
     <PackageId>Cabazure.Test</PackageId>
-    <Version>0.1.0</Version>
     <PackageTags>testing;xunit;nsubstitute;autofixture;fluentassertions</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
