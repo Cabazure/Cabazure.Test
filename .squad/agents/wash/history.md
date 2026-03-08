@@ -221,3 +221,26 @@ Key Pattern Learning:
 - Documenting both the step class and the extension method together in copilot-instructions makes the API surface clear to internal team members and future maintainers.
 
 Cross-team: Kaylee implemented the step and extension; Zoe provided 5 tests; Wash completed docs and commit.
+
+### Phase 25: Test Timeouts Documentation (2026-03-11)
+
+Task: Document three complementary test timeout patterns recommended by Mal's research.
+
+Implementation:
+- Added "## Test Timeouts" section to README.md after "String Content Assertions", before "Compatibility"
+  - Documented xUnit 3 `[Fact(Timeout = 5000)]` / `[Theory(Timeout = 5000)]` with example
+  - Documented .NET 6+ `Task.WaitAsync(TimeSpan)` per-await pattern with example
+  - Documented NSubstitute `WaitForReceived()` async call verification with module initializer override example
+  - Explained each pattern's best use case
+- Added "### Test Timeouts" subsection to `.github/copilot-instructions.md` after "ProtectedMethodExtensions", before "xUnit 3 Specifics"
+  - Listed three patterns with concise descriptions and best-use guidance
+  - Noted that no new library helper is required — all scenarios are covered by xUnit 3 + BCL
+- Committed with `docs(assertions): document test timeout patterns`
+
+Key Finding:
+- xUnit 3 + BCL timeout coverage is complete. The three patterns (whole-test, per-await, call verification) address all timeout scenarios test authors encounter. No new timeout helper was added to Cabazure.Test.
+
+Documentation Impact:
+- Users: Clear, discoverable patterns for handling test timeouts in different scenarios
+- Library Scope: Confirms timeout handling is external to the library's responsibility
+- Maintainability: Documented patterns are stable (no library changes required)
