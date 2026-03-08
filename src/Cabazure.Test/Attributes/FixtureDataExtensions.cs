@@ -34,13 +34,13 @@ internal static class FixtureDataExtensions
         for (var i = 0; i < parameters.Length; i++)
         {
             var parameter = parameters[i];
-            var frozenAttr = parameter.GetCustomAttribute<FrozenAttribute>();
 
             if (i < provided.Length)
             {
                 var value = provided[i];
                 values[i] = value;
 
+                var frozenAttr = parameter.GetCustomAttribute<FrozenAttribute>();
                 if (frozenAttr is not null && value is not null && !parameter.ParameterType.IsValueType)
                 {
                     fixture.Customizations.Insert(
@@ -54,11 +54,9 @@ internal static class FixtureDataExtensions
             }
             else
             {
-                if (frozenAttr is not null)
+                foreach (var attr in parameter.GetCustomAttributes<CustomizeAttribute>())
                 {
-                    // FreezeOnMatchCustomization creates the value AND registers it as frozen
-                    // in one step; the subsequent Resolve call returns the already-frozen instance.
-                    fixture.Customize(frozenAttr.GetCustomization(parameter));
+                    fixture.Customize(attr.GetCustomization(parameter));
                 }
 
                 values[i] = new SpecimenContext(fixture).Resolve(parameter);
