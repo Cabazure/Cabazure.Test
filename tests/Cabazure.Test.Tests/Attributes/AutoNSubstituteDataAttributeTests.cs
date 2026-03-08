@@ -1,3 +1,4 @@
+using AutoFixture.Xunit3;
 using FrozenAttribute = AutoFixture.Xunit3.FrozenAttribute;
 using Cabazure.Test.Tests.Fixture;
 using FluentAssertions;
@@ -43,5 +44,35 @@ public class AutoNSubstituteDataAttributeTests
         str.Should().NotBeNullOrEmpty();
         ((object)number).Should().BeOfType<int>();
         service.Should().NotBeNull();
+    }
+
+    [Theory, AutoNSubstituteData]
+    public void Theory_WithNoAutoProperties_DoesNotPopulateProperties(
+        [NoAutoProperties] TypeWithProperties sut)
+    {
+        sut.Should().NotBeNull();
+        sut.Name.Should().BeNull("NoAutoProperties suppresses property population");
+        sut.Value.Should().Be(0, "NoAutoProperties suppresses property population");
+    }
+
+    [Theory, AutoNSubstituteData]
+    public void Theory_WithNoAutoPropertiesAndFrozen_BothApplied(
+        [NoAutoProperties, Frozen] TypeWithProperties frozen,
+        TypeWithProperties sut)
+    {
+        sut.Should().BeSameAs(frozen, "[Frozen] freezes the instance");
+        sut.Name.Should().BeNull("[NoAutoProperties] was applied before freezing");
+    }
+
+    [Theory, AutoNSubstituteData]
+    public void Theory_WithoutNoAutoProperties_DoesPopulateProperties(TypeWithProperties sut)
+    {
+        sut.Name.Should().NotBeNull("AutoFixture populates properties by default");
+    }
+
+    public sealed class TypeWithProperties
+    {
+        public string? Name { get; set; }
+        public int Value { get; set; }
     }
 }
