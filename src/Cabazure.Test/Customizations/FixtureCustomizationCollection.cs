@@ -12,8 +12,9 @@ namespace Cabazure.Test.Customizations;
 /// <para>
 /// The collection is pre-seeded with <see cref="AutoNSubstituteCustomization"/>,
 /// <see cref="RecursionCustomization"/>, <see cref="ImmutableCollectionCustomization"/>,
-/// <see cref="DateOnlyTimeOnlyCustomization"/>, and <see cref="CancellationTokenCustomization"/>
-/// as the first five entries.
+/// <see cref="DateOnlyTimeOnlyCustomization"/>, <see cref="CancellationTokenCustomization"/>,
+/// <see cref="JsonElementCustomization"/>, and <see cref="JsonSerializerOptionsCustomization"/>
+/// as the first seven entries.
 /// Customizations are applied in the order they appear in the collection.
 /// </para>
 /// <para>
@@ -45,6 +46,7 @@ public sealed class FixtureCustomizationCollection : IEnumerable<ICustomization>
             new DateOnlyTimeOnlyCustomization(),
             new CancellationTokenCustomization(),
             new JsonElementCustomization(),
+            new JsonSerializerOptionsCustomization(),
         ];
     }
 
