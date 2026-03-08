@@ -447,3 +447,35 @@ Result: Build clean (0 errors). Zoe will run full test suite.
 **Result:** All 238 tests pass. Two clean commits: 6de77c9, a0c3a66.
 
 **Key insight:** Private field naming convention is camelCase without underscore prefix — items not _items, syncLock not _syncLock. Apply consistently when spotted.
+
+## Learnings
+
+### Issue #40: netstandard2.1 Multi-targeting (2026-03-07)
+
+**Task:** Add 
+et10.0;netstandard2.1 multi-targeting to Cabazure.Test.csproj.
+
+**Changes made:**
+- TargetFramework → TargetFrameworks: 
+et10.0;netstandard2.1
+- DateOnlyTimeOnlyCustomization.cs — entire file wrapped in #if NET6_0_OR_GREATER; constructor guard removed from within #if block
+- FixtureCustomizationCollection.cs — 
+ew DateOnlyTimeOnlyCustomization() in constructor array wrapped with #if NET6_0_OR_GREATER; converted collection expression init [..] to 
+ew ICustomization[]{} and spread [.. items, x] to .Concat(new[]{x}).ToArray() for cross-TFM safety
+- ArgumentNullException.ThrowIfNull replaced with if (x is null) throw new ArgumentNullException(nameof(x)) in all 14 affected files (ThrowIfNull is .NET 6+)
+- TaskCompletionSource (non-generic, .NET 5+) → TaskCompletionSource<object?> everywhere; TrySetResult() → TrySetResult(null)
+- Task.WaitAsync polyfill via #if NET6_0_OR_GREATER / Task.WhenAny fallback
+- Added System.Text.Json + Microsoft.CSharp as conditional package references for 
+etstandard2.1
+
+**Key learning — dynamic needs Microsoft.CSharp on netstandard2.1:**
+ImmutableCollectionCustomization uses Func<dynamic, object> and dynamic list = context.Resolve(listType) to call extension methods (e.g., ImmutableArray.ToImmutableArray(dynamic)) without explicit generic type arguments. This pattern uses runtime binder dispatch which requires Microsoft.CSharp.dll — available in .NET Core/5+/Standard2.0 via Microsoft.CSharp NuGet package 4.7.0. Added conditionally for 
+etstandard2.1.
+
+**Key learning — collection expression [.. spread] on netstandard2.1:**
+C# 12 collection expressions with spread ([.. items, x]) on arrays may or may not compile cleanly for all netstandard2.1 environments depending on SDK. Replaced with .Concat(new[]{x}).ToArray() for explicit cross-TFM compatibility. Collection expressions without spread ([a, b, c]) are fine.
+
+**Key learning — TaskCompletionSource (non-generic) is .NET 5+:**
+The non-generic TaskCompletionSource was added in .NET 5 and is not available in netstandard2.1. Use TaskCompletionSource<T> (available since netstandard1.0) for cross-TFM code.
+
+**Test result:** 238/238 passing on net10.0.
