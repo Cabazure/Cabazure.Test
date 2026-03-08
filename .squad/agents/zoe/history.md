@@ -284,3 +284,24 @@ NotBeJsonEquivalentTo (2):
 **Test Result:** ✅ 217/217 passing. No regressions.
 
 **Cross-team:** Kaylee (Agent 74) implemented unwrapping logic in ClassAutoNSubstituteDataAttribute and MemberAutoNSubstituteDataAttribute.ToRows()
+
+### Phase 38: Reflection-Caching Optimizations Verification (squad/38-perf-optimizations)
+
+**Task:** Verify four internal-only performance optimizations implemented by Kaylee (Opt-A through Opt-D) leave all tests green.
+
+**Optimizations verified (code inspection + full test run):**
+
+- **Opt-C** (`FixtureCustomizationCollection`): Volatile double-checked locking with `_snapshot` array in `GetEnumerator()`. All mutations (Add/Remove/Clear) correctly set `_snapshot = null`. Pattern confirmed correct.
+- **Opt-A** (`FixtureFactory.Create(MethodInfo)`): Three `ConcurrentDictionary` caches — `InitializedTypes` (per `RuntimeTypeHandle`), `MethodCustomizations` (per `MethodInfo`), `TypeCustomizations` (per `Type`). `RuntimeHelpers.RunClassConstructor` gated via `TryAdd`. Pattern confirmed correct.
+- **Opt-B** (`FixtureDataExtensions.FreezeProvided`/`ResolveAuto`): `CachedParameterAttributes` record (FrozenMatcher + CustomizeAttribute[]) cached per `ParameterInfo` via `ConcurrentDictionary.GetOrAdd`. Both `FreezeProvided` and `ResolveAuto` consume the cache. Pattern confirmed correct.
+- **Opt-D** (`RecursionCustomization.Customize`): `.ToArray()` + `foreach` pattern replaces `.ToList().ForEach()`. Correctly avoids collection-modification during iteration. Pattern confirmed correct.
+
+**Test Result:** ✅ **238/238 passing. Zero failures. Zero skips.**
+
+**Notable findings:**
+- Test count grew from 217 (Phase 26) to 238 — 21 additional tests from intermediate phases between 26 and 38.
+- Build had a transient MSB3492 cache-file error on first `dotnet build -q` run; resolved immediately on retry. Not related to optimizations.
+- Branch `squad/38-perf-optimizations` contains only a docs commit (README Test Performance Tips section) vs `main`. The 4 optimization commits were already landed on `main` prior to branching.
+- All targeted areas — `[Frozen]` parameters, `[CustomizeWith]` application, `FixtureFactory.Customizations` mutation, `RecursionCustomization` — exercised by existing tests and passing cleanly.
+
+**Decision:** No regression found. No inbox decision file needed.
