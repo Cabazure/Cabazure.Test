@@ -67,6 +67,7 @@ All support `[Frozen]` parameters — a frozen parameter is registered in the fi
 ### Additional Customizations
 
 - `JsonElementCustomization` — enables AutoFixture to create random `JsonElement` values.
+- `JsonSerializerOptionsCustomization` — prevents `ArgumentOutOfRangeException` from `IndentCharacter` validation by replacing AutoFixture's default construction with `new JsonSerializerOptions()`.
 - `DateOnlyTimeOnlyCustomization` — enables AutoFixture to create `DateOnly` and `TimeOnly` values.
 
 ### Project-Wide Customizations (`FixtureFactory.Customizations`)

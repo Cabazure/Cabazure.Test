@@ -256,6 +256,7 @@ When the assertion fails, the FluentAssertions failure message is included in NS
 | `CancellationTokenCustomization` | Provides non-cancelled `CancellationToken` parameters in theory tests (`new CancellationToken(false)`), fixing AutoFixture's default. |
 | `DateOnlyTimeOnlyCustomization` | Enables reliable creation of `DateOnly` and `TimeOnly` values derived from a random `DateTime`. |
 | `JsonElementCustomization` | Included-by-default customization that enables creation of `System.Text.Json.JsonElement` instances. Produces a random JSON string by default; configurable via constructor overloads. |
+| `JsonSerializerOptionsCustomization` | Prevents `ArgumentOutOfRangeException` when AutoFixture tries to set `IndentCharacter` to a random char. Produces `new JsonSerializerOptions()` by default. |
 | `InvokeProtected` / `InvokeProtectedAsync` | Extension methods for invoking protected instance methods via reflection — void, typed-return, and async variants. Useful for testing Template Method patterns and protected virtual hooks without subclassing. |
 | `BeSimilarTo<T>` | Whitespace-normalized string comparison (collapses whitespace/newlines) |
 | `BeXmlEquivalentTo<T>` | XML structural comparison ignoring formatting |
@@ -340,7 +341,23 @@ public static void Initialize()
 }
 ```
 
-### Custom Type Registration
+### `JsonSerializerOptionsCustomization`
+
+Prevents an `ArgumentOutOfRangeException` when AutoFixture tries to construct `JsonSerializerOptions`. The `IndentCharacter` property (added in .NET 8) only accepts `' '` (space) or `'\t'` (tab); AutoFixture generates a random `char` for it, which always fails with:
+
+> `"Supported indentation characters are space and horizontal tab."`
+
+**Included by default.** Produces `new JsonSerializerOptions()` with all framework defaults. Override for a single fixture with `fixture.Inject(...)`, or project-wide by removing and re-registering:
+
+```csharp
+[ModuleInitializer]
+public static void Initialize()
+{
+    FixtureFactory.Customizations.Remove<JsonSerializerOptionsCustomization>();
+    FixtureFactory.Customizations.Add(
+        _ => new JsonSerializerOptions(JsonSerializerDefaults.Web));
+}
+```
 
 AutoFixture cannot construct some types by default — `JsonElement`, `DateOnly`, or your own domain types with special creation logic. Use `FixtureFactory.Customizations` to register custom factories and builders.
 
