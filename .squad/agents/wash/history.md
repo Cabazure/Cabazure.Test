@@ -57,3 +57,15 @@ My domain is xUnit 3 integration. Key difference from xUnit 2: `DataAttribute` i
 - **Pattern Learning:** Both Phases 23 & 24 follow consistent documentation structure: problem statement → per-call usage → global registration via [ModuleInitializer]
 
 ### Phase 25: Test Timeouts Documentation (2026-03-11)
+
+### Phase 27: Dependency Upgrade Commits (2026-03-08)
+
+**Task:** Create focused conventional commits for Kaylee's dependency upgrade work.
+
+**Commits Created:**
+- 8ee6553: uild(deps): upgrade test infrastructure packages — coverlet.collector & Microsoft.NET.Test.Sdk upgrades
+- c31b69f: uild(deps): pin FluentAssertions to v7 (licensing) — version constraint [7.0.0, 8.0.0) in both .csproj files
+
+**Result:** Clean conventional commit history. Single-concern separation enables clear bisect workflows. Licensing context preserved in commit message for future maintainers. All 217 tests passing.
+
+**Pattern:** Infrastructure upgrades separated from licensing constraints for decision clarity and maintainability.

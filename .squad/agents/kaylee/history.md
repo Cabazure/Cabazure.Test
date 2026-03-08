@@ -380,3 +380,27 @@ The `throw;` after `.Throw()` is unreachable at runtime but required so the comp
 - Pattern-matching approach (`item is ITheoryDataRow tdr`) is idiomatic C# 9+
 
 **Status:** ✅ Complete — both files fixed, docs updated
+
+## Learnings
+
+### Package Upgrade: coverlet.collector + Microsoft.NET.Test.Sdk (2026-07-14)
+
+**Task:** Bump two test-infrastructure NuGet packages in 	ests\Cabazure.Test.Tests\Cabazure.Test.Tests.csproj:
+- coverlet.collector 6.0.4 → 8.0.0
+- Microsoft.NET.Test.Sdk 17.12.0 → 18.3.0
+
+**Result:** Build clean, all 217 tests passed. Both packages are pure test-infrastructure — no source or API changes required. Straightforward version bump with no compatibility friction.
+
+
+### FluentAssertions v7 Pin (2026-07-14)
+**Task:** Pin FluentAssertions to [7.0.0, 8.0.0) in both src\Cabazure.Test\Cabazure.Test.csproj and 	ests\Cabazure.Test.Tests\Cabazure.Test.Tests.csproj.
+**Reason:** FluentAssertions 8+ introduced a commercial license requirement for large organisations. Cabazure.Test ships FA as a transitive dependency, so pinning to v7 protects consumers from inadvertently pulling in a version with license obligations.
+**Result:** Build clean, all 217 tests passed. NuGet version range syntax [7.0.0, 8.0.0) (inclusive lower, exclusive upper) is the correct way to express this constraint in MSBuild project files — it prevents automatic upgrades to v8+ while still allowing any 7.x patch/minor release.
+
+### Phase 27: Test Infrastructure Dependency Upgrade (2026-03-08)
+
+**Task:** Upgrade coverlet.collector (6.0.4 → 8.0.0) and Microsoft.NET.Test.Sdk (17.12.0 → 18.3.0) in 	ests\Cabazure.Test.Tests\Cabazure.Test.Tests.csproj. Pin FluentAssertions to [7.0.0, 8.0.0) in both src and tests .csproj files.
+
+**Result:** Build clean, all 217 tests passing. Pure test-infrastructure dependency updates with no source-code compatibility impact. FluentAssertions pinning defers v8 licensing review to future phase — v7 remains stable across consumer ecosystem.
+
+**Note:** Conventional commit separation (Wash): build(deps): infrastructure upgrades, then build(deps): FA pinning with licensing context.
