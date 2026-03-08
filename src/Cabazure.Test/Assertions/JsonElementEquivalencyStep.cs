@@ -1,6 +1,5 @@
 using System.Text.Json;
 using FluentAssertions.Equivalency;
-using FluentAssertions.Execution;
 
 namespace Cabazure.Test;
 
@@ -14,8 +13,9 @@ namespace Cabazure.Test;
 /// <c>result.Should().BeEquivalentTo(expected)</c>), it falls back to reference equality for
 /// <see cref="System.Text.Json.JsonElement"/> properties, which may produce false negatives even
 /// for semantically identical JSON. This step intercepts those comparisons and normalizes both
-/// values via <see cref="JsonSerializer.Serialize(JsonElement)"/> before comparing as strings —
-/// the same approach used by <see cref="JsonElementAssertions.BeEquivalentTo(JsonElement, string, object[])"/>.
+/// values via <see cref="JsonElementHelper.ToCompactString"/> (a reflection-free
+/// <see cref="System.Text.Json.Utf8JsonWriter"/>-based serializer) before delegating to
+/// FluentAssertions' string comparison — providing accurate structural diffs on failure.
 /// </para>
 /// <para>
 /// Register per-call:
@@ -48,7 +48,8 @@ public sealed class JsonElementEquivalencyStep : IEquivalencyStep
     /// Provides context about the current node in the object graph and the reason for the assertion.
     /// </param>
     /// <param name="nestedValidator">
-    /// The validator that can be used to recursively assert nested members (not used by this step).
+    /// The validator that can be used to recursively assert nested members — used by this step
+    /// to delegate string comparison to FluentAssertions for accurate diff messages.
     /// </param>
     /// <returns>
     /// <see cref="EquivalencyResult.AssertionCompleted"/> if both comparands are
@@ -66,16 +67,12 @@ public sealed class JsonElementEquivalencyStep : IEquivalencyStep
             return EquivalencyResult.ContinueWithNext;
         }
 
-        var subjectJson = JsonSerializer.Serialize(subject);
-        var expectedJson = JsonSerializer.Serialize(expectation);
+        var newComparands = new Comparands(
+            JsonElementHelper.ToCompactString(subject),
+            JsonElementHelper.ToCompactString(expectation),
+            typeof(string));
 
-        Execute.Assertion
-            .BecauseOf(context.Reason.FormattedMessage, context.Reason.Arguments)
-            .ForCondition(subjectJson == expectedJson)
-            .FailWith(
-                "Expected JSON to be equivalent to {0}{reason}, but found {1}.",
-                expectedJson,
-                subjectJson);
+        nestedValidator.RecursivelyAssertEquality(newComparands, context);
 
         return EquivalencyResult.AssertionCompleted;
     }

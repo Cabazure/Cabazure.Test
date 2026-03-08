@@ -40,8 +40,8 @@ public sealed class JsonElementAssertions
         string because = "",
         params object[] becauseArgs)
     {
-        var subjectJson = JsonSerializer.Serialize(subject);
-        var expectedJson = JsonSerializer.Serialize(expected);
+        var subjectJson = JsonElementHelper.ToCompactString(subject);
+        var expectedJson = JsonElementHelper.ToCompactString(expected);
 
         Execute.Assertion
             .BecauseOf(because, becauseArgs)

@@ -243,5 +243,5 @@ public static class StringContentExtensions
         => s is null ? string.Empty : XDocument.Parse(s).ToString(SaveOptions.DisableFormatting);
 
     private static string NormalizeJson(string? s)
-        => s is null ? string.Empty : JsonSerializer.Serialize(JsonDocument.Parse(s).RootElement);
+        => s is null ? string.Empty : JsonElementHelper.ToCompactString(JsonDocument.Parse(s).RootElement);
 }
