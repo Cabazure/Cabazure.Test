@@ -4,7 +4,7 @@
 
 [![NuGet](https://img.shields.io/nuget/v/Cabazure.Test.svg)](https://www.nuget.org/packages/Cabazure.Test)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Build](https://github.com/Cabazure/Cabazure.Test/actions/workflows/build.yml/badge.svg)](https://github.com/Cabazure/Cabazure.Test/actions/workflows/build.yml)
+[![Build](https://github.com/Cabazure/Cabazure.Test/actions/workflows/ci.yml/badge.svg)](https://github.com/Cabazure/Cabazure.Test/actions/workflows/ci.yml)
 
 ---
 
@@ -159,7 +159,7 @@ Apply a customization to a single test method or an entire test class without to
 
 ```csharp
 using AutoFixture.Xunit3;
-using Cabazure.Test.Customizations;
+using Cabazure.Test;
 using FluentAssertions;
 using NSubstitute;
 using Xunit;
@@ -275,9 +275,9 @@ When the assertion fails, the FluentAssertions failure message is included in NS
 | `JsonElementCustomization` | Included-by-default customization that enables creation of `System.Text.Json.JsonElement` instances. Produces a random JSON string by default; configurable via constructor overloads. |
 | `JsonSerializerOptionsCustomization` | Prevents `ArgumentOutOfRangeException` when AutoFixture tries to set `IndentCharacter` to a random char. Produces `new JsonSerializerOptions()` by default. |
 | `InvokeProtected` / `InvokeProtectedAsync` | Extension methods for invoking protected instance methods via reflection — void, typed-return, and async variants. Useful for testing Template Method patterns and protected virtual hooks without subclassing. |
-| `BeSimilarTo<T>` | Whitespace-normalized string comparison (collapses whitespace/newlines) |
-| `BeXmlEquivalentTo<T>` | XML structural comparison ignoring formatting |
-| `BeJsonEquivalentTo<T>` | JSON structural comparison ignoring formatting |
+| `BeSimilarTo` | Whitespace-normalized string comparison (collapses whitespace/newlines) |
+| `BeXmlEquivalentTo` | XML structural comparison ignoring formatting |
+| `BeJsonEquivalentTo` | JSON structural comparison ignoring formatting |
 | Auto-substitution | Interfaces and abstract classes are automatically replaced with NSubstitute substitutes everywhere — no manual `Substitute.For<T>()` required. Un-setup method calls return NSubstitute defaults (`null`, `0`, `false`, completed `Task`). Use `.Returns()` to configure explicit return values. |
 
 ---
@@ -599,7 +599,7 @@ internal static class TestAssemblyInitializer
     public static void Initialize()
     {
         // All BeCloseTo/NotBeCloseTo calls now default to 100ms tolerance
-        CabazureAssertionOptions.DateTimeOffsetPrecision = 100;
+        CabazureAssertionOptions.DateTimeOffsetPrecision = TimeSpan.FromMilliseconds(100);
     }
 }
 ```
@@ -773,7 +773,7 @@ internal static class TestAssemblyInitializer
 
 ## Compatibility
 
-- **.NET 9+** (`net9.0`)
+- **.NET 10+** (`net10.0`) and **netstandard2.1** (compatible with .NET Framework 4.8, Xamarin, Unity)
 - **FluentAssertions 7.x** is included. FA 7 contains breaking changes from 6.x. If you are migrating from Atc.Test or another package that used FA 6, review the [FluentAssertions 7 migration guide](https://fluentassertions.com/upgradingtov7) before upgrading.
 
 ---
