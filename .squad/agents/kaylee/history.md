@@ -198,6 +198,14 @@ The `throw;` after `.Throw()` is unreachable at runtime but required so the comp
 
 **Cross-team:** Zoe handled test migration (7 files, type alias pattern, 165 passing); Wash clarified README documentation (namespace, examples, Matching enum).
 
+### Phase 26: ITheoryDataRow Unwrapping (2026-03-08)
+
+**xUnit 3 TheoryData enumeration:** When a data source inherits from `TheoryData<T1, T2, ...>`, enumeration yields `ITheoryDataRow` objects, NOT `object[]` arrays. The `ITheoryDataRow.GetData()` method returns the unpacked `object?[]`. Pattern-matching on `ITheoryDataRow` before falling back to array cast or wrapping prevents incorrectly wrapping the row object itself as a single value.
+
+**Fix pattern:** `item is ITheoryDataRow tdr ? tdr.GetData() : (item as object?[] ?? [(object?)item])`
+
+**Why it matters:** Without this check, tests using `TheoryData<T>` subclasses would fail at execution with `ArgumentException` ("Object must implement IConvertible"). The fix is additive — existing `object[]` sources continue to work, and `TheoryData<T>` sources now unwrap correctly.
+
 **Decision logged:** .squad/decisions.md — "Phase 16: Replace Custom FrozenAttribute with AutoFixture.Xunit3.FrozenAttribute"
 
 ### Phase 17: FluentAssertions Extensions (2026-03-07T23:11:00Z)
@@ -256,6 +264,21 @@ The `throw;` after `.Throw()` is unreachable at runtime but required so the comp
 - Created `src/Cabazure.Test/Attributes/FixtureDataExtensions.cs` — same logic, class renamed to `FixtureDataExtensions`, `MergeValues` gains `this IFixture fixture` as first parameter
 - `AutoNSubstituteDataAttribute` and `InlineAutoNSubstituteDataAttribute`: removed `var parameters = ...` local, inlined `testMethod.GetParameters()` into the `fixture.MergeValues(...)` call
 - `ClassAutoNSubstituteDataAttribute` and `MemberAutoNSubstituteDataAttribute`: `theoryParams` local retained (used across loop iterations); call site updated to `fixture.MergeValues(theoryParams, row)`
+
+### Phase 26: TheoryDataRow Unwrapping Fix (2026-03-08T08:06:15Z)
+
+**Task:** Fix ITheoryDataRow unwrapping bug in data attributes. When users passed `TheoryData<T>` instances (which inherit `IEnumerable<ITheoryDataRow>`), the attributes were not correctly unpacking individual rows before passing to test methods.
+
+**Implementation:**
+- ClassAutoNSubstituteDataAttribute (line 100): Added unwrapping logic — if `IEnumerable<ITheoryDataRow>` collection detected, unpack each row individually using `row.GetData()` before value extraction
+- MemberAutoNSubstituteDataAttribute.ToRows() (line 156): Applied same unwrapping pattern in the `ToRows()` method to ensure consistency across both member-sourced and class-sourced data paths
+- Updated XML docs on both attributes to document `TheoryData<T>` support and row unpacking behavior
+
+**Key Pattern:** TheoryDataRow unwrapping follows xUnit's internal pattern. When data sources return collections of `ITheoryDataRow` objects, each row must be individually unpacked via `row.GetData()` to extract the strongly-typed parameter values.
+
+**Test Result:** ✅ 217/217 passing. Zoe created comprehensive regression suite validating unwrapping for both attribute types.
+
+**Cross-team:** Zoe (Agent 75) wrote TypedTheoryData + TypedRows regression tests in ClassAutoNSubstituteDataAttributeTests.cs and MemberAutoNSubstituteDataAttributeTests.cs
 - 6 files changed. Build clean, 184/184 tests passing.
 
 **Design note:** Extension method on `IFixture` reads more naturally at the call site (`fixture.MergeValues(...)`) and keeps the method discoverable via IDE autocomplete on fixture instances.
@@ -330,3 +353,30 @@ The `throw;` after `.Throw()` is unreachable at runtime but required so the comp
 **Cross-team:** Zoe created comprehensive test suite (5 tests); Wash updated README + committed feature.
 
 **Status:** ✅ Complete — phase24 orchestration logged
+
+### Phase 26: Fix ITheoryDataRow Unwrapping Bug (2026-03-08)
+
+**Task:** Fix bug where `TheoryData<T1, T2>` subclasses were not being unwrapped correctly in data attributes.
+
+**Root Cause:** When data sources inherit from `TheoryData<T1, T2>` (or any `TheoryData<...>`), enumeration yields `ITheoryDataRow` objects, not `object[]` arrays. The cast `item as object?[]` failed, and the fallback `[(object?)item]` wrapped the entire `ITheoryDataRow` object as a single value, causing `ArgumentException` at test execution.
+
+**Implementation:**
+1. **ClassAutoNSubstituteDataAttribute.cs** (line 111):
+   - Changed: `var row = item as object?[] ?? [(object?)item];`
+   - To: `var row = item is ITheoryDataRow tdr ? tdr.GetData() : (item as object?[] ?? [(object?)item]);`
+   - Updated XML doc `<remarks>` to document support for both `IEnumerable<object[]>` AND `TheoryData<T1, T2>` subclasses
+   - Added code example showing both approaches
+
+2. **MemberAutoNSubstituteDataAttribute.cs** (line 161-162 in `ToRows()`):
+   - Changed: `return enumerable.Cast<object?>().Select(item => item as object?[] ?? [(object?)item]);`
+   - To: `return enumerable.Cast<object?>().Select(item => item is ITheoryDataRow tdr ? tdr.GetData() : (item as object?[] ?? [(object?)item]));`
+   - Updated XML doc `<remarks>` to document support for both return types
+   - Added code example showing both approaches
+
+**Key Details:**
+- `ITheoryDataRow` already in scope via `using Xunit.v3;` (present in both files)
+- `ITheoryDataRow.GetData()` returns `object?[]` containing unpacked row values
+- Fix is additive — existing `object[]`-based sources continue to work exactly as before
+- Pattern-matching approach (`item is ITheoryDataRow tdr`) is idiomatic C# 9+
+
+**Status:** ✅ Complete — both files fixed, docs updated
