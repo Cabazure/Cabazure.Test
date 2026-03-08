@@ -40,8 +40,8 @@ public sealed class JsonElementAssertions
         string because = "",
         params object[] becauseArgs)
     {
-        var subjectJson = JsonElementHelper.ToCompactString(subject);
-        var expectedJson = JsonElementHelper.ToCompactString(expected);
+        var subjectJson = subject.ToCompactString();
+        var expectedJson = expected.ToCompactString();
 
         Execute.Assertion
             .BecauseOf(because, becauseArgs)

@@ -13,7 +13,7 @@ namespace Cabazure.Test;
 /// <c>result.Should().BeEquivalentTo(expected)</c>), it falls back to reference equality for
 /// <see cref="System.Text.Json.JsonElement"/> properties, which may produce false negatives even
 /// for semantically identical JSON. This step intercepts those comparisons and normalizes both
-/// values via <see cref="JsonElementHelper.ToCompactString"/> (a reflection-free
+/// values via <see cref="JsonElementExtensions.ToCompactString"/> (a reflection-free
 /// <see cref="System.Text.Json.Utf8JsonWriter"/>-based serializer) before delegating to
 /// FluentAssertions' string comparison — providing accurate structural diffs on failure.
 /// </para>
@@ -68,8 +68,8 @@ public sealed class JsonElementEquivalencyStep : IEquivalencyStep
         }
 
         var newComparands = new Comparands(
-            JsonElementHelper.ToCompactString(subject),
-            JsonElementHelper.ToCompactString(expectation),
+            subject.ToCompactString(),
+            expectation.ToCompactString(),
             typeof(string));
 
         nestedValidator.RecursivelyAssertEquality(newComparands, context);
