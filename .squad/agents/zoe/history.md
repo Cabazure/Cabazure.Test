@@ -305,3 +305,5 @@ NotBeJsonEquivalentTo (2):
 - All targeted areas — `[Frozen]` parameters, `[CustomizeWith]` application, `FixtureFactory.Customizations` mutation, `RecursionCustomization` — exercised by existing tests and passing cleanly.
 
 **Decision:** No regression found. No inbox decision file needed.
+
+**Cross-Update (Scribe, 2026-03-08T15:12:21Z):** Kaylee's decision merged to decisions.md. Code commits: fc2f65b, b41c235. Squad files logged. Phase 38 ready for merge.

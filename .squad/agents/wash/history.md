@@ -80,3 +80,5 @@ My domain is xUnit 3 integration. Key difference from xUnit 2: `DataAttribute` i
 3. Consolidate repetitive `[Fact]` methods with `[MemberAutoNSubstituteData]` + `TheoryData<Type>` (reduces test count, improves clarity)
 
 **Pattern:** Doc sections use ❌/✅ code block pairs with a brief rationale sentence — consistent with FluentAssertions Extensions section style. Cross-references to existing sections preferred over duplicating examples.
+
+**Cross-Update (Scribe, 2026-03-08T15:12:21Z):** Kaylee's decision merged to decisions.md. Code commits: fc2f65b, b41c235. Squad files logged. Phase 38 ready for merge.
