@@ -210,3 +210,27 @@ NotBeJsonEquivalentTo (2):
 - No RootElement.Clone() needed since DTOs hold values by value type (JsonElement is a struct)
 
 **Test Result:** ✅ 208/208 passing — 203 existing + 5 new. No regressions.
+
+### Phase 24: EmptyObjectEquivalencyStep Tests (2026-03-07)
+
+**Task:** Write comprehensive tests for EmptyObjectEquivalencyStep and AllowingEmptyObjects() extension method.
+
+**File Created:** `tests/Cabazure.Test.Tests/Assertions/EmptyObjectEquivalencyStepTests.cs` (5 tests)
+
+**Coverage:**
+
+1. BeEquivalentTo_WithAllowingEmptyObjects_PassesForEmptyType — empty type (no properties/fields) passes comparison with AllowingEmptyObjects()
+2. BeEquivalentTo_WithAllowingEmptyObjects_PassesForNonEmptyTypeWithMatchingValues — non-empty type with matching properties still works correctly (step doesn't break normal types)
+3. BeEquivalentTo_WithAllowingEmptyObjects_ThrowsForNonEmptyTypeWithDifferentValues — non-empty type with differing values still fails as expected
+4. BeEquivalentTo_WithoutAllowingEmptyObjects_ThrowsForEmptyType — regression test: without the step, empty type throws InvalidOperationException
+5. BeEquivalentTo_WithAllowingEmptyObjects_HandlesNullExpectation — null expectation doesn't cause NullReferenceException (falls through to FA's null handling)
+
+**Key Patterns:**
+- All tests use [Fact] — no auto-generated data needed for equivalency step logic
+- Private nested test DTO classes (EmptyDto with no members, DtoWithProperty with one property)
+- Positive tests use `var act = () => ...` then `act.Should().NotThrow()`
+- Negative tests use `Action act = () => ...` then `act.Should().Throw<Exception>()`
+- Regression test documents WHY the feature exists (empty types throw InvalidOperationException in FA without this step)
+- Pattern matches JsonElementEquivalencyStepTests.cs from Phase 23
+
+**Test Result:** ✅ 213/213 passing — 208 existing + 5 new. No regressions.

@@ -176,3 +176,48 @@ Key Insight:
 - `FixtureCustomizationCollection` moved to `Cabazure.Test.Customizations` and required adding that using directive where directly referenced
 
 Cross-team: Kaylee completed Phase 22 part 1 (namespace declarations); this work completes part 2 (using statements).
+
+### Phase 23: JsonElementEquivalencyStep Documentation & Commit (2026-03-10)
+
+Task: Update README.md and copilot-instructions.md to document the new `JsonElementEquivalencyStep` / `UsingJsonElementComparison()` feature, then stage and commit all Phase 23 changes.
+
+Implementation:
+- Added new `### JsonElement Equivalency in DTOs` subsection to `## FluentAssertions Extensions` in README.md, between the DateTimeOffset section and the `## String Content Assertions` section
+  - Explains the problem: `BeEquivalentTo` falls back to reference equality for `JsonElement` properties
+  - Documents per-call usage: `opts.UsingJsonElementComparison()`
+  - Documents global registration via `[ModuleInitializer]` + `AssertionOptions.AssertEquivalencyUsing`
+- Added `JsonElementEquivalencyStep` / `UsingJsonElementComparison()` entry to the `### FluentAssertions Extensions` section in `.github/copilot-instructions.md`, between the new `#### JsonElementEquivalencyStep` heading and `#### StringContentExtensions`
+- Staged all changes with `git add -A` and created commit `feat(assertions): add JsonElementEquivalencyStep for BeEquivalentTo on DTOs` (8 files, 330 insertions)
+
+Files committed:
+- `src/Cabazure.Test/Assertions/JsonElementEquivalencyStep.cs` (new)
+- `src/Cabazure.Test/Assertions/JsonElementEquivalencyExtensions.cs` (new)
+- `tests/Cabazure.Test.Tests/Assertions/JsonElementEquivalencyStepTests.cs` (new)
+- `.squad/decisions/inbox/kaylee-p23-equivalency.md` (new)
+- `README.md` (updated)
+- `.github/copilot-instructions.md` (updated)
+- `.squad/agents/kaylee/history.md`, `.squad/agents/zoe/history.md` (line-ending normalization)
+
+Cross-team: Kaylee implemented the step and extension; Zoe provided 5 tests; Wash completed docs and commit.
+
+### Phase 24: EmptyObjectEquivalencyStep Documentation & Commit (2026-03-10)
+
+Task: Update README.md and copilot-instructions.md to document the new `EmptyObjectEquivalencyStep` / `AllowingEmptyObjects<TSelf>()` feature, then stage and commit all Phase 24 changes.
+
+Implementation:
+- Added new `### Allowing Empty Objects in BeEquivalentTo` subsection to `## FluentAssertions Extensions` in README.md, immediately after the "JsonElement Equivalency in DTOs" section
+  - Explains the problem: `BeEquivalentTo` throws `InvalidOperationException` on types with no public properties
+  - Documents per-call usage: `opts.AllowingEmptyObjects()`
+  - Documents global registration via `[ModuleInitializer]` + `AssertionOptions.AssertEquivalencyUsing`
+  - Notes that types with members continue through FluentAssertions' normal equivalency pipeline unchanged
+- Added `EmptyObjectEquivalencyStep` / `AllowingEmptyObjects<TSelf>()` entry to the `### FluentAssertions Extensions` section in `.github/copilot-instructions.md`, between the `JsonElementEquivalencyStep` entry and `StringContentExtensions` heading
+  - Describes `EmptyObjectEquivalencyStep` as an `IEquivalencyStep` that returns `AssertionCompleted` for empty types
+  - Describes `AllowingEmptyObjects<TSelf>()` as the extension method that registers the step; documents both per-call and global usage patterns
+- Staged changes with `git add README.md .github/copilot-instructions.md` and created commit `feat(assertions): add EmptyObjectEquivalencyStep for BeEquivalentTo on property-less types` (2 files, 21 insertions)
+
+Key Pattern Learning:
+- The documentation pattern established for `AllowingEmptyObjects()` mirrors `UsingJsonElementComparison()`: lead with the problem statement, then show per-call usage, then show global registration. This pattern is consistent and discoverable for users working with FluentAssertions equivalency configuration.
+- Both extensions are designed to work seamlessly in module initializers via `AssertionOptions.AssertEquivalencyUsing`, keeping project-wide configuration centralized.
+- Documenting both the step class and the extension method together in copilot-instructions makes the API surface clear to internal team members and future maintainers.
+
+Cross-team: Kaylee implemented the step and extension; Zoe provided 5 tests; Wash completed docs and commit.

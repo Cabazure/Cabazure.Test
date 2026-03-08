@@ -1664,3 +1664,239 @@ Remove the custom Cabazure.Test.Attributes.FrozenAttribute and use AutoFixture.X
 ### Package Version
 
 AutoFixture.Xunit3 4.19.0 — compatible with AutoFixture 4.18.1 and xunit.v3.extensibility.core 3.2.2 already in the project.
+
+---
+
+## Phase 22: Namespace Consolidation (Part 1 & 2)
+
+**Date:** 2026-03-08 — 2026-03-10  
+**Authors:** Kaylee (Core Dev), Wash (Integration Dev)  
+**Status:** ✅ Completed
+
+### Part 1: Namespace Declaration Changes (Kaylee)
+
+**Objective:** Consolidate public API into a single `using Cabazure.Test;` statement for test authors.
+
+#### Decision 1a: Move 5 Public Attributes to Cabazure.Test
+
+Changed namespace from `Cabazure.Test.Attributes` to `Cabazure.Test`:
+- `AutoNSubstituteDataAttribute`
+- `InlineAutoNSubstituteDataAttribute`
+- `MemberAutoNSubstituteDataAttribute`
+- `ClassAutoNSubstituteDataAttribute`
+- `CustomizeWithAttribute`
+
+**Rationale:**
+- These are primary public API types
+- Test authors only need `using Cabazure.Test;`
+- Files remain in physical `src/Cabazure.Test/Attributes/` folder (organization)
+- Source files import `using Cabazure.Test.Attributes;` for internal `FixtureDataExtensions.MergeValues`
+
+#### Decision 1b: Move FixtureCustomizationCollection to Cabazure.Test.Customizations
+
+Moved from `src/Cabazure.Test/FixtureCustomizationCollection.cs` (namespace `Cabazure.Test`) to `src/Cabazure.Test/Customizations/FixtureCustomizationCollection.cs` (namespace `Cabazure.Test.Customizations`).
+
+**Rationale:**
+- Type is accessed via `FixtureFactory.Customizations` in module initializers (not direct user code)
+- Grouping with other customization types improves namespace structure
+- Updated `FixtureFactory.cs` using statements accordingly
+
+**Result:** src project builds cleanly ✅
+
+### Part 2: Using Statement Updates (Wash)
+
+**Objective:** Clean up stale `using` statements across test and documentation files after namespace changes.
+
+#### Decision 2a: Test Files — Remove Cabazure.Test.Attributes
+
+Removed `using Cabazure.Test.Attributes;` from 15 test files:
+- Attribute types now in `Cabazure.Test` (already imported)
+- No functionality changes; tests remain identical
+
+**Files Updated:**
+- AutoNSubstituteDataAttributeTests.cs
+- InlineAutoNSubstituteDataAttributeTests.cs
+- MemberAutoNSubstituteDataAttributeTests.cs
+- ClassAutoNSubstituteDataAttributeTests.cs
+- CustomizeWithAttributeTests.cs
+- And 10 others
+
+#### Decision 2b: Test Files — Add Cabazure.Test.Customizations
+
+Added `using Cabazure.Test.Customizations;` to `FixtureCustomizationCollectionTests.cs`.
+
+**Rationale:** Type moved to new namespace; explicit import required.
+
+#### Decision 2c: Documentation (README.md) — Remove Attribute Namespace
+
+Updated 3 code examples to remove `using Cabazure.Test.Attributes;`.
+
+**Rationale:** Public API consolidated to single import.
+
+#### Decision 2d: Attribute Source Files — Preserve Internal Using
+
+Kept `using Cabazure.Test.Attributes;` in 4 attribute implementation files:
+- They access internal `FixtureDataExtensions.MergeValues` extension
+- Helper remains internal; not visible to users
+- Maintains clean public API boundary
+
+**Files Preserved (correctly retain internal using):**
+- AutoNSubstituteDataAttribute.cs
+- InlineAutoNSubstituteDataAttribute.cs
+- MemberAutoNSubstituteDataAttribute.cs
+- ClassAutoNSubstituteDataAttribute.cs
+
+**Build Result:** ✅ GREEN (Build succeeded in 1.5s)
+
+---
+
+## Phase 23: JsonElementEquivalencyStep Implementation
+
+**Date:** 2026-03-08  
+**Author:** Kaylee (Core Dev)  
+**Status:** ✅ Implemented
+
+### Context
+
+FluentAssertions' `BeEquivalentTo` method needs custom handling for `System.Text.Json.JsonElement` types. Standard equivalency comparison fails because `JsonElement` has no public members to compare.
+
+### Decision 1: Implement IEquivalencyStep Interface
+
+Created `JsonElementEquivalencyStep` implementing `IEquivalencyStep` from `FluentAssertions.Equivalency` namespace.
+
+**Method Signature:**
+```csharp
+public EquivalencyResult Handle(Comparands comparands, IEquivalencyValidationContext context, IEquivalencyValidator validator)
+```
+
+**Rationale:**
+- Standard FluentAssertions 7.0.0 extension point
+- Composable with other equivalency steps
+- Can be registered globally or per-call
+
+### Decision 2: Both Comparands Must Be JsonElement
+
+Pattern matching enforces strict type checking:
+```csharp
+if (comparands.Subject is not JsonElement subject || comparands.Expectation is not JsonElement expectation)
+{
+    return EquivalencyResult.ContinueWithNext;
+}
+```
+
+**Rationale:**
+- Mixed-type comparisons (e.g., JsonElement vs string) fall through to next step
+- Callers should use `BeEquivalentTo(string)` overload for string comparisons
+- Prevents silent type coercion
+
+### Decision 3: Normalization via JsonSerializer.Serialize()
+
+Both elements serialized and compared as strings:
+```csharp
+var subjectJson = JsonSerializer.Serialize(subject);
+var expectedJson = JsonSerializer.Serialize(expectation);
+```
+
+**Rationale:**
+- Normalizes whitespace and formatting
+- Produces canonical key-ordered representation
+- Same strategy as custom `JsonElementAssertions.BeEquivalentTo`
+- Structurally identical JSON compares as equal
+
+### Decision 4: Failure Message Uses Context.Reason
+
+Threads `because` and `becauseArgs` from caller:
+```csharp
+Execute.Assertion
+    .BecauseOf(context.Reason.FormattedMessage, context.Reason.Arguments)
+    .ForCondition(subjectJson == expectedJson)
+    .FailWith("Expected JSON to be equivalent to {0}{reason}, but found {1}.", expectedJson, subjectJson);
+```
+
+**Rationale:** Consistent with FluentAssertions' built-in steps (verified via ILSpy)
+
+### Decision 5: Extension Method Generic on SelfReferenceEquivalencyAssertionOptions<TSelf>
+
+Covers both per-call and global registration:
+```csharp
+public static TSelf UsingJsonElementComparison<TSelf>(
+    this SelfReferenceEquivalencyAssertionOptions<TSelf> options)
+    where TSelf : SelfReferenceEquivalencyAssertionOptions<TSelf>
+    => options.Using(new JsonElementEquivalencyStep());
+```
+
+**Rationale:**
+- `EquivalencyAssertionOptions<T>` and `EquivalencyAssertionOptions` both inherit from `SelfReferenceEquivalencyAssertionOptions<TSelf>`
+- Single generic extension covers both; no overloads needed
+- Return type `TSelf` enables method chaining
+
+**Files Created:**
+- `src/Cabazure.Test/Assertions/JsonElementEquivalencyStep.cs`
+- `src/Cabazure.Test/Assertions/JsonElementEquivalencyExtensions.cs`
+
+---
+
+## Phase 24: EmptyObjectEquivalencyStep Implementation
+
+**Date:** 2026-03-08  
+**Author:** Kaylee (Core Dev)  
+**Status:** ✅ Implemented
+
+### Context
+
+FluentAssertions 7.x throws `InvalidOperationException` when comparing objects with no public properties or fields. Common in serialization testing with marker/empty DTOs.
+
+### Decision 1: Implement IEquivalencyStep for Empty Objects
+
+Created `EmptyObjectEquivalencyStep` following exact pattern from Phase 23's `JsonElementEquivalencyStep`.
+
+**Detection Logic:**
+```csharp
+var properties = comparands.Subject.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
+var fields = comparands.Subject.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance);
+if (properties.Length == 0 && fields.Length == 0)
+{
+    return EquivalencyResult.AssertionCompleted;
+}
+return EquivalencyResult.ContinueWithNext;
+```
+
+**Rationale:**
+- Empty types are trivially equivalent (nothing to compare)
+- Returns `AssertionCompleted` to halt step chain
+- Non-empty types fall through to normal equivalency handling
+
+### Decision 2: Extension Method AllowingEmptyObjects<TSelf>
+
+Generic over `SelfReferenceEquivalencyAssertionOptions<TSelf>` for both registration patterns:
+
+```csharp
+public static TSelf AllowingEmptyObjects<TSelf>(this SelfReferenceEquivalencyAssertionOptions<TSelf> options)
+    where TSelf : SelfReferenceEquivalencyAssertionOptions<TSelf>
+    => options.Using(new EmptyObjectEquivalencyStep());
+```
+
+**Usage Examples:**
+```csharp
+// Per-call
+result.Should().BeEquivalentTo(expected, opts => opts.AllowingEmptyObjects());
+
+// Global
+AssertionOptions.AssertEquivalencyUsing(opts => opts.AllowingEmptyObjects());
+```
+
+**Rationale:** Same generic design as Phase 23; enables both per-call and global registration
+
+### Decision 3: Pattern Consistency with Phase 23
+
+Exact parallel structure:
+- Same namespace (`Cabazure.Test`)
+- Same IEquivalencyStep implementation approach
+- Same generic extension method design
+- Same comprehensive XML documentation
+
+**Rationale:** Reduces cognitive load; developers recognize both steps as variations of the same pattern
+
+**Files Created:**
+- `src/Cabazure.Test/Assertions/EmptyObjectEquivalencyStep.cs`
+- `src/Cabazure.Test/Assertions/EmptyObjectEquivalencyExtensions.cs`

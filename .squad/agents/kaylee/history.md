@@ -302,3 +302,31 @@ The `throw;` after `.Throw()` is unreachable at runtime but required so the comp
 **Step logic:** Pattern-match both `comparands.Subject` and `comparands.Expectation` to `JsonElement`; if either is not a `JsonElement`, return `ContinueWithNext`. Otherwise normalize both via `JsonSerializer.Serialize()`, assert string equality via `Execute.Assertion.BecauseOf(context.Reason.FormattedMessage, context.Reason.Arguments)`, return `AssertionCompleted`.
 
 **Build:** Clean ✅
+
+### Phase 24: EmptyObjectEquivalencyStep (2026-03-08)
+
+**Task:** Implement EmptyObjectEquivalencyStep (FA 7.0.0 IEquivalencyStep) + AllowingEmptyObjects extension to allow BeEquivalentTo to succeed when comparing instances of types with no public properties or fields.
+
+**Problem:** FluentAssertions 7.x throws InvalidOperationException ("No members were found for comparison…") from StructuralEqualityEquivalencyStep when the root-level object graph has zero public instance members. This is common when testing serialisation round-trips with marker/empty types.
+
+**Solution:** Intercepts the comparison pipeline before the structural step. If the expectation type has zero public instance properties AND zero public instance fields, the instances are considered trivially equivalent and the assertion completes immediately. All other types pass through to FA's normal pipeline.
+
+**Step logic:**
+1. Get type from comparands.Expectation?.GetType()
+2. If null, return ContinueWithNext
+3. Check for public instance properties using GetProperties(BindingFlags.Public | BindingFlags.Instance)
+4. Check for public instance fields using GetFields(BindingFlags.Public | BindingFlags.Instance)
+5. If either has members, return ContinueWithNext
+6. Otherwise return AssertionCompleted (trivially equivalent)
+
+**Extension method pattern:** Follows JsonElementEquivalencyStep pattern — generic on TSelf extending SelfReferenceEquivalencyAssertionOptions<TSelf>. Works for both per-call (BeEquivalentTo lambda) and global (AssertEquivalencyUsing lambda) registration. Calls options.Using(new EmptyObjectEquivalencyStep()).
+
+**Files created:**
+- src/Cabazure.Test/Assertions/EmptyObjectEquivalencyStep.cs
+- src/Cabazure.Test/Assertions/EmptyObjectEquivalencyExtensions.cs
+
+**Build:** Not yet verified
+
+**Cross-team:** Zoe created comprehensive test suite (5 tests); Wash updated README + committed feature.
+
+**Status:** ✅ Complete — phase24 orchestration logged
