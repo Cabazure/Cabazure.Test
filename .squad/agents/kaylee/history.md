@@ -435,3 +435,15 @@ Result: Build clean (0 errors). Zoe will run full test suite.
 **Result:** All 238 tests pass. 21 insertions(+), 42 deletions(-). Commit: 1eb2eb5
 
 **Key insight:** The volatile field reference IS the immutable snapshot — no need for separate snapshot infrastructure when using copy-on-write. Lock only needed to serialize concurrent mutations (prevent lost updates).
+
+### Phase 40: Pre-release cleanup (refactor + chore)
+
+**Task:** Two focused pre-release cleanup commits.
+
+1. efactor(customizations): Renamed private field _items → items in FixtureCustomizationCollection. The underscore prefix violated the project's camelCase-without-prefix convention for private fields (as documented in the style guide and already followed by syncLock). 8 occurrences updated.
+
+2. chore: Deleted .gitkeep placeholder files from src/Cabazure.Test/Attributes/ and src/Cabazure.Test/Customizations/. Both directories now contain real source files.
+
+**Result:** All 238 tests pass. Two clean commits: 6de77c9, a0c3a66.
+
+**Key insight:** Private field naming convention is camelCase without underscore prefix — items not _items, syncLock not _syncLock. Apply consistently when spotted.
