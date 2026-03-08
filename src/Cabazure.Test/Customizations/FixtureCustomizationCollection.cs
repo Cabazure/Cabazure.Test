@@ -33,13 +33,12 @@ namespace Cabazure.Test.Customizations;
 /// </remarks>
 public sealed class FixtureCustomizationCollection : IEnumerable<ICustomization>
 {
-    private readonly List<ICustomization> customizations;
     private readonly object syncLock = new();
-    private volatile ICustomization[]? _snapshot;
+    private volatile ICustomization[] _items;
 
     internal FixtureCustomizationCollection()
     {
-        customizations =
+        _items =
         [
             new AutoNSubstituteCustomization(),
             new RecursionCustomization(),
@@ -52,16 +51,7 @@ public sealed class FixtureCustomizationCollection : IEnumerable<ICustomization>
     }
 
     /// <summary>Gets the number of customizations currently in the collection.</summary>
-    public int Count
-    {
-        get
-        {
-            lock (syncLock)
-            {
-                return customizations.Count;
-            }
-        }
-    }
+    public int Count => _items.Length;
 
     /// <summary>
     /// Appends a customization to the end of the collection.
@@ -74,10 +64,7 @@ public sealed class FixtureCustomizationCollection : IEnumerable<ICustomization>
     {
         ArgumentNullException.ThrowIfNull(customization);
         lock (syncLock)
-        {
-            _snapshot = null;
-            customizations.Add(customization);
-        }
+            _items = [.. _items, customization];
     }
 
     /// <summary>
@@ -139,8 +126,14 @@ public sealed class FixtureCustomizationCollection : IEnumerable<ICustomization>
         ArgumentNullException.ThrowIfNull(customization);
         lock (syncLock)
         {
-            _snapshot = null;
-            return customizations.Remove(customization);
+            var current = _items;
+            var idx = Array.IndexOf(current, customization);
+            if (idx < 0) return false;
+            var next = new ICustomization[current.Length - 1];
+            Array.Copy(current, 0, next, 0, idx);
+            Array.Copy(current, idx + 1, next, idx, current.Length - idx - 1);
+            _items = next;
+            return true;
         }
     }
 
@@ -155,14 +148,13 @@ public sealed class FixtureCustomizationCollection : IEnumerable<ICustomization>
     {
         lock (syncLock)
         {
-            var index = customizations.FindIndex(c => c is T);
-            if (index < 0)
-            {
-                return false;
-            }
-
-            _snapshot = null;
-            customizations.RemoveAt(index);
+            var current = _items;
+            var idx = Array.FindIndex(current, c => c is T);
+            if (idx < 0) return false;
+            var next = new ICustomization[current.Length - 1];
+            Array.Copy(current, 0, next, 0, idx);
+            Array.Copy(current, idx + 1, next, idx, current.Length - idx - 1);
+            _items = next;
             return true;
         }
     }
@@ -171,10 +163,7 @@ public sealed class FixtureCustomizationCollection : IEnumerable<ICustomization>
     public void Clear()
     {
         lock (syncLock)
-        {
-            _snapshot = null;
-            customizations.Clear();
-        }
+            _items = [];
     }
 
     /// <summary>
@@ -183,17 +172,7 @@ public sealed class FixtureCustomizationCollection : IEnumerable<ICustomization>
     /// </summary>
     /// <returns>An enumerator over a snapshot of the customizations.</returns>
     public IEnumerator<ICustomization> GetEnumerator()
-    {
-        var snapshot = _snapshot;
-        if (snapshot is null)
-        {
-            lock (syncLock)
-            {
-                _snapshot = snapshot = [.. customizations];
-            }
-        }
-        return ((IEnumerable<ICustomization>)snapshot).GetEnumerator();
-    }
+        => ((IEnumerable<ICustomization>)_items).GetEnumerator();
 
     /// <inheritdoc/>
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
