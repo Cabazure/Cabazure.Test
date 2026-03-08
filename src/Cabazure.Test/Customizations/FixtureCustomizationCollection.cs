@@ -44,6 +44,7 @@ public sealed class FixtureCustomizationCollection : IEnumerable<ICustomization>
             new ImmutableCollectionCustomization(),
             new DateOnlyTimeOnlyCustomization(),
             new CancellationTokenCustomization(),
+            new JsonElementCustomization(),
         ];
     }
 
