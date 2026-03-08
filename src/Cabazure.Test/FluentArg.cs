@@ -23,7 +23,7 @@ public static class FluentArg
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="assertion"/> is <c>null</c>.</exception>
     public static ref T? Match<T>(Action<T> assertion)
     {
-        ArgumentNullException.ThrowIfNull(assertion);
+        if (assertion is null) throw new ArgumentNullException(nameof(assertion));
         return ref ArgumentMatcher.Enqueue<T>(new FluentAssertionArgumentMatcher<T>(assertion));
     }
 }

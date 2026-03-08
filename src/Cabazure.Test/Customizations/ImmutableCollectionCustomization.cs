@@ -17,7 +17,7 @@ public sealed class ImmutableCollectionCustomization : ICustomization
     /// <inheritdoc />
     public void Customize(IFixture fixture)
     {
-        ArgumentNullException.ThrowIfNull(fixture);
+        if (fixture is null) throw new ArgumentNullException(nameof(fixture));
 
         fixture.Customizations.Add(
             new ImmutableCollectionBuilder(

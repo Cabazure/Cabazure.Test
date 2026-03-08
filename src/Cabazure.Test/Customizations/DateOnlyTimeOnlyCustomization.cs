@@ -1,3 +1,4 @@
+#if NET6_0_OR_GREATER
 using AutoFixture;
 using AutoFixture.Kernel;
 
@@ -19,7 +20,7 @@ public sealed class DateOnlyTimeOnlyCustomization : ICustomization
     /// <inheritdoc />
     public void Customize(IFixture fixture)
     {
-        ArgumentNullException.ThrowIfNull(fixture);
+        if (fixture is null) throw new ArgumentNullException(nameof(fixture));
         fixture.Customizations.Add(new DateTimeOnlyBuilder());
     }
 
@@ -45,3 +46,4 @@ public sealed class DateOnlyTimeOnlyCustomization : ICustomization
         }
     }
 }
+#endif

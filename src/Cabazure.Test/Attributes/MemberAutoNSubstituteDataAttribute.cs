@@ -80,7 +80,7 @@ public sealed class MemberAutoNSubstituteDataAttribute : MemberDataAttributeBase
         MethodInfo testMethod,
         DisposalTracker disposalTracker)
     {
-        ArgumentNullException.ThrowIfNull(testMethod);
+        if (testMethod is null) throw new ArgumentNullException(nameof(testMethod));
         MemberType ??= testMethod.DeclaringType;
 
         var baseRows = await base.GetData(testMethod, disposalTracker);

@@ -61,14 +61,14 @@ public class TypeCustomization<T> : ICustomization
     /// </exception>
     public TypeCustomization(Func<IFixture, T> factory)
     {
-        ArgumentNullException.ThrowIfNull(factory);
+        if (factory is null) throw new ArgumentNullException(nameof(factory));
         this.factory = factory;
     }
 
     /// <inheritdoc/>
     public void Customize(IFixture fixture)
     {
-        ArgumentNullException.ThrowIfNull(fixture);
+        if (fixture is null) throw new ArgumentNullException(nameof(fixture));
         fixture.Customizations.Insert(0, new DelegateBuilder(fixture, factory));
     }
 

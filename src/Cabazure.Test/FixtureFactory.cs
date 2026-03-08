@@ -68,7 +68,7 @@ public static class FixtureFactory
     /// </exception>
     public static IFixture Create(params ICustomization[] customizations)
     {
-        ArgumentNullException.ThrowIfNull(customizations);
+        if (customizations is null) throw new ArgumentNullException(nameof(customizations));
         var fixture = new Fixture();
         ApplyCustomizations(fixture, Customizations);
         ApplyCustomizations(fixture, customizations);

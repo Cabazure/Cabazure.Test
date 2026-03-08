@@ -123,7 +123,7 @@ public class DiscountServiceTests
 
 ### Project-wide customizations via `FixtureFactory.Customizations`
 
-Register a customization once for the whole test assembly using `[ModuleInitializer]`. It is applied to every fixture created by any data attribute.
+Register a customization once for the whole test assembly using `[ModuleInitializer]`. It is applied to every fixture created by any data attribute. `[ModuleInitializer]` requires .NET 5+; on older frameworks, call the initializer method manually from your test setup.
 
 ```csharp
 using System.Runtime.CompilerServices;
@@ -299,7 +299,7 @@ Provides properly initialized `CancellationToken` parameters in theory tests. Au
 
 Enables reliable creation of `DateOnly` and `TimeOnly` values. AutoFixture cannot construct `DateOnly` by default (it generates invalid year/month/day combinations), and while `TimeOnly` technically works, AutoFixture produces near-zero tick values making it useless for tests. This customization derives both types from a randomly generated `DateTime`.
 
-**Included by default.** Remove it with `FixtureFactory.Customizations.Remove<DateOnlyTimeOnlyCustomization>()` if you need different behavior.
+**Included by default on .NET 6+.** Remove it with `FixtureFactory.Customizations.Remove<DateOnlyTimeOnlyCustomization>()` if you need different behavior. On netstandard2.1 targets, this customization is excluded from the default fixture because `DateOnly` and `TimeOnly` require .NET 6+.
 
 ### `JsonElementCustomization`
 
