@@ -48,6 +48,17 @@ public class JsonElementAssertionsTests
     }
 
     [Fact]
+    public void BeEquivalentTo_WithSameJsonDifferentFormatting_Passes()
+    {
+        var element1 = JsonDocument.Parse("""{"name":"Alice","age":30}""").RootElement.Clone();
+        var element2 = JsonDocument.Parse("""{ "name": "Alice", "age": 30 }""").RootElement.Clone();
+
+        var act = () => element1.Should().BeEquivalentTo(element2);
+
+        act.Should().NotThrow();
+    }
+
+    [Fact]
     public void BeEquivalentTo_WithString_MatchingJson_Passes()
     {
         var json = """{"name":"Alice","age":30}""";
