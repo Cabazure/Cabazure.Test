@@ -188,6 +188,27 @@ Extensions on `ICall` for inspecting received calls (argument extraction, etc.).
 
 Extensions for invoking `protected` methods on substitutes via reflection, enabling assertion on protected virtual behaviour.
 
+### Test Timeouts
+
+xUnit 3 and .NET BCL provide three complementary timeout patterns:
+
+1. **Whole-test timeout** — `[Fact(Timeout = 5000)]` or `[Theory(Timeout = 5000)]`
+   - xUnit 3 native attribute; applies to entire test execution
+   - Throws `TestTimeoutException` on expiry
+   - Best for: detecting hangs in synchronous code, enforcing performance thresholds
+
+2. **Per-await timeout** — `await task.WaitAsync(TimeSpan.FromMilliseconds(500))`
+   - .NET 6+ BCL API; use directly in tests where a single awaited call might hang
+   - Example: `var result = await SomeApiCall().WaitAsync(TimeSpan.FromSeconds(2));`
+   - Best for: timeout on individual async operations within a test
+
+3. **NSubstitute call verification timeout** — `substitute.WaitForReceived(x => x.Method(...))`
+   - Already in Cabazure.Test via `WaitForReceivedExtensions`
+   - Configurable via `WaitForReceivedExtensions.DefaultTimeout` (default: 10 seconds)
+   - Best for: waiting for async NSubstitute calls in concurrent tests
+
+No new library helper is required for test timeouts — the above three patterns cover all scenarios test authors encounter.
+
 ### xUnit 3 Specifics
 
 - Prefer `[ModuleInitializer]` (via `AssemblyInitializer`) over `IClassFixture` static constructors for global test setup.

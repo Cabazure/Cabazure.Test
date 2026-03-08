@@ -645,6 +645,75 @@ and supports the standard FluentAssertions `because`/`becauseArgs` parameters.
 
 ---
 
+## Test Timeouts
+
+xUnit 3 and the .NET BCL provide three complementary timeout patterns for different scenarios:
+
+### Whole-Test Execution Limit
+
+Use the `Timeout` parameter on `[Fact]` or `[Theory]` to set a maximum duration for the entire test:
+
+```csharp
+[Fact(Timeout = 5000)]  // Timeout in milliseconds
+public void SlowOperation_CompletesInTime()
+{
+    var result = ExpensiveComputation();
+    result.Should().Be(42);
+}
+```
+
+If the test exceeds the timeout, xUnit 3 throws `TestTimeoutException`. This is useful for detecting hangs in synchronous code or ensuring performance thresholds.
+
+### Per-Await Timeout
+
+Use `Task.WaitAsync(TimeSpan)` (.NET 6+) to add a timeout to individual `await` expressions. This is ideal when a single async call might hang:
+
+```csharp
+using FluentAssertions;
+
+[Fact]
+public async Task ApiCall_ReturnsWithinTimeout()
+{
+    var cts = new CancellationTokenSource();
+    var result = await SomeApiCall(cts.Token)
+        .WaitAsync(TimeSpan.FromSeconds(2));  // Timeout on this specific call
+    
+    result.Should().NotBeNull();
+}
+```
+
+### Waiting for NSubstitute Call Verification
+
+Use `WaitForReceived` to poll until an asynchronous call is verified on a substitute:
+
+```csharp
+[Theory, AutoNSubstituteData]
+public async Task Service_CallsRepository(IRepository repo, Service sut)
+{
+    await sut.ProcessAsync();
+    
+    // Waits up to 10 seconds for the call (configurable)
+    await repo.WaitForReceived(r => r.Save(Arg.Any<Item>()));
+}
+```
+
+The default timeout is `WaitForReceivedExtensions.DefaultTimeout` (10 seconds). Override it globally in a `[ModuleInitializer]`:
+
+```csharp
+using Cabazure.Test;
+
+internal static class TestAssemblyInitializer
+{
+    [System.Runtime.CompilerServices.ModuleInitializer]
+    public static void Initialize()
+    {
+        WaitForReceivedExtensions.DefaultTimeout = TimeSpan.FromSeconds(5);
+    }
+}
+```
+
+---
+
 ## Compatibility
 
 - **.NET 9+** (`net9.0`)
