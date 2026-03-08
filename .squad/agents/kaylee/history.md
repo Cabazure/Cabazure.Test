@@ -418,3 +418,20 @@ Opt-B: Added CachedParameterAttributes sealed record and ParameterCache Concurre
 Opt-D: Replaced .ToList().ForEach() with .ToArray() + foreach in RecursionCustomization, eliminating intermediate List allocation per fixture creation.
 
 Result: Build clean (0 errors). Zoe will run full test suite.
+
+### Phase 39: Simplified FixtureCustomizationCollection (refactor)
+
+**Task:** Replace two-field design (List<ICustomization> customizations + volatile ICustomization[]? _snapshot) with single volatile ICustomization[] _items using copy-on-write.
+
+**Rationale:** Phase 38 introduced _snapshot field for lock-free reads, but the DCL pattern in GetEnumerator was incorrect (missing inner re-check). Two fields harder to reason about than one. Copy-on-write with single volatile array is simpler and correct.
+
+**Design:**
+- _items never null — initialized in constructor with default customizations
+- Count and GetEnumerator: direct volatile read (no lock, no DCL)
+- Add/Remove/Clear: acquire syncLock, build new array from _items, write back atomically
+- Mutations use collection expressions ([.._items, customization]) or Array.Copy for removals
+- _snapshot field removed entirely
+
+**Result:** All 238 tests pass. 21 insertions(+), 42 deletions(-). Commit: 1eb2eb5
+
+**Key insight:** The volatile field reference IS the immutable snapshot — no need for separate snapshot infrastructure when using copy-on-write. Lock only needed to serialize concurrent mutations (prevent lost updates).

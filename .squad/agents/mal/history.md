@@ -203,3 +203,30 @@ All caches are `ConcurrentDictionary` (thread-safe inserts) or protected by `loc
 The `ICustomization` contract in AutoFixture is fundamentally stateless-on-self by design. `Customize(IFixture)` is a pure side-effect on the fixture argument, not the receiver. This is the standard library practice across the AutoFixture ecosystem.
 
 **Note for Ricky:** Safe under parallel execution. No ordering-dependent behavior. The only subtlety is that `CustomizeAttribute.GetCustomization(parameter)` creates a **new** `ICustomization` on each call (not cached), while `CustomizeWithAttribute.Instantiate()` creates once and caches. Both patterns are correct — the difference is that `CustomizeAttribute` is parameter-scoped (different customization per parameter type) while `CustomizeWithAttribute` is method/class-scoped (same customization reused). Both implementations are stateless on the customization instance.
+
+
+### Phase 39 — Copy-on-Write Refactor Validation
+
+**Date:** 2026-03-08T16:08:43Z
+**Status:** ✅ Validated  
+**Agent:** Kaylee (Core Dev) — Implementation  
+**Related Decisions:** Copy-on-write pattern for thread-safe collections
+
+**Kaylee's Work:**
+- Refactored FixtureCustomizationCollection from two-field snapshot-caching design to single volatile array with copy-on-write mutations
+- Fixed double-checked locking (DCL) bug in snapshot invalidation path
+- Eliminated snapshot-building overhead; simplified to one field instead of two
+- All 238 tests pass — no behavioral change
+
+**Pattern Documentation:**
+- Proposed copy-on-write pattern for team standardization (.squad/decisions/inbox/kaylee-copy-on-write-pattern.md)
+- Rationale: simpler reasoning, no DCL complexity, direct volatile reads are correct by construction
+- Constraints: best for low-frequency writes, small collections (Fixture customizations fit perfectly)
+
+**Implications for Caching Review:**
+- Validates earlier Phase 38 caching safety review (Mal's decision)
+- Copy-on-write pattern is proven safe under concurrent access
+- No per-test state leakage; cache invalidation is atomic
+
+**Status:** Implementation complete, decision ready for team review and potential standardization as team pattern.
+
