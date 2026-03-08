@@ -167,3 +167,39 @@ Single entry-point namespace (`Cabazure.Test`) for all public test-facing types 
 
 **Commit Message:**
 Followed Conventional Commits with BREAKING CHANGE footer; scope(s) = `attributes,customizations`; properly attributed to Copilot.
+
+### Phase 38: Caching Safety Review (2026-07-14)
+
+**Task:** Review reflection caching changes in `squad/38-perf-optimizations` branch for state leakage risks.
+
+**Files Reviewed:**
+- `src/Cabazure.Test/FixtureFactory.cs` — `InitializedTypes`, `MethodCustomizations`, `TypeCustomizations` caches
+- `src/Cabazure.Test/Attributes/FixtureDataExtensions.cs` — `ParameterCache` with `CachedParameterAttributes`
+- `src/Cabazure.Test/Customizations/FixtureCustomizationCollection.cs` — `_snapshot` volatile field
+
+**Analysis by Cache:**
+
+1. **`InitializedTypes` (RuntimeTypeHandle → byte):** Safe. Caches only the *fact* that `RunClassConstructor` was called. No fixture-specific state. Keys are value types with correct equality semantics.
+
+2. **`MethodCustomizations` / `TypeCustomizations` (MethodInfo/Type → ICustomization[]):** Safe. All `ICustomization.Customize(IFixture)` implementations in this library (and AutoFixture itself) mutate the **fixture**, not the customization instance. Customizations are stateless factories that add builders to the fixture on each call. Re-verified every `Customize` method in `src/Cabazure.Test/Customizations/` — none store mutable state on `this`.
+
+3. **`[CustomizeWith]` attribute `Instantiate()` caching:** Safe. `Instantiate()` calls `Activator.CreateInstance(CustomizationType)` to produce a new `ICustomization`. The cached array shares these instances across all fixture creations for the same method/type. Same reasoning as #2 — `Customize()` is idempotent on the customization itself.
+
+4. **`ParameterCache` (ParameterInfo → CachedParameterAttributes):** Safe.
+   - `FrozenMatcher` (`IRequestSpecification`): Pure predicate object. `IsSatisfiedBy(object)` is a stateless type comparison. AutoFixture's `EqualRequestSpecification` stores only the target type and a comparer — no mutable state, no side effects.
+   - `Customizations` (`CustomizeAttribute[]`): The attribute instances are cached, but `GetCustomization(parameter)` returns a **new** `ICustomization` on each call. The returned customization is applied to the per-test fixture and not cached.
+
+5. **`_snapshot` (volatile ICustomization[]?):** Safe. Invalidated inside the lock on every mutation (`Add`, `Remove`, `Clear`). Volatile write provides memory barrier. Lock-free read path in `GetEnumerator()` either returns cached snapshot or acquires lock to refresh. No stale data observable after mutation completes.
+
+**xUnit 3 Parallel Execution:**
+All caches are `ConcurrentDictionary` (thread-safe inserts) or protected by `lock` (FixtureCustomizationCollection). Static caches are intentionally shared across parallel test execution — this is correct because the cached values contain no per-fixture state. Each test gets its own `new Fixture()` instance; the cached customizations/matchers are applied fresh to each fixture.
+
+**Verdict:** ✅ APPROVE
+
+**Rationale:** The caching strategy correctly separates:
+- **What to cache:** Reflection metadata (attributes, matchers, customization factories) — stable, type-level data
+- **What not to cache:** Fixture instances, frozen specimens, per-test state — created fresh per test
+
+The `ICustomization` contract in AutoFixture is fundamentally stateless-on-self by design. `Customize(IFixture)` is a pure side-effect on the fixture argument, not the receiver. This is the standard library practice across the AutoFixture ecosystem.
+
+**Note for Ricky:** Safe under parallel execution. No ordering-dependent behavior. The only subtlety is that `CustomizeAttribute.GetCustomization(parameter)` creates a **new** `ICustomization` on each call (not cached), while `CustomizeWithAttribute.Instantiate()` creates once and caches. Both patterns are correct — the difference is that `CustomizeAttribute` is parameter-scoped (different customization per parameter type) while `CustomizeWithAttribute` is method/class-scoped (same customization reused). Both implementations are stateless on the customization instance.
