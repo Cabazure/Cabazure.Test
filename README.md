@@ -10,9 +10,17 @@
 
 ## What is it?
 
-**Cabazure.Test** is a spiritual successor to [Atc.Test](https://github.com/atc-net/atc-test), rebuilt from the ground up for xUnit 3. It bundles xUnit 3, NSubstitute, AutoFixture, and FluentAssertions into a single package so you can focus on writing tests instead of wiring up infrastructure.
+**Cabazure.Test** bundles xUnit 3, NSubstitute, AutoFixture, and FluentAssertions into a single, pre-configured testing package. One NuGet reference and you're writing expressive tests immediately — no per-project wiring required.
 
-Two things set this library apart. First, project-wide fixture customizations are registered explicitly in a `[ModuleInitializer]` method — there is no reflection-based auto-discovery scanning assemblies for special attributes. This makes startup deterministic, fast, and straightforward to reason about. Second, interfaces and abstract classes are automatically substituted by NSubstitute everywhere — no manual `Substitute.For<T>()` calls required.
+Several things set it apart from wiring up the four libraries yourself:
+
+- **Zero-boilerplate theory data** — `[AutoNSubstituteData]` generates all test parameters automatically. Interfaces and abstract classes become NSubstitute substitutes; no `Substitute.For<T>()` calls needed.
+- **`[Frozen]` auto-wiring** — a `[Frozen]` parameter is shared across all subsequent parameters in the same test, so the same substitute flows into your SUT and is available for `Received()` verification.
+- **Explicit project-wide customization** — register fixture configuration once in a `[ModuleInitializer]`. No assembly scanning or reflection-based discovery — startup is deterministic and fast.
+- **Batteries included** — built-in customizations for `ImmutableArray<T>`, `DateOnly`, `JsonElement`, `JsonSerializerOptions`, and `CancellationToken`. Works out of the box.
+- **Extended assertions** — FluentAssertions extensions for JSON, XML, and string-similarity comparison, plus configurable `DateTimeOffset` precision.
+
+> Spiritual successor to [Atc.Test](https://github.com/atc-net/atc-test), rebuilt from the ground up for xUnit 3.
 
 ---
 
