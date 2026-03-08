@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Reflection;
 using Cabazure.Test.Attributes;
 using Xunit;
@@ -57,28 +56,10 @@ namespace Cabazure.Test;
 /// </example>
 /// </remarks>
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-public sealed class ClassAutoNSubstituteDataAttribute : DataAttribute
+public sealed class ClassAutoNSubstituteDataAttribute(Type dataClass) : ClassDataAttribute(dataClass)
 {
     /// <summary>
-    /// Initializes a new instance of <see cref="ClassAutoNSubstituteDataAttribute"/>
-    /// with the specified data class.
-    /// </summary>
-    /// <param name="dataClass">
-    /// The type that provides test data. Must have a public parameterless constructor
-    /// and implement <c>IEnumerable&lt;object[]&gt;</c>.
-    /// </param>
-    public ClassAutoNSubstituteDataAttribute(Type dataClass)
-    {
-        DataClass = dataClass;
-    }
-
-    /// <summary>
-    /// Gets the type that provides the test data rows.
-    /// </summary>
-    public Type DataClass { get; }
-
-    /// <summary>
-    /// Returns one theory data row per row supplied by the <see cref="DataClass"/>, each
+    /// Returns one theory data row per row supplied by <see cref="ClassDataAttribute.Class"/>, each
     /// merged with fixture-generated values for any remaining parameters. Any disposable
     /// arguments in each row are registered with <paramref name="disposalTracker"/>
     /// so xUnit 3 disposes them automatically after the corresponding test case completes.
@@ -91,31 +72,25 @@ public sealed class ClassAutoNSubstituteDataAttribute : DataAttribute
     /// <returns>
     /// A collection of <see cref="TheoryDataRow"/> instances, one per row from the data class.
     /// </returns>
-    public override ValueTask<IReadOnlyCollection<ITheoryDataRow>> GetData(
+    public override async ValueTask<IReadOnlyCollection<ITheoryDataRow>> GetData(
         MethodInfo testMethod,
         DisposalTracker disposalTracker)
     {
         ArgumentNullException.ThrowIfNull(testMethod);
 
-        if (Activator.CreateInstance(DataClass) is not IEnumerable dataInstance)
-        {
-            throw new InvalidOperationException(
-                $"Type '{DataClass.FullName}' must implement IEnumerable<object[]>.");
-        }
-
+        var baseRows = await base.GetData(testMethod, disposalTracker);
         var theoryParams = testMethod.GetParameters();
 
-        var result = new List<ITheoryDataRow>();
-        foreach (var item in dataInstance)
+        var result = new List<ITheoryDataRow>(baseRows.Count);
+        foreach (var baseRow in baseRows)
         {
-            var row = item is ITheoryDataRow tdr ? tdr.GetData() : (item as object?[] ?? [(object?)item]);
             var fixture = FixtureFactory.Create(testMethod);
-            var values = fixture.MergeValues(theoryParams, row);
+            var values = fixture.MergeValues(theoryParams, baseRow.GetData());
             disposalTracker.AddRange(values);
             result.Add(new TheoryDataRow(values));
         }
 
-        return new ValueTask<IReadOnlyCollection<ITheoryDataRow>>(result);
+        return result;
     }
 
     /// <inheritdoc />

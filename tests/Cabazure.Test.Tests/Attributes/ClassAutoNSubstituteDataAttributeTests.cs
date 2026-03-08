@@ -60,6 +60,23 @@ public class ClassAutoNSubstituteDataAttributeTests
         count.Should().BeOneOf(1, 2);
         service.Should().NotBeNull();
     }
+
+    [Theory]
+    [ClassAutoNSubstituteData(typeof(DisposableData))]
+    public void DisposableDataClass_ProvidesRows(
+        string value,
+        FixtureFactoryTests.IMyInterface service)
+    {
+        value.Should().Be("disposed");
+        service.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void SupportsDiscoveryEnumeration_ReturnsTrue_EvenForDisposableDataClass()
+    {
+        var sut = new ClassAutoNSubstituteDataAttribute(typeof(DisposableData));
+        sut.SupportsDiscoveryEnumeration().Should().BeTrue();
+    }
 }
 
 public class SingleColumnData : IEnumerable<object[]>
@@ -101,4 +118,16 @@ public class TypedTheoryData : TheoryData<string, int>
         Add("hello", 1);
         Add("world", 2);
     }
+}
+
+public class DisposableData : IEnumerable<object[]>, IDisposable
+{
+    public IEnumerator<object[]> GetEnumerator()
+    {
+        yield return ["disposed"];
+    }
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    public void Dispose() { }
 }
