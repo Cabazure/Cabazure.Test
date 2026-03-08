@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using AutoFixture;
@@ -43,6 +44,10 @@ public static class FixtureFactory
     /// </remarks>
     public static FixtureCustomizationCollection Customizations { get; } = new();
 
+    private static readonly ConcurrentDictionary<RuntimeTypeHandle, byte> InitializedTypes = new();
+    private static readonly ConcurrentDictionary<MethodInfo, ICustomization[]> MethodCustomizations = new();
+    private static readonly ConcurrentDictionary<Type, ICustomization[]> TypeCustomizations = new();
+
     /// <summary>
     /// Creates a new <see cref="IFixture"/> with <see cref="AutoFixture.AutoNSubstitute.AutoNSubstituteCustomization"/> applied.
     /// </summary>
@@ -84,25 +89,21 @@ public static class FixtureFactory
     internal static IFixture Create(MethodInfo testMethod)
     {
         var declaringType = testMethod.DeclaringType;
-        if (declaringType is not null)
-        {
+        if (declaringType is not null && InitializedTypes.TryAdd(declaringType.TypeHandle, 0))
             RuntimeHelpers.RunClassConstructor(declaringType.TypeHandle);
-        }
 
         var fixture = new Fixture();
         ApplyCustomizations(fixture, Customizations);
 
-        foreach (var attr in testMethod.GetCustomAttributes<CustomizeWithAttribute>())
-        {
-            fixture.Customize(attr.Instantiate());
-        }
+        foreach (var c in MethodCustomizations.GetOrAdd(testMethod,
+            m => [.. m.GetCustomAttributes<CustomizeWithAttribute>().Select(a => a.Instantiate())]))
+            fixture.Customize(c);
 
         if (declaringType is not null)
         {
-            foreach (var attr in declaringType.GetCustomAttributes<CustomizeWithAttribute>())
-            {
-                fixture.Customize(attr.Instantiate());
-            }
+            foreach (var c in TypeCustomizations.GetOrAdd(declaringType,
+                t => [.. t.GetCustomAttributes<CustomizeWithAttribute>().Select(a => a.Instantiate())]))
+                fixture.Customize(c);
         }
 
         return fixture;

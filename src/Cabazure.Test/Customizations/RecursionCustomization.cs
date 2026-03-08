@@ -18,10 +18,8 @@ public sealed class RecursionCustomization : ICustomization
     {
         ArgumentNullException.ThrowIfNull(fixture);
 
-        fixture.Behaviors
-            .OfType<ThrowingRecursionBehavior>()
-            .ToList()
-            .ForEach(b => fixture.Behaviors.Remove(b));
+        foreach (var b in fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToArray())
+            fixture.Behaviors.Remove(b);
 
         fixture.Behaviors.Add(new OmitOnRecursionBehavior());
     }

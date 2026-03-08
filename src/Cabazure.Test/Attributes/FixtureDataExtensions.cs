@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Reflection;
 using AutoFixture;
 using AutoFixture.Kernel;
@@ -11,6 +12,24 @@ namespace Cabazure.Test.Attributes;
 /// </summary>
 internal static class FixtureDataExtensions
 {
+    private sealed record CachedParameterAttributes(
+        IRequestSpecification? FrozenMatcher,
+        CustomizeAttribute[] Customizations);
+
+    private static readonly ConcurrentDictionary<ParameterInfo, CachedParameterAttributes> ParameterCache = new();
+
+    private static CachedParameterAttributes GetParameterAttributes(ParameterInfo parameter)
+        => ParameterCache.GetOrAdd(parameter, static p =>
+        {
+            var frozenAttr = p.GetCustomAttribute<FrozenAttribute>();
+            IRequestSpecification? matcher = frozenAttr is not null
+                ? ((FreezeOnMatchCustomization)frozenAttr.GetCustomization(p)).Matcher
+                : null;
+            return new CachedParameterAttributes(
+                matcher,
+                [.. p.GetCustomAttributes<CustomizeAttribute>()]);
+        });
+
     /// <summary>
     /// Resolves a complete set of theory parameter values by combining <paramref name="provided"/>
     /// values (left-aligned) with fixture-generated values for any remaining parameters.
@@ -54,10 +73,9 @@ internal static class FixtureDataExtensions
     /// </summary>
     private static void FreezeProvided(this IFixture fixture, ParameterInfo parameter, object? value)
     {
-        if (value is null || parameter.GetCustomAttribute<FrozenAttribute>() is not { } frozenAttr)
-            return;
-
-        var matcher = ((FreezeOnMatchCustomization)frozenAttr.GetCustomization(parameter)).Matcher;
+        if (value is null) return;
+        var cached = GetParameterAttributes(parameter);
+        if (cached.FrozenMatcher is not { } matcher) return;
         fixture.Customizations.Insert(
             0,
             new FilteringSpecimenBuilder(new FixedBuilder(value), matcher));
@@ -73,7 +91,8 @@ internal static class FixtureDataExtensions
         if (parameter.ParameterType.IsAssignableFrom(typeof(Fixture)))
             return fixture;
 
-        foreach (var attr in parameter.GetCustomAttributes<CustomizeAttribute>())
+        var cached = GetParameterAttributes(parameter);
+        foreach (var attr in cached.Customizations)
             fixture.Customize(attr.GetCustomization(parameter));
 
         return new SpecimenContext(fixture).Resolve(parameter);
