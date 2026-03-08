@@ -69,7 +69,7 @@ public class TypeCustomization<T> : ICustomization
     public void Customize(IFixture fixture)
     {
         ArgumentNullException.ThrowIfNull(fixture);
-        fixture.Customizations.Add(new DelegateBuilder(fixture, factory));
+        fixture.Customizations.Insert(0, new DelegateBuilder(fixture, factory));
     }
 
     private sealed class DelegateBuilder : ISpecimenBuilder
