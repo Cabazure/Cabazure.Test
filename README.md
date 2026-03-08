@@ -255,7 +255,7 @@ When the assertion fails, the FluentAssertions failure message is included in NS
 | `ImmutableCollectionCustomization` | Enables fixture creation of `ImmutableList<T>`, `ImmutableArray<T>`, `ImmutableDictionary<,>`, and other immutable collections. |
 | `CancellationTokenCustomization` | Provides non-cancelled `CancellationToken` parameters in theory tests (`new CancellationToken(false)`), fixing AutoFixture's default. |
 | `DateOnlyTimeOnlyCustomization` | Enables reliable creation of `DateOnly` and `TimeOnly` values derived from a random `DateTime`. |
-| `JsonElementCustomization` | Opt-in customization that enables creation of `System.Text.Json.JsonElement` instances. |
+| `JsonElementCustomization` | Included-by-default customization that enables creation of `System.Text.Json.JsonElement` instances. Produces a random JSON string by default; configurable via constructor overloads. |
 | `InvokeProtected` / `InvokeProtectedAsync` | Extension methods for invoking protected instance methods via reflection — void, typed-return, and async variants. Useful for testing Template Method patterns and protected virtual hooks without subclassing. |
 | `BeSimilarTo<T>` | Whitespace-normalized string comparison (collapses whitespace/newlines) |
 | `BeXmlEquivalentTo<T>` | XML structural comparison ignoring formatting |
@@ -302,19 +302,42 @@ Enables reliable creation of `DateOnly` and `TimeOnly` values. AutoFixture canno
 
 ### `JsonElementCustomization`
 
-Enables creation of `System.Text.Json.JsonElement` instances. AutoFixture cannot construct `JsonElement` by default because it requires a `ref Utf8JsonReader` parameter. This customization creates a `JsonElement` representing a JSON object with a randomly generated key/value pair.
+Enables creation of `System.Text.Json.JsonElement` instances. AutoFixture cannot construct `JsonElement` by default because it requires a `ref Utf8JsonReader` parameter. **Included by default** — produces a random JSON string using `Utf8JsonWriter` so it works regardless of whether `JsonSerializerIsReflectionEnabledByDefault` is set to `false`.
 
-**Not included by default** — opt in via:
+Three constructor overloads let you control the generated value:
 
 ```csharp
-FixtureFactory.Customizations.Add(new JsonElementCustomization());
+// Default — random JSON string (reflection-free)
+new JsonElementCustomization()
+
+// Raw JSON string factory — you return the JSON, parsing/cloning is automatic
+new JsonElementCustomization(
+    f => $"{{\"{f.Create<string>()}\": \"{f.Create<string>()}\"}}")
+
+// Element factory — you produce the JsonElement directly with full control
+new JsonElementCustomization(f =>
+{
+    using var buffer = new MemoryStream();
+    using (var writer = new Utf8JsonWriter(buffer))
+    {
+        writer.WriteStartObject();
+        writer.WriteString(f.Create<string>(), f.Create<string>());
+        writer.WriteEndObject();
+    }
+    return JsonDocument.Parse(buffer.ToArray()).RootElement.Clone();
+})
 ```
 
-Or apply per-test:
+To override the default in your project, remove the built-in instance and add your own:
 
 ```csharp
-var fixture = FixtureFactory.Create(new JsonElementCustomization());
-var element = fixture.Create<JsonElement>();
+[ModuleInitializer]
+public static void Initialize()
+{
+    FixtureFactory.Customizations.Remove<JsonElementCustomization>();
+    FixtureFactory.Customizations.Add(
+        new JsonElementCustomization(f => f.Create<int>().ToString()));
+}
 ```
 
 ### Custom Type Registration
