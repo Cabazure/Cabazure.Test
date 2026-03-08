@@ -11,6 +11,7 @@ public class WaitForReceivedExtensionsTests
     {
         void Process(string value);
         Task ProcessAsync(string value);
+        Task<string> FetchAsync(string input);
     }
 
     [Fact]
@@ -140,5 +141,39 @@ public class WaitForReceivedExtensionsTests
         {
             WaitForReceivedExtensions.DefaultTimeout = originalDefault;
         }
+    }
+
+    [Fact]
+    public async Task WaitForReceivedWithAnyArgs_WhenSubstituteHasConfiguredReturn_StillDetectsCall()
+    {
+        var service = Substitute.For<ITestService>();
+        service.FetchAsync(Arg.Any<string>()).Returns("result");
+
+        var waitTask = service.WaitForReceivedWithAnyArgs(
+            s => s.FetchAsync(default!),
+            timeout: TimeSpan.FromSeconds(5));
+
+        await Task.Delay(50);
+        _ = Task.Run(async () => await service.FetchAsync("input"));
+
+        var act = async () => await waitTask;
+        await act.Should().CompleteWithinAsync(TimeSpan.FromSeconds(1));
+    }
+
+    [Fact]
+    public async Task WaitForReceived_WhenSubstituteHasConfiguredReturn_StillDetectsCall()
+    {
+        var service = Substitute.For<ITestService>();
+        service.FetchAsync("exact-input").Returns("result");
+
+        var waitTask = service.WaitForReceived(
+            s => s.FetchAsync("exact-input"),
+            timeout: TimeSpan.FromSeconds(5));
+
+        await Task.Delay(50);
+        _ = Task.Run(async () => await service.FetchAsync("exact-input"));
+
+        var act = async () => await waitTask;
+        await act.Should().CompleteWithinAsync(TimeSpan.FromSeconds(1));
     }
 }

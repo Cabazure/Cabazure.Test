@@ -116,7 +116,7 @@ public static class WaitForReceivedExtensions
 
         var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        // Register handler for future calls
+        // Register handler for future calls (event-driven — works when no configured return)
         router.RegisterCustomCallHandlerFactory(state => new SignalingCallHandler(spec, tcs));
 
         // Pre-check already-received calls (race-free because handler is already registered)
@@ -128,7 +128,42 @@ public static class WaitForReceivedExtensions
         var effectiveTimeout = timeout ?? DefaultTimeout;
         var ct = TestContext.Current.CancellationToken;
 
+        // Polling fallback: NSubstitute stops the route chain at ReturnConfiguredResultHandler (step 6)
+        // before reaching ReturnFromCustomHandlers (step 9) where SignalingCallHandler lives.
+        // RecordCallHandler (step 2) always runs, so ReceivedCalls() always has the call.
+        // This polling loop catches the case where the event-driven handler is never reached.
+        _ = PollUntilSignaledAsync(router, spec, tcs, ct);
+
         return tcs.Task.WaitAsync(effectiveTimeout, ct);
+    }
+
+    /// <summary>
+    /// Polls for calls matching the specification in the router's received calls list,
+    /// signaling the TaskCompletionSource when a match is found. Provides fallback detection
+    /// for scenarios where the event-driven SignalingCallHandler is bypassed by NSubstitute's
+    /// route chain (e.g., when a substitute has a configured return value).
+    /// </summary>
+    private static async Task PollUntilSignaledAsync(
+        ICallRouter router,
+        ICallSpecification spec,
+        TaskCompletionSource tcs,
+        CancellationToken ct)
+    {
+        try
+        {
+            while (!tcs.Task.IsCompleted)
+            {
+                await Task.Delay(50, ct);
+                if (tcs.Task.IsCompleted)
+                    return;
+                if (router.ReceivedCalls().Any(c => spec.IsSatisfiedBy(c)))
+                {
+                    tcs.TrySetResult();
+                    return;
+                }
+            }
+        }
+        catch (OperationCanceledException) { }
     }
 }
 
