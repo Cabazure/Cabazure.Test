@@ -1,4 +1,5 @@
 using FrozenAttribute = AutoFixture.Xunit3.FrozenAttribute;
+using AutoFixture.Xunit3;
 using Cabazure.Test.Tests.Fixture;
 using FluentAssertions;
 using Xunit;
@@ -108,6 +109,22 @@ public class MemberAutoNSubstituteDataAttributeTests
         count.Should().BeOneOf(1, 2);
         service.Should().NotBeNull();
     }
+
+    public static IEnumerable<object[]> ConcreteInterfaceRows =>
+    [
+        [new ConcreteImplementation()],
+    ];
+
+    [Theory]
+    [MemberAutoNSubstituteData(nameof(ConcreteInterfaceRows))]
+    public void FrozenProvidedValue_WithImplementedInterfacesMatching_FreezesViaInterface(
+        [Frozen(Matching.ImplementedInterfaces)] ConcreteImplementation concreteService,
+        FixtureFactoryTests.MyServiceWithDependency sut)
+    {
+        sut.Dependency.Should().BeSameAs(concreteService);
+    }
+
+    public class ConcreteImplementation : FixtureFactoryTests.IMyInterface { }
 
     public static async IAsyncEnumerable<object[]> AsyncRows()
     {

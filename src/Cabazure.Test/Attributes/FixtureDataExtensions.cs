@@ -50,20 +50,17 @@ internal static class FixtureDataExtensions
     /// <summary>
     /// Registers an already-provided value in the fixture when the parameter carries
     /// <see cref="FrozenAttribute"/>, so subsequent parameters of the same type receive
-    /// the same instance.
+    /// the same instance. Respects the <see cref="FrozenAttribute.By"/> matching flags.
     /// </summary>
     private static void FreezeProvided(this IFixture fixture, ParameterInfo parameter, object? value)
     {
-        if (value is null || parameter.GetCustomAttribute<FrozenAttribute>() is null)
+        if (value is null || parameter.GetCustomAttribute<FrozenAttribute>() is not { } frozenAttr)
             return;
 
+        var matcher = ((FreezeOnMatchCustomization)frozenAttr.GetCustomization(parameter)).Matcher;
         fixture.Customizations.Insert(
             0,
-            new FilteringSpecimenBuilder(
-                new FixedBuilder(value),
-                new OrRequestSpecification(
-                    new SeedRequestSpecification(parameter.ParameterType),
-                    new ExactTypeSpecification(parameter.ParameterType))));
+            new FilteringSpecimenBuilder(new FixedBuilder(value), matcher));
     }
 
     /// <summary>
