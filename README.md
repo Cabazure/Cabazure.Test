@@ -260,7 +260,7 @@ When the assertion fails, the FluentAssertions failure message is included in NS
 | `BeSimilarTo<T>` | Whitespace-normalized string comparison (collapses whitespace/newlines) |
 | `BeXmlEquivalentTo<T>` | XML structural comparison ignoring formatting |
 | `BeJsonEquivalentTo<T>` | JSON structural comparison ignoring formatting |
-| Auto-substitution | Interfaces and abstract classes are automatically replaced with NSubstitute substitutes everywhere — no manual `Substitute.For<T>()` required. |
+| Auto-substitution | Interfaces and abstract classes are automatically replaced with NSubstitute substitutes everywhere — no manual `Substitute.For<T>()` required. Un-setup method calls return NSubstitute defaults (`null`, `0`, `false`, completed `Task`). Use `.Returns()` to configure explicit return values. |
 
 ---
 
