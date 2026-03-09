@@ -131,16 +131,7 @@ public class DiscountServiceTests
 
 ### Project-wide customizations via `FixtureFactory.Customizations`
 
-Register a customization once for the whole test assembly using `[ModuleInitializer]`. It is applied to every fixture created by any data attribute. `[ModuleInitializer]` requires .NET 5+; on older frameworks, call the initializer method manually from your test setup, or define the attribute yourself so the compiler accepts the syntax:
-
-```csharp
-// Only needed when targeting frameworks older than .NET 5
-namespace System.Runtime.CompilerServices
-{
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    internal sealed class ModuleInitializerAttribute : Attribute { }
-}
-```
+Register a customization once for the whole test assembly using `[ModuleInitializer]`. It is applied to every fixture created by any data attribute.
 
 ```csharp
 using System.Runtime.CompilerServices;
@@ -150,6 +141,17 @@ internal static class TestAssemblyInitializer
     [ModuleInitializer]
     public static void Initialize()
         => FixtureFactory.Customizations.Add(new MyDomainCustomization());
+}
+```
+
+`[ModuleInitializer]` is built into .NET 5 and later. All runtimes compatible with Cabazure.Test (.NET 6–10+) include it, so no extra setup is needed in practice. If you are in the unusual position of targeting .NET Core 3.1 — the only netstandard2.1-compatible runtime that predates .NET 5 — you can define the attribute yourself with a C# 9+ compiler; the compiler emits proper module-initializer IL and the CLR will call the method automatically:
+
+```csharp
+// Only needed for .NET Core 3.1 (corner case)
+namespace System.Runtime.CompilerServices
+{
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+    internal sealed class ModuleInitializerAttribute : Attribute { }
 }
 ```
 
@@ -773,7 +775,10 @@ internal static class TestAssemblyInitializer
 
 ## Compatibility
 
-- **.NET 10+** (`net10.0`) and **netstandard2.1** (compatible with .NET Framework 4.8, Xamarin, Unity)
+- **.NET 10+** (`net10.0`) — primary target; gets full performance.
+- **.NET 6–9** — use the `netstandard2.1` DLL (xUnit 3 requires .NET 6+, so this is the typical multi-version scenario). Xamarin, Unity, and Mono (6.4+) also support netstandard2.1.
+
+> **Note:** .NET Framework is *not* supported. It tops out at netstandard2.0, while Cabazure.Test requires netstandard2.1.
 - **FluentAssertions 7.x** is included. FA 7 contains breaking changes from 6.x. If you are migrating from Atc.Test or another package that used FA 6, review the [FluentAssertions 7 migration guide](https://fluentassertions.com/upgradingtov7) before upgrading.
 
 ---
