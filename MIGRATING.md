@@ -147,6 +147,31 @@ public static void Initialize()
 
 ---
 
+## General migration tips
+
+- Prefer built-in Cabazure.Test helpers before writing bespoke specimen builders. Use `SpecimenRequestHelper.GetRequestType(request)` instead of duplicating request-matching helpers, and use `FixtureFactory.Customizations.Add<T>(...)` or `TypeCustomization<T>` when you only need a type-focused customization. Reach for a full `ISpecimenBuilder` only when you genuinely need lower-level specimen control.
+- Use `FluentArg.Match<T>()` for single inline assertions where the verified argument is asserted immediately and not reused later. Keep `ReceivedArg<T>()` / `ReceivedArgs<T>()` when the captured value is reused, transformed, or asserted across a batch or multi-step flow.
+
+One common cleanup is replacing an `Arg.Any<T>()` + later argument-extraction pattern with an inline matcher when the verification flow is equivalent:
+
+```csharp
+// Before
+_ = substitute.Received(1).Handle(Arg.Any<MyRequest>());
+var request = substitute.ReceivedArg<MyRequest>();
+request.Id.Should().Be(expectedId);
+
+// After
+substitute.Received(1).Handle(
+    FluentArg.Match<MyRequest>(request =>
+        request.Id.Should().Be(expectedId)));
+```
+
+This is usually a good fit when the old Atc.Test pattern was `Arg.Any<T>()` followed by `ReceivedCallWithArgument<T>()`, or the Cabazure.Test equivalent `ReceivedArg<T>()`, and the extracted value was only used for that immediate assertion. If the test reuses the captured argument, transforms it first, or inspects a batch of received values, the post-call inspection style often stays clearer.
+
+`FluentArg.Match<T>()` takes an assertion action, not a boolean predicate, so keep the checks inside FluentAssertions-style assertions.
+
+---
+
 ## Quick-reference checklist
 
 - [ ] Replace `<PackageReference Include="Atc.Test" .../>` with `<PackageReference Include="Cabazure.Test" .../>`
