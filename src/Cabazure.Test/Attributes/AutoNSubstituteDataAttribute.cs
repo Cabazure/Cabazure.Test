@@ -51,7 +51,7 @@ public sealed class AutoNSubstituteDataAttribute : DataAttribute
         var fixture = FixtureFactory.Create(testMethod);
         var values = fixture.MergeValues(testMethod.GetParameters(), []);
         disposalTracker.AddRange(values);
-        IReadOnlyCollection<ITheoryDataRow> result = [new TheoryDataRow(values)];
+        IReadOnlyCollection<ITheoryDataRow> result = [new TheoryDataRow(values) { Label = Array.Empty<object?>().BuildStableLabel() }];
         return new ValueTask<IReadOnlyCollection<ITheoryDataRow>>(result);
     }
 
