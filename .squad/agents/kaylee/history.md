@@ -497,3 +497,23 @@ The non-generic TaskCompletionSource was added in .NET 5 and is not available in
 ull, alue.ToString()). Returns "" for empty arrays.
 
 **Key insight:** The label only needs to be stable, not perfectly descriptive. An empty label ("") on AutoNSubstituteData is intentional — test authors who need descriptive names should use InlineAutoNSubstituteData with explicit values.
+
+### Issue #stable-discovery-labels: Revert Label approach, fix SupportsDiscoveryEnumeration (2026-07-14)
+
+**Task:** Fix VS Test Explorer "Not Run" — the correct way.
+
+**Root cause (confirmed by Ricky via decompilation of xunit.runner.visualstudio 3.1.5):**
+VS derives TestCase.Id from TestCaseUniqueID which is a SHA256 hash of the serialized argument values (via UniqueIDGenerator.ForTestCase in xunit.v3.common). Setting TheoryDataRow.Label or TestDisplayName only affects display strings — not the ID used for discovery-to-execution matching. AutoFixture generates GUID-suffixed strings each GetData() call → different hash → ID mismatch → "Not Run".
+
+**Fix:** Return alse from SupportsDiscoveryEnumeration() on all four attributes. xUnit 3 skips discovery enumeration, so VS never stores IDs that could mismatch.
+
+**Files changed:**
+- src/Cabazure.Test/Attributes/AutoNSubstituteDataAttribute.cs — SupportsDiscoveryEnumeration() => false, removed Label assignment
+- src/Cabazure.Test/Attributes/InlineAutoNSubstituteDataAttribute.cs — same
+- src/Cabazure.Test/Attributes/MemberAutoNSubstituteDataAttribute.cs — SupportsDiscoveryEnumeration() => false, removed Label and index counter
+- src/Cabazure.Test/Attributes/ClassAutoNSubstituteDataAttribute.cs — same as Member
+- src/Cabazure.Test/Attributes/FixtureDataExtensions.cs — removed BuildStableLabel and FormatLabelValue helpers entirely
+
+**Commit:** ix(attributes): return false from SupportsDiscoveryEnumeration to fix VS Test Explorer "Not Run" on branch squad/stable-discovery-labels
+
+**Key learning:** TheoryDataRow.Label is purely cosmetic. The real xUnit 3 test case identity comes from the SHA256 of serialized argument values. The only reliable fix for non-serializable or non-deterministic test data is SupportsDiscoveryEnumeration() => false.

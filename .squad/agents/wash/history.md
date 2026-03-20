@@ -82,3 +82,20 @@ My domain is xUnit 3 integration. Key difference from xUnit 2: `DataAttribute` i
 **Pattern:** Doc sections use ❌/✅ code block pairs with a brief rationale sentence — consistent with FluentAssertions Extensions section style. Cross-references to existing sections preferred over duplicating examples.
 
 **Cross-Update (Scribe, 2026-03-08T15:12:21Z):** Kaylee's decision merged to decisions.md. Code commits: fc2f65b, b41c235. Squad files logged. Phase 38 ready for merge.
+
+### Phase 41: Stable Discovery Labels PR (2026-03-13)
+
+**Task:** Create GitHub PR for `squad/stable-discovery-labels` targeting `main`.
+
+**Work Completed:**
+- Confirmed 4 commits on branch (stable-label strategy implementation + test coverage + squad history)
+- Verified branch was already pushed to origin
+- Created PR with comprehensive description covering:
+  - Root cause: AutoFixture's non-deterministic `Guid.NewGuid()` causing display name mismatches between xUnit 3 discovery and execution phases
+  - Solution: Set `TheoryDataRow.Label` to deterministic values per attribute type (empty string for `AutoNSubstituteData`, formatted values for `InlineAutoNSubstituteData`, row indices for member/class variants)
+  - Test coverage: 9 new tests in `DiscoveryEnumerationLabelTests.cs` verifying label stability
+  - Working as Wash (Integration & Tooling Developer)
+
+**PR:** https://github.com/Cabazure/Cabazure.Test/pull/1
+
+**Learning:** The "Not Run" bug illustrates the critical importance of deterministic display names in xUnit 3's discovery pipeline. The fix (stable labels) is minimal and surgical — one-liner assignments on each data row — making it a good model for targeted bug fixes in test infrastructure.
