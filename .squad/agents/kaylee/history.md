@@ -479,3 +479,21 @@ C# 12 collection expressions with spread ([.. items, x]) on arrays may or may no
 The non-generic TaskCompletionSource was added in .NET 5 and is not available in netstandard2.1. Use TaskCompletionSource<T> (available since netstandard1.0) for cross-TFM code.
 
 **Test result:** 238/238 passing on net10.0.
+### Issue #stable-labels: Stable TheoryDataRow.Label (2026-07-14)
+
+**Task:** Fix VS Test Explorer "Not Run" caused by unstable xUnit 3 discovery display names.
+
+**Root cause:** When SupportsDiscoveryEnumeration() => true, xUnit 3 calls GetData() twice — once at discovery and once at execution. AutoFixture generates strings as paramName + Guid.NewGuid() on every call, producing different display names each time, causing VS to show "Not Run".
+
+**Fix:** Set TheoryDataRow.Label to a stable string on every returned row.
+
+**Label strategy decisions:**
+- AutoNSubstituteData: Label = "" (empty string) — xUnit renders just the method name, always stable since there are no deterministic values.
+- InlineAutoNSubstituteData: Label from BuildStableLabel(Values) — inline values are deterministic (compile-time constants), so they produce a stable and human-readable label like "hello", 42.
+- MemberAutoNSubstituteData: Label from row **index** ( , 1, 2…) — member-provided values may themselves be non-deterministic (e.g., LINQ transforms, random factories), so we cannot trust them for a stable label. Row index is always stable and unique.
+- ClassAutoNSubstituteData: Same as Member — row index for the same reasoning.
+
+**BuildStableLabel() extension:** Added to FixtureDataExtensions as an internal static string BuildStableLabel(this object?[] provided). Formats values with type-aware quoting ("str", 'c', 	rue/alse, 
+ull, alue.ToString()). Returns "" for empty arrays.
+
+**Key insight:** The label only needs to be stable, not perfectly descriptive. An empty label ("") on AutoNSubstituteData is intentional — test authors who need descriptive names should use InlineAutoNSubstituteData with explicit values.
