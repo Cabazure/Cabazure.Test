@@ -76,6 +76,28 @@ Full test coverage for library features: FixtureFactory, 4 data attributes, 8 cu
 
 ## Learnings
 
+### Phase 19: Stable TheoryDataRow.Label Tests (squad/stable-discovery-labels)
+
+**Task:** Write tests verifying all four data attributes set deterministic Label values on returned ITheoryDataRow instances.
+
+**File created:** 	ests/Cabazure.Test.Tests/Attributes/DiscoveryEnumerationLabelTests.cs
+
+**Coverage (9 tests):**
+- AutoNSubstituteData: empty string label, stable across two calls
+- InlineAutoNSubstituteData: label matches formatted inline values ("hello", 42 → "\"hello\", 42"), stable across two calls, null formats as "null"
+- MemberAutoNSubstituteData: each row gets its index as label ("0", "1", "2"), stable across two calls
+- ClassAutoNSubstituteData: same index-label pattern, stable across two calls
+
+**Pattern:** Same reflection-based GetData() call pattern as DisposalTrackerIntegrationTests.cs.
+
+**Key decisions:**
+- MemberLabelTestHost is a private static class that owns both the host method AND ThreeStringRows() so MemberType ??= testMethod.DeclaringType resolves the member correctly.
+- LabelTestMethodHost is separate for Auto/Inline/Class tests.
+- ThreeRowClassData is public (not private/static) — required by ClassDataAttribute which instantiates it via reflection with a public parameterless constructor.
+- For the stability tests, the "called twice" assertion checks both that labels match each other AND that they equal the expected value, making the test self-documenting.
+
+**Result:** 9/9 passing on first run.
+
 ### Phase 16 FrozenAttribute Test Update (Re-verified)
 
 - All Phase 16 FrozenAttribute migration changes were already applied in a previous session. When asked to redo work, always check the current file state before modifying.
@@ -351,4 +373,5 @@ NotBeJsonEquivalentTo (2):
 - FixtureCustomizationCollection is optimal case study (small collection, rare mutations during module init)
 
 **Status:** Implementation validated, pattern ready for team standardization.
+
 
