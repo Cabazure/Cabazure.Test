@@ -230,3 +230,70 @@ The `ICustomization` contract in AutoFixture is fundamentally stateless-on-self 
 
 **Status:** Implementation complete, decision ready for team review and potential standardization as team pattern.
 
+### Phase 40: SupportsDiscoveryEnumeration Architectural Review (2026-03-20)
+
+**Task:** Analyze whether `MemberAutoNSubstituteDataAttribute` and `ClassAutoNSubstituteDataAttribute` could use `SupportsDiscoveryEnumeration() => true` while `AutoNSubstituteDataAttribute` and `InlineAutoNSubstituteDataAttribute` use `false`.
+
+**Context:**
+- VS Test Explorer marks tests as "Not Run" when `TestCaseUniqueID` (SHA256 of serialized args) differs between discovery and execution
+- AutoFixture generates `paramName + Guid.NewGuid()` on every `GetData()` call → hash mismatch
+- Member/Class attributes have deterministic user-provided values, but AUTO-generated trailing params are still non-deterministic
+
+**Options Analyzed:**
+
+1. **Option B (stable-only ID contribution):** NOT POSSIBLE — xUnit's `UniqueIDGenerator.ForTestCase` hashes ALL argument values. No API to exclude trailing AutoFixture-generated params.
+
+2. **Option C (TestDisplayName/Label for stable ID):** CONFIRMED NOT POSSIBLE — `Label` and `TestDisplayName` affect display only, not the `TestCaseUniqueID` hash. Verified via decompilation.
+
+3. **Option D (deterministic AutoFixture seed):** TECHNICALLY POSSIBLE BUT WRONG — Would require custom `ISpecimenBuilder` seeded per row. **Violates AutoFixture's core value proposition** (randomization catches edge cases). If users want deterministic values, they should use `[MemberAutoNSubstituteData]` with explicit values.
+
+4. **Option A (false for all):** CORRECT CHOICE — Uniform, correct, simple. UX trade-off (no per-row pre-run visibility) is acceptable. Tests that appear but don't run are worse than tests that appear after first execution.
+
+**Recommendation:** Keep `SupportsDiscoveryEnumeration() => false` on ALL four attributes.
+
+**Architectural Principle Documented:**
+> Test correctness trumps IDE discoverability.
+
+**Decision Document:** `.squad/decisions/inbox/mal-member-class-discovery-recommendation.md`
+
+**Status:** ✅ Complete — recommendation delivered.
+
+
+## Session: Fix Discovery Enumeration Architecture Review (2026-03-20)
+
+**Teammates:** Kaylee (Implementation), Zoe (Testing), Wash (PR Integration)
+
+**Task:** Review all options (B/C/D) for Member/Class discovery, confirm false-for-all is correct.
+
+**Analysis Completed:**
+
+1. **Option A (false-for-all):** CORRECT
+   - Test correctness trumps IDE discoverability
+   - Uniform behaviour across all four attributes
+   - Simple, future-proof
+
+2. **Option B (true for Member/Class with stable-only ID):** NOT POSSIBLE
+   - xUnit's UniqueIDGenerator.ForTestCase hashes ALL arguments
+   - No API exists to exclude AutoFixture-generated trailing parameters from hash
+   - Architecture fundamentally requires all arguments to be stable
+
+3. **Option C (stabilize with TestDisplayName/Label):** CONFIRMED NOT POSSIBLE
+   - Verified via decompilation of xunit.runner.visualstudio 3.1.5
+   - Labels affect only display string, not TestCaseUniqueID
+   - ID is always computed from serialized values
+
+4. **Option D (deterministic AutoFixture seed):** TECHNICALLY POSSIBLE BUT WRONG
+   - Would reduce test quality (same values every run)
+   - Violates AutoFixture's core principle (randomization catches edge cases)
+   - Creates false confidence (passes with seed X, fails in production)
+   - If users want determinism, use [InlineAutoNSubstituteData] or explicit values
+
+**Architectural Decision:** Proceed with Option A (uniform false). Documented comprehensive reasoning in decisions.md.
+
+**Impact:**
+- Trade-off accepted: single theory entry before first run, each row appears after execution
+- UX cost minimal; correctness critical
+- Future-proof: if xUnit adds stable-ID mechanism, can revisit
+
+**PR:** #1 merged with Kaylee & Zoe contributions
+

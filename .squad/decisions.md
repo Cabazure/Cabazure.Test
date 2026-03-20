@@ -2164,3 +2164,69 @@ Target `net10.0;netstandard2.1` in `Cabazure.Test.csproj`. Test project remains 
 ### Behavioral difference on netstandard2.1
 `DateOnlyTimeOnlyCustomization` is not included in the default `FixtureCustomizationCollection` when built for netstandard2.1. Consumers on those platforms who need `DateOnly`/`TimeOnly` support must target a .NET 6+ framework or provide their own customization.
 
+
+---
+
+## Discovery Enumeration Fix (2026-03-20)
+
+### 32. SupportsDiscoveryEnumeration() — Uniform false across all Data Attributes
+
+**Date:** 2026-03-20  
+**Authors:** Kaylee (Implementation), Zoe (Testing), Mal (Architecture Review)  
+**Status:** Implemented  
+**Branch:** squad/stable-discovery-labels
+
+#### Summary
+
+All four Cabazure.Test data attributes now return alse from SupportsDiscoveryEnumeration():
+- AutoNSubstituteDataAttribute
+- InlineAutoNSubstituteDataAttribute
+- MemberAutoNSubstituteDataAttribute
+- ClassAutoNSubstituteDataAttribute
+
+#### Root Cause Fixed
+
+xUnit 3 computes TestCaseUniqueID as a SHA256 hash of serialized argument values. When SupportsDiscoveryEnumeration() => true:
+1. Discovery calls GetData() → AutoFixture generates new values → hash₁
+2. Execution calls GetData() → AutoFixture generates different values → hash₂
+3. hash₁ ≠ hash₂ → VS Test Explorer cannot match → "Not Run" state
+
+The prior approach tried to stabilize this with TheoryDataRow.Label — incorrect, as labels do NOT affect TestCaseUniqueID.
+
+#### Decision: Return false
+
+Setting SupportsDiscoveryEnumeration() => false tells xUnit not to attempt discovery-time enumeration. VS Test Explorer never stores an ID from discovery, so there is no ID to mismatch at execution.
+
+#### Trade-off Accepted
+
+| Behavior | With 	rue | With alse |
+|----------|-------------|--------------|
+| Test correctness | ❌ Broken | ✅ Works |
+| Pre-run visibility | Each row visible | Single entry |
+| Post-run visibility | Each row visible | Each row visible |
+| Run individual row | Before first run: Yes; After: Yes | Before first run: No; After: Yes |
+
+UX cost is minimal; test correctness trumps IDE discoverability.
+
+#### Architectural Principle
+
+**"Test correctness trumps IDE discoverability."** A test that appears in Explorer but never runs is worse than one that appears after its first execution.
+
+#### Implementation Details
+
+- Removed BuildStableLabel and Label assignments (no effect on ID)
+- All four attributes now have uniform behaviour
+- Build clean; all tests passing
+
+#### Analyzed Alternatives (Rejected)
+
+**Option B (stable-only ID contribution):** Not possible — xUnit hashes ALL arguments, no API exists to exclude some from hash.
+
+**Option C (TestDisplayName/Label stabilization):** Confirmed not possible via decompilation — only affects display text, not ID.
+
+**Option D (deterministic AutoFixture seed):** Technically possible but violates AutoFixture's core principle (randomization catches edge cases). Would reduce test quality and create false confidence.
+
+#### Future Consideration
+
+If xUnit adds a mechanism to exclude specific arguments from TestCaseUniqueID hash, or cache discovery-time rows, this decision can be revisited.
+

@@ -390,3 +390,22 @@ NotBeJsonEquivalentTo (2):
 **Test Result:** 4/4 passing
 **Commit:** e2332be
 **Decision:** Inbox file written: .squad/decisions/inbox/zoe-discovery-false-tests.md
+## Phase 39: Fix Discovery Enumeration Tests (2026-03-20)
+
+**Teammates:** Kaylee (Implementation), Mal (Architecture Review), Wash (PR Integration)
+
+**Task:** Replace label tests with SupportsDiscoveryEnumeration() => false contract tests.
+
+**Work Done:**
+- Replaced 4 Label format tests in DiscoveryEnumerationLabelTests.cs with 4 SupportsDiscoveryEnumeration() contract tests
+- Each test verifies that the corresponding attribute returns alse:
+  - AutoNSubstituteDataAttribute.SupportsDiscoveryEnumeration()
+  - InlineAutoNSubstituteDataAttribute.SupportsDiscoveryEnumeration()
+  - MemberAutoNSubstituteDataAttribute.SupportsDiscoveryEnumeration()
+  - ClassAutoNSubstituteDataAttribute.SupportsDiscoveryEnumeration()
+- All tests passing ✅
+
+**Architectural Alignment:** Tests now verify the root fix (disable discovery enumeration) rather than the symptom (label stability). This is more aligned with the actual problem and solution.
+
+**PR:** #1 (with Kaylee's implementation + Mal's decision analysis)
+

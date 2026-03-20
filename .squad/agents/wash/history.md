@@ -99,3 +99,23 @@ My domain is xUnit 3 integration. Key difference from xUnit 2: `DataAttribute` i
 **PR:** https://github.com/Cabazure/Cabazure.Test/pull/1
 
 **Learning:** The "Not Run" bug illustrates the critical importance of deterministic display names in xUnit 3's discovery pipeline. The fix (stable labels) is minimal and surgical — one-liner assignments on each data row — making it a good model for targeted bug fixes in test infrastructure.
+
+## Phase 26: Fix Discovery Enumeration — PR #1 (2026-03-20)
+
+**Teammates:** Kaylee (Implementation), Zoe (Testing), Mal (Architecture Review)
+
+**Task:** Create PR #1 for discovery enumeration fix.
+
+**Work Done:**
+- Created PR #1 at https://github.com/Cabazure/Cabazure.Test/pull/1
+- Title: "Fix xUnit 3 test discovery enumeration: SupportsDiscoveryEnumeration() => false on all attributes"
+- Branch: squad/stable-discovery-labels
+- Commits:
+  - Kaylee: Implementation (reverted labels, set SupportsDiscoveryEnumeration() => false)
+  - Zoe: Tests (4 new SupportsDiscoveryEnumeration() contract tests)
+  - Mal: Architecture decision (comprehensive analysis in decisions.md)
+
+**PR Description:** Explains root cause (TestCaseUniqueID hash mismatch between discovery and execution), rationale for decision (test correctness over IDE discoverability), and analyzed alternatives.
+
+**Status:** Ready for squad review before merge.
+

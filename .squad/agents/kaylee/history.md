@@ -517,3 +517,22 @@ VS derives TestCase.Id from TestCaseUniqueID which is a SHA256 hash of the seria
 **Commit:** ix(attributes): return false from SupportsDiscoveryEnumeration to fix VS Test Explorer "Not Run" on branch squad/stable-discovery-labels
 
 **Key learning:** TheoryDataRow.Label is purely cosmetic. The real xUnit 3 test case identity comes from the SHA256 of serialized argument values. The only reliable fix for non-serializable or non-deterministic test data is SupportsDiscoveryEnumeration() => false.
+
+## Phase 40: Fix Discovery Enumeration (2026-03-20)
+
+**Teammates:** Zoe (Testing), Mal (Architecture Review), Wash (PR Integration)
+
+**Task:** Revert label approach, set SupportsDiscoveryEnumeration() => false on all four attributes.
+
+**Work Done:**
+- Reverted TheoryDataRow.Label assignments and BuildStableLabel helper from FixtureDataExtensions
+- Set SupportsDiscoveryEnumeration() => false on all four data attributes
+- Removed BuildStableLabel extension and FormatLabelValue helper
+- Build clean ✅
+
+**Key Learning:** The root problem was not display name instability, but xUnit's TestCaseUniqueID computation. xUnit 3 hashes serialized argument values to produce test IDs. When SupportsDiscoveryEnumeration() => true, it calls GetData() at discovery and again at execution; AutoFixture generates different values each time → different hashes → ID mismatch → "Not Run".
+
+The fix: disable discovery enumeration. xUnit never stores an ID from discovery time, so there's nothing to mismatch at execution.
+
+**PR:** #1 merged (with Zoe's tests + Mal's architecture decision)
+
