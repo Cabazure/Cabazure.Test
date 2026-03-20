@@ -409,3 +409,25 @@ NotBeJsonEquivalentTo (2):
 
 **PR:** #1 (with Kaylee's implementation + Mal's decision analysis)
 
+## Learning: SupportsDiscoveryEnumeration Tests Must Assert False (2026-03-20)
+
+**Context:** Phase 39 replaced label-stability tests with proper contract tests.
+
+**Key Finding:** The earlier label-stability tests were misleading. They tested the symptom (label format), not the root cause (TestCaseUniqueID computation). The correct contract for AutoFixture-backed xUnit 3 data attributes is:
+
+- `SupportsDiscoveryEnumeration()` **must return `false`**
+- This is the architectural requirement that prevents the double-GetData() pattern
+- Verified by decompilation of xunit.runner.visualstudio 3.1.5
+
+**What Was Removed:**
+- 11 stale label-stability tests that verified label consistency
+- BuildStableLabel format helpers and index counters
+- TheoryDataRow.Label assignments
+
+**What Remains:**
+- 4 contract tests verifying `SupportsDiscoveryEnumeration() => false` on each attribute
+- Simple, focused assertions on the actual API contract
+- Aligned with architectural intent (disable discovery enumeration)
+
+**Lesson:** Tests should verify the root cause fix, not symptoms. Label-based tests created false confidence that the problem was solved when the real issue was deeper in xUnit's identity computation.
+

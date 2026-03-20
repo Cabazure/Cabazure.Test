@@ -119,3 +119,24 @@ My domain is xUnit 3 integration. Key difference from xUnit 2: `DataAttribute` i
 
 **Status:** Ready for squad review before merge.
 
+## Learning: PR #1 — Discovery Enumeration Fix (2026-03-20)
+
+**Context:** This PR implements the final fix for xUnit 3 test discovery enumeration.
+
+**Key Finding:** The branch `squad/stable-discovery-labels` initially pursued a label-stability approach, but investigation revealed the root cause: xUnit 3 calls `GetData()` twice (discovery + execution) when `SupportsDiscoveryEnumeration() => true`. Test case identity is derived from a SHA256 hash of serialized argument values, not from labels. AutoFixture generates different values each time → different hashes → ID mismatch in VS Test Explorer.
+
+**The Fix:** Set `SupportsDiscoveryEnumeration() => false` on all four data attributes:
+- AutoNSubstituteDataAttribute
+- InlineAutoNSubstituteDataAttribute
+- MemberAutoNSubstituteDataAttribute
+- ClassAutoNSubstituteDataAttribute
+
+This prevents the discovery-time `GetData()` call, eliminating the ID mismatch entirely.
+
+**Commits in PR #1:**
+1. Kaylee: Implementation (reverted labels, set SupportsDiscoveryEnumeration() => false)
+2. Zoe: Tests (4 contract tests verifying the false return value)
+3. Mal: Architecture decision (comprehensive analysis in decisions.md)
+
+**Lesson:** When xUnit test data is non-serializable or non-deterministic, discovery enumeration must be disabled at the source. Symptom-based fixes (like label stability) cannot work because xUnit's identity mechanism operates deeper than display-layer control.
+

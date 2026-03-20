@@ -536,3 +536,24 @@ The fix: disable discovery enumeration. xUnit never stores an ID from discovery 
 
 **PR:** #1 merged (with Zoe's tests + Mal's architecture decision)
 
+## Learning: xUnit 3 Double-GetData() Pattern (2026-03-20)
+
+**Context:** Phase 40 investigation revealed the fundamental mechanism behind the "Not Run" bug.
+
+**Key Finding:** xUnit 3 calls `GetData()` **twice** when `SupportsDiscoveryEnumeration() => true`:
+1. At discovery time (when VS builds the test case list)
+2. At execution time (when the test actually runs)
+
+VS Test Explorer derives `TestCase.Id` from `TestCaseUniqueID` — a SHA256 hash of **serialized argument values** — NOT from `Label` or `TestDisplayName`. AutoFixture generates GUID-suffixed strings on each `GetData()` call, so the hash differs between discovery and execution → ID mismatch → "Not Run" status in VS.
+
+**What Doesn't Work:**
+- Setting `Label` or `TestDisplayName` does NOT fix the ID mismatch
+- BuildStableLabel helper (attempted in earlier phases) was a dead end — the real identity is computed by xUnit, not visible in Label
+
+**The Fix:** `SupportsDiscoveryEnumeration() => false`
+- Prevents the discovery-time `GetData()` call entirely
+- xUnit never stores a discovery-time ID, so there's nothing to mismatch at execution
+- Confirmed via decompilation of xunit.runner.visualstudio 3.1.5 (`UniqueIDGenerator.ForTestCase` logic)
+
+**Lesson:** When xUnit test data is non-serializable or non-deterministic (like AutoFixture), discovery enumeration must be disabled at the source. Symptom-based fixes (label stability) cannot work because xUnit's identity mechanism operates at a deeper layer.
+
