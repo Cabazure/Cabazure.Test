@@ -55,7 +55,7 @@ Four xUnit 3 `DataAttribute` implementations for `[Theory]` tests, all backed by
 
 All support `[Frozen]` parameters — a frozen parameter is registered in the fixture before subsequent parameters are resolved.
 
-**Important:** All custom data attributes **must** return `SupportsDiscoveryEnumeration = true` in their implementation. Live `CancellationToken` instances (from `CancellationTokenSource`) are not serializable in xUnit 3's test case discovery phase and would break test enumeration if discovery tried to serialize them. The standard data attributes handle this correctly.
+**Important:** All custom data attributes **must** return `SupportsDiscoveryEnumeration() => false` in their implementation. xUnit 3 calls `GetData()` twice when this returns `true` (once at discovery, once at execution). VS Test Explorer matches test cases by `TestCaseUniqueID` — a SHA256 hash of the serialized argument values — not by display name. AutoFixture generates non-deterministic values (GUID-suffixed strings) on each call, producing different hashes between discovery and execution, which causes VS Test Explorer to show tests as "Not Run". Returning `false` prevents xUnit from enumerating test cases at discovery time, so no ID mismatch is possible. Setting `Label` or `TestDisplayName` on `TheoryDataRow` does NOT fix this — those affect only the display string, not the `UniqueID`.
 
 ### Customizations
 

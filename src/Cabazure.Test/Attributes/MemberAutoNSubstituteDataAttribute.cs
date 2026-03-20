@@ -87,19 +87,17 @@ public sealed class MemberAutoNSubstituteDataAttribute : MemberDataAttributeBase
         var theoryParams = testMethod.GetParameters();
 
         var result = new List<ITheoryDataRow>(baseRows.Count);
-        var index = 0;
         foreach (var baseRow in baseRows)
         {
             var fixture = FixtureFactory.Create(testMethod);
             var values = fixture.MergeValues(theoryParams, baseRow.GetData());
             disposalTracker.AddRange(values);
-            result.Add(new TheoryDataRow(values) { Label = index.ToString() });
-            index++;
+            result.Add(new TheoryDataRow(values));
         }
 
         return result;
     }
 
     /// <inheritdoc />
-    public override bool SupportsDiscoveryEnumeration() => true;
+    public override bool SupportsDiscoveryEnumeration() => false;
 }

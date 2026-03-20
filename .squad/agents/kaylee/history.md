@@ -497,3 +497,63 @@ The non-generic TaskCompletionSource was added in .NET 5 and is not available in
 ull, alue.ToString()). Returns "" for empty arrays.
 
 **Key insight:** The label only needs to be stable, not perfectly descriptive. An empty label ("") on AutoNSubstituteData is intentional — test authors who need descriptive names should use InlineAutoNSubstituteData with explicit values.
+
+### Issue #stable-discovery-labels: Revert Label approach, fix SupportsDiscoveryEnumeration (2026-07-14)
+
+**Task:** Fix VS Test Explorer "Not Run" — the correct way.
+
+**Root cause (confirmed by Ricky via decompilation of xunit.runner.visualstudio 3.1.5):**
+VS derives TestCase.Id from TestCaseUniqueID which is a SHA256 hash of the serialized argument values (via UniqueIDGenerator.ForTestCase in xunit.v3.common). Setting TheoryDataRow.Label or TestDisplayName only affects display strings — not the ID used for discovery-to-execution matching. AutoFixture generates GUID-suffixed strings each GetData() call → different hash → ID mismatch → "Not Run".
+
+**Fix:** Return alse from SupportsDiscoveryEnumeration() on all four attributes. xUnit 3 skips discovery enumeration, so VS never stores IDs that could mismatch.
+
+**Files changed:**
+- src/Cabazure.Test/Attributes/AutoNSubstituteDataAttribute.cs — SupportsDiscoveryEnumeration() => false, removed Label assignment
+- src/Cabazure.Test/Attributes/InlineAutoNSubstituteDataAttribute.cs — same
+- src/Cabazure.Test/Attributes/MemberAutoNSubstituteDataAttribute.cs — SupportsDiscoveryEnumeration() => false, removed Label and index counter
+- src/Cabazure.Test/Attributes/ClassAutoNSubstituteDataAttribute.cs — same as Member
+- src/Cabazure.Test/Attributes/FixtureDataExtensions.cs — removed BuildStableLabel and FormatLabelValue helpers entirely
+
+**Commit:** ix(attributes): return false from SupportsDiscoveryEnumeration to fix VS Test Explorer "Not Run" on branch squad/stable-discovery-labels
+
+**Key learning:** TheoryDataRow.Label is purely cosmetic. The real xUnit 3 test case identity comes from the SHA256 of serialized argument values. The only reliable fix for non-serializable or non-deterministic test data is SupportsDiscoveryEnumeration() => false.
+
+## Phase 40: Fix Discovery Enumeration (2026-03-20)
+
+**Teammates:** Zoe (Testing), Mal (Architecture Review), Wash (PR Integration)
+
+**Task:** Revert label approach, set SupportsDiscoveryEnumeration() => false on all four attributes.
+
+**Work Done:**
+- Reverted TheoryDataRow.Label assignments and BuildStableLabel helper from FixtureDataExtensions
+- Set SupportsDiscoveryEnumeration() => false on all four data attributes
+- Removed BuildStableLabel extension and FormatLabelValue helper
+- Build clean ✅
+
+**Key Learning:** The root problem was not display name instability, but xUnit's TestCaseUniqueID computation. xUnit 3 hashes serialized argument values to produce test IDs. When SupportsDiscoveryEnumeration() => true, it calls GetData() at discovery and again at execution; AutoFixture generates different values each time → different hashes → ID mismatch → "Not Run".
+
+The fix: disable discovery enumeration. xUnit never stores an ID from discovery time, so there's nothing to mismatch at execution.
+
+**PR:** #1 merged (with Zoe's tests + Mal's architecture decision)
+
+## Learning: xUnit 3 Double-GetData() Pattern (2026-03-20)
+
+**Context:** Phase 40 investigation revealed the fundamental mechanism behind the "Not Run" bug.
+
+**Key Finding:** xUnit 3 calls `GetData()` **twice** when `SupportsDiscoveryEnumeration() => true`:
+1. At discovery time (when VS builds the test case list)
+2. At execution time (when the test actually runs)
+
+VS Test Explorer derives `TestCase.Id` from `TestCaseUniqueID` — a SHA256 hash of **serialized argument values** — NOT from `Label` or `TestDisplayName`. AutoFixture generates GUID-suffixed strings on each `GetData()` call, so the hash differs between discovery and execution → ID mismatch → "Not Run" status in VS.
+
+**What Doesn't Work:**
+- Setting `Label` or `TestDisplayName` does NOT fix the ID mismatch
+- BuildStableLabel helper (attempted in earlier phases) was a dead end — the real identity is computed by xUnit, not visible in Label
+
+**The Fix:** `SupportsDiscoveryEnumeration() => false`
+- Prevents the discovery-time `GetData()` call entirely
+- xUnit never stores a discovery-time ID, so there's nothing to mismatch at execution
+- Confirmed via decompilation of xunit.runner.visualstudio 3.1.5 (`UniqueIDGenerator.ForTestCase` logic)
+
+**Lesson:** When xUnit test data is non-serializable or non-deterministic (like AutoFixture), discovery enumeration must be disabled at the source. Symptom-based fixes (label stability) cannot work because xUnit's identity mechanism operates at a deeper layer.
+

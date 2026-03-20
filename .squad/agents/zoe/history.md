@@ -375,3 +375,59 @@ NotBeJsonEquivalentTo (2):
 **Status:** Implementation validated, pattern ready for team standardization.
 
 
+
+
+### Phase 40 — Replace DiscoveryEnumeration label tests (2026-03-08)
+**Task:** Replace `DiscoveryEnumerationLabelTests.cs` with tests verifying the correct fix for VS Test Explorer Not Run.
+**Background:** Previous tests verified Label/BuildStableLabel behaviour — wrong approach. VS uses TestCaseUniqueID (SHA256 of serialized args). The correct fix is SupportsDiscoveryEnumeration() => false.
+**Action:**
+- Replaced all content in tests/Cabazure.Test.Tests/Attributes/DiscoveryEnumerationLabelTests.cs
+- 4 new [Fact] tests, one per attribute: AutoNSubstituteData, InlineAutoNSubstituteData, MemberAutoNSubstituteData, ClassAutoNSubstituteData
+- Each test: instantiates the attribute, calls SupportsDiscoveryEnumeration(), asserts false
+- Added minimal private stubs (SomeStaticMember, SomeDataClass) for construction of Member/ClassAutoNSubstituteDataAttribute
+- Removed 11 stale label-stability tests
+**Build:** Clean (transient MSB3492 on first run, passed on retry)
+**Test Result:** 4/4 passing
+**Commit:** e2332be
+**Decision:** Inbox file written: .squad/decisions/inbox/zoe-discovery-false-tests.md
+## Phase 39: Fix Discovery Enumeration Tests (2026-03-20)
+
+**Teammates:** Kaylee (Implementation), Mal (Architecture Review), Wash (PR Integration)
+
+**Task:** Replace label tests with SupportsDiscoveryEnumeration() => false contract tests.
+
+**Work Done:**
+- Replaced 4 Label format tests in DiscoveryEnumerationLabelTests.cs with 4 SupportsDiscoveryEnumeration() contract tests
+- Each test verifies that the corresponding attribute returns alse:
+  - AutoNSubstituteDataAttribute.SupportsDiscoveryEnumeration()
+  - InlineAutoNSubstituteDataAttribute.SupportsDiscoveryEnumeration()
+  - MemberAutoNSubstituteDataAttribute.SupportsDiscoveryEnumeration()
+  - ClassAutoNSubstituteDataAttribute.SupportsDiscoveryEnumeration()
+- All tests passing ✅
+
+**Architectural Alignment:** Tests now verify the root fix (disable discovery enumeration) rather than the symptom (label stability). This is more aligned with the actual problem and solution.
+
+**PR:** #1 (with Kaylee's implementation + Mal's decision analysis)
+
+## Learning: SupportsDiscoveryEnumeration Tests Must Assert False (2026-03-20)
+
+**Context:** Phase 39 replaced label-stability tests with proper contract tests.
+
+**Key Finding:** The earlier label-stability tests were misleading. They tested the symptom (label format), not the root cause (TestCaseUniqueID computation). The correct contract for AutoFixture-backed xUnit 3 data attributes is:
+
+- `SupportsDiscoveryEnumeration()` **must return `false`**
+- This is the architectural requirement that prevents the double-GetData() pattern
+- Verified by decompilation of xunit.runner.visualstudio 3.1.5
+
+**What Was Removed:**
+- 11 stale label-stability tests that verified label consistency
+- BuildStableLabel format helpers and index counters
+- TheoryDataRow.Label assignments
+
+**What Remains:**
+- 4 contract tests verifying `SupportsDiscoveryEnumeration() => false` on each attribute
+- Simple, focused assertions on the actual API contract
+- Aligned with architectural intent (disable discovery enumeration)
+
+**Lesson:** Tests should verify the root cause fix, not symptoms. Label-based tests created false confidence that the problem was solved when the real issue was deeper in xUnit's identity computation.
+

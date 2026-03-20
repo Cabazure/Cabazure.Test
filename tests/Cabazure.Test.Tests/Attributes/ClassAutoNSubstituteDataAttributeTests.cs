@@ -72,10 +72,10 @@ public class ClassAutoNSubstituteDataAttributeTests
     }
 
     [Fact]
-    public void SupportsDiscoveryEnumeration_ReturnsTrue_EvenForDisposableDataClass()
+    public void SupportsDiscoveryEnumeration_ReturnsFalse()
     {
         var sut = new ClassAutoNSubstituteDataAttribute(typeof(DisposableData));
-        sut.SupportsDiscoveryEnumeration().Should().BeTrue();
+        sut.SupportsDiscoveryEnumeration().Should().BeFalse();
     }
 }
 
