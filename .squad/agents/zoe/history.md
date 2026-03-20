@@ -375,3 +375,18 @@ NotBeJsonEquivalentTo (2):
 **Status:** Implementation validated, pattern ready for team standardization.
 
 
+
+
+### Phase 40 — Replace DiscoveryEnumeration label tests (2026-03-08)
+**Task:** Replace `DiscoveryEnumerationLabelTests.cs` with tests verifying the correct fix for VS Test Explorer Not Run.
+**Background:** Previous tests verified Label/BuildStableLabel behaviour — wrong approach. VS uses TestCaseUniqueID (SHA256 of serialized args). The correct fix is SupportsDiscoveryEnumeration() => false.
+**Action:**
+- Replaced all content in tests/Cabazure.Test.Tests/Attributes/DiscoveryEnumerationLabelTests.cs
+- 4 new [Fact] tests, one per attribute: AutoNSubstituteData, InlineAutoNSubstituteData, MemberAutoNSubstituteData, ClassAutoNSubstituteData
+- Each test: instantiates the attribute, calls SupportsDiscoveryEnumeration(), asserts false
+- Added minimal private stubs (SomeStaticMember, SomeDataClass) for construction of Member/ClassAutoNSubstituteDataAttribute
+- Removed 11 stale label-stability tests
+**Build:** Clean (transient MSB3492 on first run, passed on retry)
+**Test Result:** 4/4 passing
+**Commit:** e2332be
+**Decision:** Inbox file written: .squad/decisions/inbox/zoe-discovery-false-tests.md
