@@ -144,10 +144,10 @@ public class MemberAutoNSubstituteDataAttributeTests
     }
 
     [Fact]
-    public void SupportsDiscoveryEnumeration_ReturnsTrue()
+    public void SupportsDiscoveryEnumeration_ReturnsFalse()
     {
         var sut = new MemberAutoNSubstituteDataAttribute(nameof(StringRows));
-        sut.SupportsDiscoveryEnumeration().Should().BeTrue();
+        sut.SupportsDiscoveryEnumeration().Should().BeFalse();
     }
 }
 
