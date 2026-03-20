@@ -71,10 +71,10 @@ public sealed class InlineAutoNSubstituteDataAttribute : DataAttribute
         var fixture = FixtureFactory.Create(testMethod);
         var values = fixture.MergeValues(testMethod.GetParameters(), Values);
         disposalTracker.AddRange(values);
-        IReadOnlyCollection<ITheoryDataRow> result = [new TheoryDataRow(values) { Label = Values.BuildStableLabel() }];
+        IReadOnlyCollection<ITheoryDataRow> result = [new TheoryDataRow(values)];
         return new ValueTask<IReadOnlyCollection<ITheoryDataRow>>(result);
     }
 
     /// <inheritdoc />
-    public override bool SupportsDiscoveryEnumeration() => true;
+    public override bool SupportsDiscoveryEnumeration() => false;
 }

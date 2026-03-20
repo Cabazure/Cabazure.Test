@@ -98,30 +98,4 @@ internal static class FixtureDataExtensions
         return new SpecimenContext(fixture).Resolve(parameter);
     }
 
-    /// <summary>
-    /// Builds a stable display label from explicitly provided (deterministic) theory values,
-    /// for use as <see cref="Xunit.TheoryDataRowBase.Label"/> to ensure consistent test case
-    /// display names across xUnit 3 discovery and execution phases.
-    /// </summary>
-    /// <remarks>
-    /// Returns an empty string for no values (xUnit renders just the method name).
-    /// Returns a formatted value list for non-empty arrays (xUnit appends as "[label]").
-    /// </remarks>
-    internal static string BuildStableLabel(this object?[] provided)
-    {
-        if (provided.Length == 0)
-            return string.Empty;
-
-        return string.Join(", ", provided.Select(FormatLabelValue));
-    }
-
-    private static string FormatLabelValue(object? value)
-        => value switch
-        {
-            null => "null",
-            string s => $"\"{s}\"",
-            char c => $"'{c}'",
-            bool b => b ? "true" : "false",
-            _ => value.ToString() ?? "null",
-        };
 }
