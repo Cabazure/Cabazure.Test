@@ -297,3 +297,47 @@ The `ICustomization` contract in AutoFixture is fundamentally stateless-on-self 
 
 **PR:** #1 merged with Kaylee & Zoe contributions
 
+## Session: Documentation Correction (2026-03-20)
+
+**Task:** Correct incorrect `SupportsDiscoveryEnumeration` guidance in `.github/copilot-instructions.md` and capture learnings as a reusable skill.
+
+**Status:** ✅ Complete
+
+**Work Performed:**
+
+1. **Fixed copilot-instructions.md (line 58):**
+   - **Old (WRONG):** "All custom data attributes **must** return `SupportsDiscoveryEnumeration = true`... Live `CancellationToken` instances are not serializable..."
+   - **New (CORRECT):** "All custom data attributes **must** return `SupportsDiscoveryEnumeration() => false`... xUnit 3 calls `GetData()` twice when true. VS Test Explorer matches by `TestCaseUniqueID` (SHA256 of argument values), not display names. AutoFixture's non-deterministic values break discovery matching..."
+
+2. **Created skill file:**
+   - `.squad/skills/xunit-theory-discovery/SKILL.md`
+   - Documents root cause (double `GetData()` call, SHA256-based UniqueID)
+   - Explains why `Label`/`TestDisplayName` don't help (display-only, not ID)
+   - Explains why deterministic seeding isn't viable (compromises AutoFixture randomization)
+   - Establishes correct pattern: `SupportsDiscoveryEnumeration() => false`
+   - Confidence: `high` (decompilation + verification)
+   - Evidence: xunit.runner.visualstudio 3.1.5
+
+3. **Committed:**
+   ```
+   docs: correct SupportsDiscoveryEnumeration guidance in copilot instructions
+   
+   Previous guidance incorrectly required true. Investigation via decompilation
+   of xunit.runner.visualstudio 3.1.5 confirmed that VS derives TestCase.Id from
+   TestCaseUniqueID (SHA256 of argument values), not display names. AutoFixture's
+   non-deterministic values break discovery matching when true is returned.
+   
+   All four data attributes now correctly return false.
+   ```
+
+**Outcome:**
+
+- Copilot instructions now contain correct, verified guidance
+- Knowledge captured for future team members and agents
+- Skill file cross-references Phase 40 history and Decision 40
+- No code changes required (implementation was already correct)
+
+**Key Learning Preserved:**
+
+The previous `SupportsDiscoveryEnumeration = true` guidance was based on a misunderstanding about `CancellationToken` serialization. The real constraint is **TestCaseUniqueID stability** — any non-deterministic value in `GetData()` requires `false`, regardless of serializability. The architectural principle "Test correctness trumps IDE discoverability" is now explicitly documented.
+
