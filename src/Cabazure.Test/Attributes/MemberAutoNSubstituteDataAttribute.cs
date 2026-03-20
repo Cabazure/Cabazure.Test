@@ -87,12 +87,14 @@ public sealed class MemberAutoNSubstituteDataAttribute : MemberDataAttributeBase
         var theoryParams = testMethod.GetParameters();
 
         var result = new List<ITheoryDataRow>(baseRows.Count);
+        var index = 0;
         foreach (var baseRow in baseRows)
         {
             var fixture = FixtureFactory.Create(testMethod);
             var values = fixture.MergeValues(theoryParams, baseRow.GetData());
             disposalTracker.AddRange(values);
-            result.Add(new TheoryDataRow(values));
+            result.Add(new TheoryDataRow(values) { Label = index.ToString() });
+            index++;
         }
 
         return result;
