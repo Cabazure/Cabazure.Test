@@ -1,6 +1,6 @@
 using FrozenAttribute = AutoFixture.Xunit3.FrozenAttribute;
 using Cabazure.Test.Tests.Fixture;
-using FluentAssertions;
+using AwesomeAssertions;
 using Xunit;
 
 namespace Cabazure.Test.Tests.Attributes;
@@ -63,5 +63,25 @@ public class InlineAutoNSubstituteDataAttributeTests
         FixtureFactoryTests.MyServiceWithStringMessage sut)
     {
         sut.Message.Should().Be("hello");
+    }
+
+    [Theory]
+    [InlineAutoNSubstituteData(null)]
+    public void NullInlineReferenceValue_IsPassedThrough(
+        string? value,
+        FixtureFactoryTests.IMyInterface service)
+    {
+        value.Should().BeNull();
+        service.Should().NotBeNull();
+    }
+
+    [Theory]
+    [InlineAutoNSubstituteData(null)]
+    public void NullInlineNullableValue_IsPassedThrough(
+        bool? enabled,
+        FixtureFactoryTests.IMyInterface service)
+    {
+        enabled.Should().BeNull();
+        service.Should().NotBeNull();
     }
 }

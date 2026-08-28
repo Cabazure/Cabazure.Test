@@ -1,5 +1,5 @@
 using Cabazure.Test.Customizations;
-using FluentAssertions;
+using AwesomeAssertions;
 using Xunit;
 
 namespace Cabazure.Test.Tests.Customizations;

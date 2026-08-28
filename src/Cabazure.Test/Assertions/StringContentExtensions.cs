@@ -1,9 +1,9 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
-using FluentAssertions;
-using FluentAssertions.Execution;
-using FluentAssertions.Primitives;
+using AwesomeAssertions;
+using AwesomeAssertions.Execution;
+using AwesomeAssertions.Primitives;
 
 namespace Cabazure.Test;
 
@@ -37,7 +37,7 @@ public static class StringContentExtensions
         var normalizedSubject = NormalizeWhitespace(assertions.Subject);
         var normalizedExpected = NormalizeWhitespace(expected);
 
-        Execute.Assertion
+        AssertionChain.GetOrCreate()
             .BecauseOf(because, becauseArgs)
             .ForCondition(normalizedSubject == normalizedExpected)
             .FailWith(
@@ -72,7 +72,7 @@ public static class StringContentExtensions
         var normalizedSubject = NormalizeWhitespace(assertions.Subject);
         var normalizedExpected = NormalizeWhitespace(expected);
 
-        Execute.Assertion
+        AssertionChain.GetOrCreate()
             .BecauseOf(because, becauseArgs)
             .ForCondition(normalizedSubject != normalizedExpected)
             .FailWith(
@@ -110,7 +110,7 @@ public static class StringContentExtensions
         var normalizedSubject = NormalizeXml(assertions.Subject);
         var normalizedExpected = NormalizeXml(expected);
 
-        Execute.Assertion
+        AssertionChain.GetOrCreate()
             .BecauseOf(because, becauseArgs)
             .ForCondition(normalizedSubject == normalizedExpected)
             .FailWith(
@@ -149,7 +149,7 @@ public static class StringContentExtensions
         var normalizedSubject = NormalizeXml(assertions.Subject);
         var normalizedExpected = NormalizeXml(expected);
 
-        Execute.Assertion
+        AssertionChain.GetOrCreate()
             .BecauseOf(because, becauseArgs)
             .ForCondition(normalizedSubject != normalizedExpected)
             .FailWith(
@@ -187,7 +187,7 @@ public static class StringContentExtensions
         var normalizedSubject = NormalizeJson(assertions.Subject);
         var normalizedExpected = NormalizeJson(expected);
 
-        Execute.Assertion
+        AssertionChain.GetOrCreate()
             .BecauseOf(because, becauseArgs)
             .ForCondition(normalizedSubject == normalizedExpected)
             .FailWith(
@@ -226,7 +226,7 @@ public static class StringContentExtensions
         var normalizedSubject = NormalizeJson(assertions.Subject);
         var normalizedExpected = NormalizeJson(expected);
 
-        Execute.Assertion
+        AssertionChain.GetOrCreate()
             .BecauseOf(because, becauseArgs)
             .ForCondition(normalizedSubject != normalizedExpected)
             .FailWith(

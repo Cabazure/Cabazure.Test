@@ -1,5 +1,5 @@
 using System.Collections;
-using FluentAssertions;
+using AwesomeAssertions;
 
 namespace Cabazure.Test.Tests.Attributes;
 

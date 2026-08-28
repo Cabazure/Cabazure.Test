@@ -1,18 +1,6 @@
 # Cabazure.Test — Copilot Instructions
 
-Cabazure.Test is an open-source .NET testing library that integrates **xUnit 3**, **NSubstitute**, **AutoFixture**, and **FluentAssertions** into a cohesive, ergonomic testing experience.
-
-## Squad
-
-This project uses Squad for AI team collaboration. Before working on any issue:
-
-1. Read `.squad/team.md` for the team roster and member roles.
-2. Read `.squad/routing.md` for work routing rules.
-3. If the issue has a `squad:{member}` label, read `.squad/agents/{member}/charter.md` to understand their domain expertise and work in their voice.
-
-### Squad History Commit Rule
-
-**After every session, all `.squad/` changes must be committed to the repo.** This includes history files, decisions, orchestration logs, and session logs. The Scribe is responsible for staging and committing `.squad/` changes at the end of each agent batch. No agent session is complete until squad state is committed.
+Cabazure.Test is an open-source .NET testing library that integrates **xUnit 3**, **NSubstitute**, **AutoFixture**, and **AwesomeAssertions** into a cohesive, ergonomic testing experience.
 
 ### README Sync Rule
 
@@ -30,7 +18,7 @@ This project uses Squad for AI team collaboration. Before working on any issue:
 | Test framework | xUnit 3 (`xunit` 3.x) |
 | Mocking | NSubstitute |
 | Test data | AutoFixture + AutoFixture.AutoNSubstitute |
-| Assertions | FluentAssertions |
+| Assertions | AwesomeAssertions |
 | Packaging | NuGet |
 
 ## Core Library Concepts
@@ -99,9 +87,9 @@ public void MyTest(MyService sut) { ... }
 
 `[CustomizeWith]` is in the `Cabazure.Test` namespace.
 
-### FluentAssertions Extensions (`Assertions/`)
+### AwesomeAssertions Extensions (`Assertions/`)
 
-The library extends FluentAssertions with custom assertion methods. All live in `src/Cabazure.Test/Assertions/` and are in the `Cabazure.Test` namespace (no extra `using` needed beyond `using Cabazure.Test;`).
+The library extends AwesomeAssertions with custom assertion methods. All live in `src/Cabazure.Test/Assertions/` and are in the `Cabazure.Test` namespace (no extra `using` needed beyond `using Cabazure.Test;`).
 
 #### `JsonElementAssertions`
 
@@ -135,8 +123,8 @@ CabazureAssertionOptions.DateTimeOffsetPrecision = TimeSpan.FromMilliseconds(100
 
 #### `EmptyObjectEquivalencyStep` / `AllowingEmptyObjects<TSelf>()`
 
-- `EmptyObjectEquivalencyStep` — `IEquivalencyStep` that allows `BeEquivalentTo` on types with no public properties/fields; returns `AssertionCompleted` for empty types to bypass FluentAssertions' structural step that would throw `InvalidOperationException`
-- `AllowingEmptyObjects<TSelf>()` — extension on `SelfReferenceEquivalencyAssertionOptions<TSelf>` that registers `EmptyObjectEquivalencyStep`; works per-call via `opts.AllowingEmptyObjects()` and globally via `AssertionOptions.AssertEquivalencyUsing(opts => opts.AllowingEmptyObjects())`
+- `EmptyObjectEquivalencyStep` — `IEquivalencyStep` that allows `BeEquivalentTo` on types with no public properties/fields; returns `EquivalencyProven` for empty types to bypass AwesomeAssertions' structural step that would throw `InvalidOperationException`
+- `AllowingEmptyObjects<TSelf>()` — extension on `SelfReferenceEquivalencyOptions<TSelf>` that registers `EmptyObjectEquivalencyStep`; works per-call via `opts.AllowingEmptyObjects()` and globally via `AssertionOptions.AssertEquivalencyUsing(opts => opts.AllowingEmptyObjects())`
 
 #### `StringContentExtensions`
 
@@ -163,7 +151,7 @@ xmlPayload.Should().BeXmlEquivalentTo("<root><item>1</item></root>");
 
 #### `FluentArg.Match<T>()`
 
-Creates a NSubstitute argument matcher backed by a FluentAssertions assertion. Use in `Received()` call verifications:
+Creates a NSubstitute argument matcher backed by an AwesomeAssertions assertion. Use in `Received()` call verifications:
 
 ```csharp
 substitute.Received().Process(FluentArg.Match<Request>(r =>
@@ -227,7 +215,7 @@ src/
     AssemblyInfo.cs         ← [InternalsVisibleTo] declarations
     CabazureAssertionOptions.cs  ← Global precision options (lives in DateTimeOffsetExtensions.cs)
     FixtureFactory.cs       ← Public fixture factory
-    FluentArg.cs            ← NSubstitute × FluentAssertions argument matcher
+    FluentArg.cs            ← NSubstitute × AwesomeAssertions argument matcher
     ProtectedMethodExtensions.cs
     ReceivedCallExtensions.cs
     WaitForReceivedExtensions.cs
@@ -274,14 +262,13 @@ All commits must follow [Conventional Commits](https://www.conventionalcommits.o
 **Types:** `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `perf`, `ci`
 
 **Scopes** (use the relevant one):
-- `assertions` — FluentAssertions extension methods (`Assertions/` folder)
+- `assertions` — AwesomeAssertions extension methods (`Assertions/` folder)
 - `fixture` — FixtureFactory and fixture configuration
 - `attributes` — DataAttribute and xUnit 3 integration
 - `customizations` — AutoFixture customizations
 - `tests` — test project changes
 - `packaging` — NuGet / .csproj metadata
 - `ci` — GitHub Actions workflows
-- `squad` — squad team / agent files
 - `github` — `.github/` config (not CI)
 - *(omit scope for repo-wide changes)*
 
@@ -295,19 +282,9 @@ chore(packaging): configure NuGet metadata and license
 
 Each commit should cover **one concern only** — no mixing features with test changes unless the test is inseparable from the feature (e.g., an internal test helper).
 
-## Branch Naming
-
-```
-squad/{issue-number}-{kebab-case-slug}
-```
-
-Example: `squad/12-implement-sut-fixture`
-
 ## PR Guidelines
 
 - Reference the issue: `Closes #{issue-number}`
-- If the issue had a `squad:{member}` label: `Working as {member} ({role})`
-- If flagged 🟡 needs-review: add a note in the PR description requesting squad review before merge.
 - Keep PRs focused — one concern per PR.
 
 ## Capability Self-Check (for Coding Agent)
@@ -316,4 +293,4 @@ Before starting:
 
 - **🟢 Good fit** — well-defined, follows existing patterns, bounded scope → proceed autonomously.
 - **🟡 Needs review** — medium complexity, new API surface, or performance-sensitive → proceed, flag in PR.
-- **🔴 Not suitable** — architecture decisions, API design, security concerns → comment on the issue and suggest reassignment to **Mal**.
+- **🔴 Not suitable** — architecture decisions, API design, or security-sensitive changes → stop and ask the user for direction before proceeding.

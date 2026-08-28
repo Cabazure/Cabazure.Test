@@ -1,21 +1,21 @@
 using System.Text.Json;
-using FluentAssertions.Equivalency;
+using AwesomeAssertions.Equivalency;
 
 namespace Cabazure.Test;
 
 /// <summary>
-/// A FluentAssertions <see cref="IEquivalencyStep"/> that handles semantic comparison
+/// An AwesomeAssertions <see cref="IEquivalencyStep"/> that handles semantic comparison
 /// of <see cref="System.Text.Json.JsonElement"/> values within object graph equivalency assertions.
 /// </summary>
 /// <remarks>
 /// <para>
-/// When FluentAssertions performs a structural equivalency check (e.g.
+/// When AwesomeAssertions performs a structural equivalency check (e.g.
 /// <c>result.Should().BeEquivalentTo(expected)</c>), it falls back to reference equality for
 /// <see cref="System.Text.Json.JsonElement"/> properties, which may produce false negatives even
 /// for semantically identical JSON. This step intercepts those comparisons and normalizes both
 /// values via <see cref="JsonElementExtensions.ToCompactString"/> (a reflection-free
 /// <see cref="System.Text.Json.Utf8JsonWriter"/>-based serializer) before delegating to
-/// FluentAssertions' string comparison — providing accurate structural diffs on failure.
+/// AwesomeAssertions' string comparison — providing accurate structural diffs on failure.
 /// </para>
 /// <para>
 /// Register per-call:
@@ -49,17 +49,17 @@ public sealed class JsonElementEquivalencyStep : IEquivalencyStep
     /// </param>
     /// <param name="nestedValidator">
     /// The validator that can be used to recursively assert nested members — used by this step
-    /// to delegate string comparison to FluentAssertions for accurate diff messages.
+    /// to delegate string comparison to AwesomeAssertions for accurate diff messages.
     /// </param>
     /// <returns>
-    /// <see cref="EquivalencyResult.AssertionCompleted"/> if both comparands are
+    /// <see cref="EquivalencyResult.EquivalencyProven"/> if both comparands are
     /// <see cref="System.Text.Json.JsonElement"/> values (assertion performed, pipeline stops);
     /// <see cref="EquivalencyResult.ContinueWithNext"/> otherwise.
     /// </returns>
     public EquivalencyResult Handle(
         Comparands comparands,
         IEquivalencyValidationContext context,
-        IEquivalencyValidator nestedValidator)
+        IValidateChildNodeEquivalency nestedValidator)
     {
         if (comparands.Subject is not JsonElement subject
             || comparands.Expectation is not JsonElement expectation)
@@ -72,8 +72,8 @@ public sealed class JsonElementEquivalencyStep : IEquivalencyStep
             expectation.ToCompactString(),
             typeof(string));
 
-        nestedValidator.RecursivelyAssertEquality(newComparands, context);
+        nestedValidator.AssertEquivalencyOf(newComparands, context);
 
-        return EquivalencyResult.AssertionCompleted;
+        return EquivalencyResult.EquivalencyProven;
     }
 }

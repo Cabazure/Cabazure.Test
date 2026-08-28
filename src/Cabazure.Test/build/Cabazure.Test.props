@@ -1,0 +1,20 @@
+<Project>
+
+  <!--
+    Global usings that consumers of Cabazure.Test typically need in their test projects.
+    Packed to buildTransitive so they flow through shared test-helper projects too.
+    <Using> items work regardless of the consumer's ImplicitUsings setting.
+  -->
+  <ItemGroup>
+    <Using Include="Cabazure.Test" />
+    <Using Include="AutoFixture" />
+    <Using Include="AutoFixture.AutoNSubstitute" />
+    <Using Include="AutoFixture.Xunit3" />
+    <Using Include="AwesomeAssertions" />
+    <Using Include="NSubstitute" />
+    <Using Include="NSubstitute.ReturnsExtensions" />
+    <Using Include="Xunit" />
+    <Using Include="System.ComponentModel.DataAnnotations" />
+  </ItemGroup>
+
+</Project>

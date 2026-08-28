@@ -1,6 +1,6 @@
 # Cabazure.Test
 
-> Ergonomic .NET unit testing — xUnit 3, NSubstitute, AutoFixture, and FluentAssertions in one package.
+> Ergonomic .NET unit testing — xUnit 3, NSubstitute, AutoFixture, and AwesomeAssertions in one package.
 
 [![NuGet](https://img.shields.io/nuget/v/Cabazure.Test.svg)](https://www.nuget.org/packages/Cabazure.Test)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -10,7 +10,7 @@
 
 ## What is it?
 
-**Cabazure.Test** bundles xUnit 3, NSubstitute, AutoFixture, and FluentAssertions into a single, pre-configured testing package. One NuGet reference and you're writing expressive tests immediately — no per-project wiring required.
+**Cabazure.Test** bundles xUnit 3, NSubstitute, AutoFixture, and AwesomeAssertions into a single, pre-configured testing package. One NuGet reference and you're writing expressive tests immediately — no per-project wiring required.
 
 Several things set it apart from wiring up the four libraries yourself:
 
@@ -18,7 +18,7 @@ Several things set it apart from wiring up the four libraries yourself:
 - **`[Frozen]` auto-wiring** — a `[Frozen]` parameter is shared across all subsequent parameters in the same test, so the same substitute flows into your SUT and is available for `Received()` verification.
 - **Explicit project-wide customization** — register fixture configuration once in a `[ModuleInitializer]`. No assembly scanning or reflection-based discovery — startup is deterministic and fast.
 - **Batteries included** — built-in customizations for `ImmutableArray<T>`, `DateOnly`, `JsonElement`, `JsonSerializerOptions`, and `CancellationToken`. Works out of the box.
-- **Extended assertions** — FluentAssertions extensions for JSON, XML, and string-similarity comparison, plus configurable `DateTimeOffset` precision.
+- **Extended assertions** — AwesomeAssertions extensions for JSON, XML, and string-similarity comparison, plus configurable `DateTimeOffset` precision.
 
 > Spiritual successor to [Atc.Test](https://github.com/atc-net/atc-test), rebuilt from the ground up for xUnit 3.
 
@@ -34,9 +34,27 @@ The package includes all dependencies needed for testing:
 - **xUnit 3** — test framework
 - **AutoFixture & AutoFixture.Xunit3** — fixture generation and `[Frozen]` attribute
 - **NSubstitute** — automatic mocking
-- **FluentAssertions** — assertion library
+- **AwesomeAssertions** — assertion library
+
+> **Note:** Cabazure.Test depends on **AwesomeAssertions 9.6.0**. AwesomeAssertions 9 renamed the namespaces from `FluentAssertions.*` to `AwesomeAssertions.*`, so examples in this README use the new namespace.
 
 No additional packages are required to get started.
+
+### Global usings
+
+Referencing Cabazure.Test via `PackageReference` automatically adds the following global `using` directives to your project — no manual `<ItemGroup>` setup required:
+
+- `Cabazure.Test`
+- `AutoFixture`
+- `AutoFixture.AutoNSubstitute`
+- `AutoFixture.Xunit3`
+- `AwesomeAssertions`
+- `NSubstitute`
+- `NSubstitute.ReturnsExtensions`
+- `Xunit`
+- `System.ComponentModel.DataAnnotations`
+
+These are delivered via a `buildTransitive` MSBuild props file, so they also flow through to test projects that reference a shared test-helpers project which in turn references Cabazure.Test. This only applies to `PackageReference`; if you reference the library via `ProjectReference` (e.g. within this repo), add the usings manually.
 
 ---
 
@@ -49,7 +67,7 @@ No additional packages are required to get started.
 ```csharp
 using AutoFixture;
 using Cabazure.Test;
-using FluentAssertions;
+using AwesomeAssertions;
 using NSubstitute;
 using Xunit;
 
@@ -79,7 +97,7 @@ For theory-driven tests, `[AutoNSubstituteData]` resolves all parameters from a 
 
 ```csharp
 using AutoFixture.Xunit3;
-using FluentAssertions;
+using AwesomeAssertions;
 using NSubstitute;
 using Xunit;
 
@@ -108,7 +126,7 @@ Combine explicit inline values with auto-generated parameters. Inline values fil
 
 ```csharp
 using AutoFixture.Xunit3;
-using FluentAssertions;
+using AwesomeAssertions;
 using NSubstitute;
 using Xunit;
 
@@ -162,7 +180,7 @@ Apply a customization to a single test method or an entire test class without to
 ```csharp
 using AutoFixture.Xunit3;
 using Cabazure.Test;
-using FluentAssertions;
+using AwesomeAssertions;
 using NSubstitute;
 using Xunit;
 
@@ -229,11 +247,11 @@ public void Handler_UsesInterfaces(
 
 ## Argument Matching with `FluentArg`
 
-`FluentArg.Match<T>` bridges FluentAssertions into NSubstitute's argument matching pipeline. Use it when you want to verify a received call with rich FluentAssertions assertions on the argument, rather than simple equality.
+`FluentArg.Match<T>` bridges AwesomeAssertions into NSubstitute's argument matching pipeline. Use it when you want to verify a received call with rich assertion chains on the argument, rather than simple equality.
 
 ```csharp
 using Cabazure.Test;
-using FluentAssertions;
+using AwesomeAssertions;
 using NSubstitute;
 
 [Fact]
@@ -253,7 +271,7 @@ public void Submit_SendsCorrectRequest()
 }
 ```
 
-When the assertion fails, the FluentAssertions failure message is included in NSubstitute's `ReceivedCallsException`, so you get precise feedback on exactly which field didn't match.
+When the assertion fails, the AwesomeAssertions failure message is included in NSubstitute's `ReceivedCallsException`, so you get precise feedback on exactly which field didn't match.
 
 ---
 
@@ -261,7 +279,7 @@ When the assertion fails, the FluentAssertions failure message is included in NS
 
 | Feature | Description |
 |---|---|
-| `FluentArg.Match<T>` | NSubstitute argument matcher that uses FluentAssertions assertions. Assertion failure messages surface in `ReceivedCallsException`. |
+| `FluentArg.Match<T>` | NSubstitute argument matcher that uses AwesomeAssertions assertions. Assertion failure messages surface in `ReceivedCallsException`. |
 | `FixtureFactory` | `Create()` and `Create(ICustomization[])` — returns a configured `IFixture` for use in `[Fact]` tests. |
 | `[AutoNSubstituteData]` | xUnit 3 `DataAttribute` — all theory parameters are auto-generated from the fixture. |
 | `[InlineAutoNSubstituteData]` | Inline values fill leading parameters; remaining parameters are auto-generated by the fixture. |
@@ -451,13 +469,13 @@ FixtureFactory.Customizations.Add<DateOnly>(
 
 | Package | Version |
 |---|---|
-| `xunit.v3` | 3.2.2 |
+| `xunit.v3` | 4.0.0 |
 | `NSubstitute` | 5.3.0 |
 | `AutoFixture` | 4.18.1 |
 | `AutoFixture.AutoNSubstitute` | 4.18.1 |
-| `FluentAssertions` | 7.0.0 |
+| `AwesomeAssertions` | 9.6.0 |
 
-All packages are exposed as transitive dependencies — you get full access to the xUnit, NSubstitute, AutoFixture, and FluentAssertions APIs without adding additional package references.
+All packages are exposed as transitive dependencies — you get full access to the xUnit, NSubstitute, AutoFixture, and AwesomeAssertions APIs without adding additional package references.
 
 ---
 
@@ -483,7 +501,7 @@ var dto = await sut.InvokeProtectedAsync<OrderDto>("FetchOrderAsync", id, cancel
 
 ```csharp
 using Cabazure.Test;
-using FluentAssertions;
+using AwesomeAssertions;
 using Xunit;
 
 public class OrderProcessorTests
@@ -512,9 +530,9 @@ public class OrderProcessor
 
 ---
 
-## FluentAssertions Extensions
+## AwesomeAssertions Extensions
 
-**Cabazure.Test** extends FluentAssertions with domain-specific assertions for JSON and datetime operations. All extensions are available via `using Cabazure.Test;` — no additional using directives are required.
+**Cabazure.Test** extends AwesomeAssertions with domain-specific assertions for JSON and datetime operations. All extensions are available via `using Cabazure.Test;` — no additional using directives are required.
 
 ### JsonElement Comparison
 
@@ -524,7 +542,7 @@ public class OrderProcessor
 
 ```csharp
 using Cabazure.Test;
-using FluentAssertions;
+using AwesomeAssertions;
 using System.Text.Json;
 
 var element1 = JsonDocument.Parse("""{"name":"Alice","age":30}""").RootElement;
@@ -537,7 +555,7 @@ element1.Should().BeEquivalentTo(element2);  // ✓ Passes — same content, dif
 
 ```csharp
 using Cabazure.Test;
-using FluentAssertions;
+using AwesomeAssertions;
 using System.Text.Json;
 
 var element = JsonDocument.Parse("""{"status":"active"}""").RootElement;
@@ -560,7 +578,7 @@ By default, `CabazureAssertionOptions.DateTimeOffsetPrecision` is set to **1 sec
 
 ```csharp
 using Cabazure.Test;
-using FluentAssertions;
+using AwesomeAssertions;
 
 [Fact]
 public void OrderTimestamp_IsRecent()
@@ -578,7 +596,7 @@ Provide a custom precision in milliseconds for a single assertion:
 
 ```csharp
 using Cabazure.Test;
-using FluentAssertions;
+using AwesomeAssertions;
 
 var time1 = new DateTimeOffset(2026, 3, 10, 12, 0, 0, TimeSpan.Zero);
 var time2 = new DateTimeOffset(2026, 3, 10, 12, 0, 0, 100, TimeSpan.Zero);
@@ -626,7 +644,7 @@ public static void Initialize()
 
 ### Allowing Empty Objects in BeEquivalentTo
 
-When testing serialization round-trips across many DTO types, some may have no public properties. FluentAssertions 7.x throws `InvalidOperationException: "No members were found for comparison..."` in this case.
+When testing serialization round-trips across many DTO types, some may have no public properties. AwesomeAssertions 9.x throws `InvalidOperationException: "No members were found for comparison..."` in this case.
 
 Use `AllowingEmptyObjects()` to allow the assertion to pass for types with no public members:
 
@@ -638,13 +656,13 @@ result.Should().BeEquivalentTo(expected, opts => opts.AllowingEmptyObjects());
 AssertionOptions.AssertEquivalencyUsing(opts => opts.AllowingEmptyObjects());
 ```
 
-Types with members continue through FluentAssertions' normal equivalency pipeline unchanged.
+Types with members continue through AwesomeAssertions' normal equivalency pipeline unchanged.
 
 ---
 
 ## String Content Assertions
 
-The `StringContentExtensions` class extends FluentAssertions' `StringAssertions` with three
+The `StringContentExtensions` class extends AwesomeAssertions' `StringAssertions` with three
 format-ignorant comparison methods, each with a positive and negative form.
 
 ### Whitespace-Normalized Comparison
@@ -654,7 +672,7 @@ collapsed to a single space before comparison:
 
 ```csharp
 using Cabazure.Test;
-using FluentAssertions;
+using AwesomeAssertions;
 
 var subject = """
     Hello
@@ -670,7 +688,7 @@ Compare XML strings by structure and content, ignoring indentation and line endi
 
 ```csharp
 using Cabazure.Test;
-using FluentAssertions;
+using AwesomeAssertions;
 
 var subject = """
     <root>
@@ -687,7 +705,7 @@ Compare JSON strings by value, ignoring formatting:
 
 ```csharp
 using Cabazure.Test;
-using FluentAssertions;
+using AwesomeAssertions;
 
 var subject = """
     {
@@ -700,7 +718,7 @@ subject.Should().BeJsonEquivalentTo("""{"name":"Alice","age":30}""");
 ```
 
 Each method has a `Not` counterpart (`NotBeSimilarTo`, `NotBeXmlEquivalentTo`, `NotBeJsonEquivalentTo`)
-and supports the standard FluentAssertions `because`/`becauseArgs` parameters.
+and supports the standard AwesomeAssertions `because`/`becauseArgs` parameters.
 
 ---
 
@@ -728,7 +746,7 @@ If the test exceeds the timeout, xUnit 3 throws `TestTimeoutException`. This is 
 Use `Task.WaitAsync(TimeSpan)` (.NET 6+) to add a timeout to individual `await` expressions. This is ideal when a single async call might hang:
 
 ```csharp
-using FluentAssertions;
+using AwesomeAssertions;
 
 [Fact]
 public async Task ApiCall_ReturnsWithinTimeout()
@@ -779,7 +797,7 @@ internal static class TestAssemblyInitializer
 - **.NET 6–9** — use the `netstandard2.1` DLL (xUnit 3 requires .NET 6+, so this is the typical multi-version scenario). Xamarin, Unity, and Mono (6.4+) also support netstandard2.1.
 
 > **Note:** .NET Framework is *not* supported. It tops out at netstandard2.0, while Cabazure.Test requires netstandard2.1.
-- **FluentAssertions 7.x** is included. FA 7 contains breaking changes from 6.x. If you are migrating from Atc.Test or another package that used FA 6, review the [FluentAssertions 7 migration guide](https://fluentassertions.com/upgradingtov7) before upgrading.
+- **AwesomeAssertions 9.6.0** is included. Use `using AwesomeAssertions;` and the corresponding `AwesomeAssertions.*` namespaces in your tests and custom extensions.
 
 ---
 

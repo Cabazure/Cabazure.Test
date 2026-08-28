@@ -1,5 +1,5 @@
 using Cabazure.Test;
-using FluentAssertions;
+using AwesomeAssertions;
 using NSubstitute;
 using NSubstitute.Exceptions;
 using Xunit;

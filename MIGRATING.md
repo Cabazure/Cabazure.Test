@@ -88,7 +88,7 @@ The following extension methods have been renamed:
 | `substitute.WaitForCall(x => x.Method(...))` | `substitute.WaitForReceived(x => x.Method(...))` | |
 | `substitute.WaitForCallForAnyArgs(x => x.Method(...))` | `substitute.WaitForReceivedWithAnyArgs(x => x.Method(...))` | |
 | `substitute.ReceivedCallWithArgument<T>()` | `substitute.ReceivedArg<T>()` | Returns `T` from the most recent matching call for further assertions |
-| `options.CompareJsonElementUsingJson()` | `options.UsingJsonElementComparison()` | FluentAssertions `BeEquivalentTo` option |
+| `options.CompareJsonElementUsingJson()` | `options.UsingJsonElementComparison()` | AwesomeAssertions `BeEquivalentTo` option |
 | `sub.InvokeProtectedMethod(name, args)` | `sub.InvokeProtected(name, args)` | Synchronous protected methods |
 | `sub.InvokeProtectedMethod(name, args)` | `sub.InvokeProtectedAsync(name, args)` | Asynchronous protected methods — previously the same method name |
 
@@ -122,7 +122,7 @@ await someTask.WaitAsync(TestTimeouts.Default);
 
 ## Step 6 — Replace `HasProperties()` with `AllowingEmptyObjects()`
 
-Atc.Test provided a `HasProperties()` extension as a guard before calling `BeEquivalentTo` on types with no public properties (which FluentAssertions throws on without a guard):
+Atc.Test provided a `HasProperties()` extension as a guard before calling `BeEquivalentTo` on types with no public properties (which AwesomeAssertions throws on without a guard):
 
 ```csharp
 // Atc.Test — old
@@ -130,7 +130,7 @@ if (result.HasProperties())
     result.Should().BeEquivalentTo<object>(expected);
 ```
 
-Cabazure.Test adds `AllowingEmptyObjects()` to FluentAssertions' equivalency options, removing the need for the conditional:
+Cabazure.Test adds `AllowingEmptyObjects()` to AwesomeAssertions' equivalency options, removing the need for the conditional:
 
 ```csharp
 // Cabazure.Test — new
@@ -168,7 +168,7 @@ substitute.Received(1).Handle(
 
 This is usually a good fit when the old Atc.Test pattern was `Arg.Any<T>()` followed by `ReceivedCallWithArgument<T>()`, or the Cabazure.Test equivalent `ReceivedArg<T>()`, and the extracted value was only used for that immediate assertion. If the test reuses the captured argument, transforms it first, or inspects a batch of received values, the post-call inspection style often stays clearer.
 
-`FluentArg.Match<T>()` takes an assertion action, not a boolean predicate, so keep the checks inside FluentAssertions-style assertions.
+`FluentArg.Match<T>()` takes an assertion action, not a boolean predicate, so keep the checks inside AwesomeAssertions-style assertions.
 
 ---
 

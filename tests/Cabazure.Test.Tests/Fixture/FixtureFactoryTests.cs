@@ -1,6 +1,6 @@
 using AutoFixture;
 using Cabazure.Test;
-using FluentAssertions;
+using AwesomeAssertions;
 using NSubstitute;
 using Xunit;
 

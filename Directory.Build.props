@@ -5,7 +5,7 @@
   <PropertyGroup Label="Assembly Naming">
     <Company>Cabazure</Company>
     <Authors>Cabazure</Authors>
-    <Description>Testing library combining xUnit 3, NSubstitute, AutoFixture and FluentAssertions for easy and expressive unit tests.</Description>
+    <Description>Testing library combining xUnit 3, NSubstitute, AutoFixture and AwesomeAssertions for easy and expressive unit tests.</Description>
     <NeutralLanguage>en</NeutralLanguage>
     <DefaultLanguage>en-US</DefaultLanguage>
     <DebugSymbols>true</DebugSymbols>

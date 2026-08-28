@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Reflection;
 using AutoFixture;
-using FluentAssertions;
+using AwesomeAssertions;
 using Xunit.Sdk;
 
 namespace Cabazure.Test.Tests.Attributes;
