@@ -1,6 +1,6 @@
 # Cabazure.Test — Copilot Instructions
 
-Cabazure.Test is an open-source .NET testing library that integrates **xUnit 3**, **NSubstitute**, **AutoFixture**, and **FluentAssertions** into a cohesive, ergonomic testing experience.
+Cabazure.Test is an open-source .NET testing library that integrates **xUnit 3**, **NSubstitute**, **AutoFixture**, and **AwesomeAssertions** into a cohesive, ergonomic testing experience.
 
 ### README Sync Rule
 
@@ -18,7 +18,7 @@ Cabazure.Test is an open-source .NET testing library that integrates **xUnit 3**
 | Test framework | xUnit 3 (`xunit` 3.x) |
 | Mocking | NSubstitute |
 | Test data | AutoFixture + AutoFixture.AutoNSubstitute |
-| Assertions | FluentAssertions |
+| Assertions | AwesomeAssertions |
 | Packaging | NuGet |
 
 ## Core Library Concepts
@@ -87,9 +87,9 @@ public void MyTest(MyService sut) { ... }
 
 `[CustomizeWith]` is in the `Cabazure.Test` namespace.
 
-### FluentAssertions Extensions (`Assertions/`)
+### AwesomeAssertions Extensions (`Assertions/`)
 
-The library extends FluentAssertions with custom assertion methods. All live in `src/Cabazure.Test/Assertions/` and are in the `Cabazure.Test` namespace (no extra `using` needed beyond `using Cabazure.Test;`).
+The library extends AwesomeAssertions with custom assertion methods. All live in `src/Cabazure.Test/Assertions/` and are in the `Cabazure.Test` namespace (no extra `using` needed beyond `using Cabazure.Test;`).
 
 #### `JsonElementAssertions`
 
@@ -123,7 +123,7 @@ CabazureAssertionOptions.DateTimeOffsetPrecision = TimeSpan.FromMilliseconds(100
 
 #### `EmptyObjectEquivalencyStep` / `AllowingEmptyObjects<TSelf>()`
 
-- `EmptyObjectEquivalencyStep` — `IEquivalencyStep` that allows `BeEquivalentTo` on types with no public properties/fields; returns `AssertionCompleted` for empty types to bypass FluentAssertions' structural step that would throw `InvalidOperationException`
+- `EmptyObjectEquivalencyStep` — `IEquivalencyStep` that allows `BeEquivalentTo` on types with no public properties/fields; returns `AssertionCompleted` for empty types to bypass AwesomeAssertions' structural step that would throw `InvalidOperationException`
 - `AllowingEmptyObjects<TSelf>()` — extension on `SelfReferenceEquivalencyAssertionOptions<TSelf>` that registers `EmptyObjectEquivalencyStep`; works per-call via `opts.AllowingEmptyObjects()` and globally via `AssertionOptions.AssertEquivalencyUsing(opts => opts.AllowingEmptyObjects())`
 
 #### `StringContentExtensions`
@@ -151,7 +151,7 @@ xmlPayload.Should().BeXmlEquivalentTo("<root><item>1</item></root>");
 
 #### `FluentArg.Match<T>()`
 
-Creates a NSubstitute argument matcher backed by a FluentAssertions assertion. Use in `Received()` call verifications:
+Creates a NSubstitute argument matcher backed by an AwesomeAssertions assertion. Use in `Received()` call verifications:
 
 ```csharp
 substitute.Received().Process(FluentArg.Match<Request>(r =>
@@ -215,7 +215,7 @@ src/
     AssemblyInfo.cs         ← [InternalsVisibleTo] declarations
     CabazureAssertionOptions.cs  ← Global precision options (lives in DateTimeOffsetExtensions.cs)
     FixtureFactory.cs       ← Public fixture factory
-    FluentArg.cs            ← NSubstitute × FluentAssertions argument matcher
+    FluentArg.cs            ← NSubstitute × AwesomeAssertions argument matcher
     ProtectedMethodExtensions.cs
     ReceivedCallExtensions.cs
     WaitForReceivedExtensions.cs
@@ -262,7 +262,7 @@ All commits must follow [Conventional Commits](https://www.conventionalcommits.o
 **Types:** `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `perf`, `ci`
 
 **Scopes** (use the relevant one):
-- `assertions` — FluentAssertions extension methods (`Assertions/` folder)
+- `assertions` — AwesomeAssertions extension methods (`Assertions/` folder)
 - `fixture` — FixtureFactory and fixture configuration
 - `attributes` — DataAttribute and xUnit 3 integration
 - `customizations` — AutoFixture customizations

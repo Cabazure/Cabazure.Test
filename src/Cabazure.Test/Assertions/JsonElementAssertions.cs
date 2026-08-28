@@ -43,7 +43,7 @@ public sealed class JsonElementAssertions
         var subjectJson = subject.ToCompactString();
         var expectedJson = expected.ToCompactString();
 
-        Execute.Assertion
+        AssertionChain.GetOrCreate()
             .BecauseOf(because, becauseArgs)
             .ForCondition(subjectJson == expectedJson)
             .FailWith("Expected JSON to be equivalent to {0}{reason}, but found {1}.", expectedJson, subjectJson);

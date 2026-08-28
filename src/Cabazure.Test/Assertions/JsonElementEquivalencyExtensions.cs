@@ -13,8 +13,8 @@ public static class JsonElementEquivalencyExtensions
     /// for semantic comparison of <see cref="System.Text.Json.JsonElement"/> properties.
     /// </summary>
     /// <typeparam name="TSelf">
-    /// The concrete options type, either <see cref="EquivalencyAssertionOptions{TExpectation}"/>
-    /// (for per-call use) or <see cref="EquivalencyAssertionOptions"/> (for global use).
+    /// The concrete options type, either <see cref="EquivalencyOptions{TExpectation}"/>
+    /// (for per-call use) or <see cref="EquivalencyOptions"/> (for global use).
     /// </typeparam>
     /// <param name="options">The equivalency assertion options to configure.</param>
     /// <returns>
@@ -36,7 +36,7 @@ public static class JsonElementEquivalencyExtensions
     /// </para>
     /// </example>
     public static TSelf UsingJsonElementComparison<TSelf>(
-        this SelfReferenceEquivalencyAssertionOptions<TSelf> options)
-        where TSelf : SelfReferenceEquivalencyAssertionOptions<TSelf>
+        this SelfReferenceEquivalencyOptions<TSelf> options)
+        where TSelf : SelfReferenceEquivalencyOptions<TSelf>
         => options.Using(new JsonElementEquivalencyStep());
 }

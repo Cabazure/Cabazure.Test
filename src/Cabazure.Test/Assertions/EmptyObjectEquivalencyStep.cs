@@ -8,7 +8,7 @@ namespace Cabazure.Test;
 /// </summary>
 /// <remarks>
 /// <para>
-/// FluentAssertions 7.x throws <see cref="InvalidOperationException"/>
+/// AwesomeAssertions 8.x throws <see cref="InvalidOperationException"/>
 /// ("No members were found for comparison…") from <c>StructuralEqualityEquivalencyStep</c> any time
 /// the root-level object graph has zero public instance members to compare. This is a common problem
 /// when testing serialisation round-trips across many DTO types, some of which are marker/empty types.
@@ -45,14 +45,14 @@ public sealed class EmptyObjectEquivalencyStep : IEquivalencyStep
     /// The validator used to recursively assert nested members (not used by this step).
     /// </param>
     /// <returns>
-    /// <see cref="EquivalencyResult.AssertionCompleted"/> if the expectation type has no public
+    /// <see cref="EquivalencyResult.EquivalencyProven"/> if the expectation type has no public
     /// instance properties and no public instance fields (the assertion trivially passes);
     /// <see cref="EquivalencyResult.ContinueWithNext"/> otherwise.
     /// </returns>
     public EquivalencyResult Handle(
         Comparands comparands,
         IEquivalencyValidationContext context,
-        IEquivalencyValidator nestedValidator)
+        IValidateChildNodeEquivalency nestedValidator)
     {
         var type = comparands.Expectation?.GetType();
         if (type is null)
@@ -73,6 +73,6 @@ public sealed class EmptyObjectEquivalencyStep : IEquivalencyStep
             return EquivalencyResult.ContinueWithNext;
         }
 
-        return EquivalencyResult.AssertionCompleted;
+        return EquivalencyResult.EquivalencyProven;
     }
 }

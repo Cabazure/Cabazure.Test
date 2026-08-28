@@ -52,14 +52,14 @@ public sealed class JsonElementEquivalencyStep : IEquivalencyStep
     /// to delegate string comparison to FluentAssertions for accurate diff messages.
     /// </param>
     /// <returns>
-    /// <see cref="EquivalencyResult.AssertionCompleted"/> if both comparands are
+    /// <see cref="EquivalencyResult.EquivalencyProven"/> if both comparands are
     /// <see cref="System.Text.Json.JsonElement"/> values (assertion performed, pipeline stops);
     /// <see cref="EquivalencyResult.ContinueWithNext"/> otherwise.
     /// </returns>
     public EquivalencyResult Handle(
         Comparands comparands,
         IEquivalencyValidationContext context,
-        IEquivalencyValidator nestedValidator)
+        IValidateChildNodeEquivalency nestedValidator)
     {
         if (comparands.Subject is not JsonElement subject
             || comparands.Expectation is not JsonElement expectation)
@@ -72,8 +72,8 @@ public sealed class JsonElementEquivalencyStep : IEquivalencyStep
             expectation.ToCompactString(),
             typeof(string));
 
-        nestedValidator.RecursivelyAssertEquality(newComparands, context);
+        nestedValidator.AssertEquivalencyOf(newComparands, context);
 
-        return EquivalencyResult.AssertionCompleted;
+        return EquivalencyResult.EquivalencyProven;
     }
 }
