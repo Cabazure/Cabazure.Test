@@ -453,7 +453,7 @@ FixtureFactory.Customizations.Add<DateOnly>(
 
 | Package | Version |
 |---|---|
-| `xunit.v3` | 3.2.2 |
+| `xunit.v3` | 4.0.0 |
 | `NSubstitute` | 5.3.0 |
 | `AutoFixture` | 4.18.1 |
 | `AutoFixture.AutoNSubstitute` | 4.18.1 |
