@@ -40,6 +40,22 @@ The package includes all dependencies needed for testing:
 
 No additional packages are required to get started.
 
+### Global usings
+
+Referencing Cabazure.Test via `PackageReference` automatically adds the following global `using` directives to your project — no manual `<ItemGroup>` setup required:
+
+- `Cabazure.Test`
+- `AutoFixture`
+- `AutoFixture.AutoNSubstitute`
+- `AutoFixture.Xunit3`
+- `AwesomeAssertions`
+- `NSubstitute`
+- `NSubstitute.ReturnsExtensions`
+- `Xunit`
+- `System.ComponentModel.DataAnnotations`
+
+These are delivered via a `buildTransitive` MSBuild props file, so they also flow through to test projects that reference a shared test-helpers project which in turn references Cabazure.Test. This only applies to `PackageReference`; if you reference the library via `ProjectReference` (e.g. within this repo), add the usings manually.
+
 ---
 
 ## Quick Start
