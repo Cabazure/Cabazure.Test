@@ -2,18 +2,6 @@
 
 Cabazure.Test is an open-source .NET testing library that integrates **xUnit 3**, **NSubstitute**, **AutoFixture**, and **FluentAssertions** into a cohesive, ergonomic testing experience.
 
-## Squad
-
-This project uses Squad for AI team collaboration. Before working on any issue:
-
-1. Read `.squad/team.md` for the team roster and member roles.
-2. Read `.squad/routing.md` for work routing rules.
-3. If the issue has a `squad:{member}` label, read `.squad/agents/{member}/charter.md` to understand their domain expertise and work in their voice.
-
-### Squad History Commit Rule
-
-**After every session, all `.squad/` changes must be committed to the repo.** This includes history files, decisions, orchestration logs, and session logs. The Scribe is responsible for staging and committing `.squad/` changes at the end of each agent batch. No agent session is complete until squad state is committed.
-
 ### README Sync Rule
 
 **Whenever a new public API, customization, or feature is added or removed, `README.md` must be updated in the same commit.** The README is the primary documentation for library users. A feature that isn't in the README doesn't exist to consumers. This applies to:
@@ -281,7 +269,6 @@ All commits must follow [Conventional Commits](https://www.conventionalcommits.o
 - `tests` — test project changes
 - `packaging` — NuGet / .csproj metadata
 - `ci` — GitHub Actions workflows
-- `squad` — squad team / agent files
 - `github` — `.github/` config (not CI)
 - *(omit scope for repo-wide changes)*
 
@@ -295,19 +282,9 @@ chore(packaging): configure NuGet metadata and license
 
 Each commit should cover **one concern only** — no mixing features with test changes unless the test is inseparable from the feature (e.g., an internal test helper).
 
-## Branch Naming
-
-```
-squad/{issue-number}-{kebab-case-slug}
-```
-
-Example: `squad/12-implement-sut-fixture`
-
 ## PR Guidelines
 
 - Reference the issue: `Closes #{issue-number}`
-- If the issue had a `squad:{member}` label: `Working as {member} ({role})`
-- If flagged 🟡 needs-review: add a note in the PR description requesting squad review before merge.
 - Keep PRs focused — one concern per PR.
 
 ## Capability Self-Check (for Coding Agent)
@@ -316,4 +293,4 @@ Before starting:
 
 - **🟢 Good fit** — well-defined, follows existing patterns, bounded scope → proceed autonomously.
 - **🟡 Needs review** — medium complexity, new API surface, or performance-sensitive → proceed, flag in PR.
-- **🔴 Not suitable** — architecture decisions, API design, security concerns → comment on the issue and suggest reassignment to **Mal**.
+- **🔴 Not suitable** — architecture decisions, API design, or security-sensitive changes → stop and ask the user for direction before proceeding.
