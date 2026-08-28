@@ -36,7 +36,7 @@ The package includes all dependencies needed for testing:
 - **NSubstitute** — automatic mocking
 - **AwesomeAssertions** — assertion library
 
-> **Note:** Cabazure.Test currently depends on **AwesomeAssertions 8.x**, which keeps the `FluentAssertions` namespaces and assembly names for source compatibility. Existing `using FluentAssertions;` directives continue to work unchanged.
+> **Note:** Cabazure.Test depends on **AwesomeAssertions 9.6.0**. AwesomeAssertions 9 renamed the namespaces from `FluentAssertions.*` to `AwesomeAssertions.*`, so examples in this README use the new namespace.
 
 No additional packages are required to get started.
 
@@ -51,7 +51,7 @@ No additional packages are required to get started.
 ```csharp
 using AutoFixture;
 using Cabazure.Test;
-using FluentAssertions;
+using AwesomeAssertions;
 using NSubstitute;
 using Xunit;
 
@@ -81,7 +81,7 @@ For theory-driven tests, `[AutoNSubstituteData]` resolves all parameters from a 
 
 ```csharp
 using AutoFixture.Xunit3;
-using FluentAssertions;
+using AwesomeAssertions;
 using NSubstitute;
 using Xunit;
 
@@ -110,7 +110,7 @@ Combine explicit inline values with auto-generated parameters. Inline values fil
 
 ```csharp
 using AutoFixture.Xunit3;
-using FluentAssertions;
+using AwesomeAssertions;
 using NSubstitute;
 using Xunit;
 
@@ -164,7 +164,7 @@ Apply a customization to a single test method or an entire test class without to
 ```csharp
 using AutoFixture.Xunit3;
 using Cabazure.Test;
-using FluentAssertions;
+using AwesomeAssertions;
 using NSubstitute;
 using Xunit;
 
@@ -235,7 +235,7 @@ public void Handler_UsesInterfaces(
 
 ```csharp
 using Cabazure.Test;
-using FluentAssertions;
+using AwesomeAssertions;
 using NSubstitute;
 
 [Fact]
@@ -457,7 +457,7 @@ FixtureFactory.Customizations.Add<DateOnly>(
 | `NSubstitute` | 5.3.0 |
 | `AutoFixture` | 4.18.1 |
 | `AutoFixture.AutoNSubstitute` | 4.18.1 |
-| `AwesomeAssertions` | 8.x |
+| `AwesomeAssertions` | 9.6.0 |
 
 All packages are exposed as transitive dependencies — you get full access to the xUnit, NSubstitute, AutoFixture, and AwesomeAssertions APIs without adding additional package references.
 
@@ -485,7 +485,7 @@ var dto = await sut.InvokeProtectedAsync<OrderDto>("FetchOrderAsync", id, cancel
 
 ```csharp
 using Cabazure.Test;
-using FluentAssertions;
+using AwesomeAssertions;
 using Xunit;
 
 public class OrderProcessorTests
@@ -526,7 +526,7 @@ public class OrderProcessor
 
 ```csharp
 using Cabazure.Test;
-using FluentAssertions;
+using AwesomeAssertions;
 using System.Text.Json;
 
 var element1 = JsonDocument.Parse("""{"name":"Alice","age":30}""").RootElement;
@@ -539,7 +539,7 @@ element1.Should().BeEquivalentTo(element2);  // ✓ Passes — same content, dif
 
 ```csharp
 using Cabazure.Test;
-using FluentAssertions;
+using AwesomeAssertions;
 using System.Text.Json;
 
 var element = JsonDocument.Parse("""{"status":"active"}""").RootElement;
@@ -562,7 +562,7 @@ By default, `CabazureAssertionOptions.DateTimeOffsetPrecision` is set to **1 sec
 
 ```csharp
 using Cabazure.Test;
-using FluentAssertions;
+using AwesomeAssertions;
 
 [Fact]
 public void OrderTimestamp_IsRecent()
@@ -580,7 +580,7 @@ Provide a custom precision in milliseconds for a single assertion:
 
 ```csharp
 using Cabazure.Test;
-using FluentAssertions;
+using AwesomeAssertions;
 
 var time1 = new DateTimeOffset(2026, 3, 10, 12, 0, 0, TimeSpan.Zero);
 var time2 = new DateTimeOffset(2026, 3, 10, 12, 0, 0, 100, TimeSpan.Zero);
@@ -628,7 +628,7 @@ public static void Initialize()
 
 ### Allowing Empty Objects in BeEquivalentTo
 
-When testing serialization round-trips across many DTO types, some may have no public properties. AwesomeAssertions 8.x throws `InvalidOperationException: "No members were found for comparison..."` in this case.
+When testing serialization round-trips across many DTO types, some may have no public properties. AwesomeAssertions 9.x throws `InvalidOperationException: "No members were found for comparison..."` in this case.
 
 Use `AllowingEmptyObjects()` to allow the assertion to pass for types with no public members:
 
@@ -656,7 +656,7 @@ collapsed to a single space before comparison:
 
 ```csharp
 using Cabazure.Test;
-using FluentAssertions;
+using AwesomeAssertions;
 
 var subject = """
     Hello
@@ -672,7 +672,7 @@ Compare XML strings by structure and content, ignoring indentation and line endi
 
 ```csharp
 using Cabazure.Test;
-using FluentAssertions;
+using AwesomeAssertions;
 
 var subject = """
     <root>
@@ -689,7 +689,7 @@ Compare JSON strings by value, ignoring formatting:
 
 ```csharp
 using Cabazure.Test;
-using FluentAssertions;
+using AwesomeAssertions;
 
 var subject = """
     {
@@ -730,7 +730,7 @@ If the test exceeds the timeout, xUnit 3 throws `TestTimeoutException`. This is 
 Use `Task.WaitAsync(TimeSpan)` (.NET 6+) to add a timeout to individual `await` expressions. This is ideal when a single async call might hang:
 
 ```csharp
-using FluentAssertions;
+using AwesomeAssertions;
 
 [Fact]
 public async Task ApiCall_ReturnsWithinTimeout()
@@ -781,7 +781,7 @@ internal static class TestAssemblyInitializer
 - **.NET 6–9** — use the `netstandard2.1` DLL (xUnit 3 requires .NET 6+, so this is the typical multi-version scenario). Xamarin, Unity, and Mono (6.4+) also support netstandard2.1.
 
 > **Note:** .NET Framework is *not* supported. It tops out at netstandard2.0, while Cabazure.Test requires netstandard2.1.
-- **AwesomeAssertions 8.x** is included. It is source-compatible with FluentAssertions 7-style `using` directives, but Cabazure.Test does not yet take a dependency on AwesomeAssertions 9 because v9 renames namespaces and drops `netstandard2.1`.
+- **AwesomeAssertions 9.6.0** is included. Use `using AwesomeAssertions;` and the corresponding `AwesomeAssertions.*` namespaces in your tests and custom extensions.
 
 ---
 

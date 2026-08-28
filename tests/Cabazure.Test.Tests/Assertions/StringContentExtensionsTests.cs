@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Xml;
 using Cabazure.Test;
-using FluentAssertions;
+using AwesomeAssertions;
 using Xunit;
 
 namespace Cabazure.Test.Tests.Assertions;

@@ -123,8 +123,8 @@ CabazureAssertionOptions.DateTimeOffsetPrecision = TimeSpan.FromMilliseconds(100
 
 #### `EmptyObjectEquivalencyStep` / `AllowingEmptyObjects<TSelf>()`
 
-- `EmptyObjectEquivalencyStep` — `IEquivalencyStep` that allows `BeEquivalentTo` on types with no public properties/fields; returns `AssertionCompleted` for empty types to bypass AwesomeAssertions' structural step that would throw `InvalidOperationException`
-- `AllowingEmptyObjects<TSelf>()` — extension on `SelfReferenceEquivalencyAssertionOptions<TSelf>` that registers `EmptyObjectEquivalencyStep`; works per-call via `opts.AllowingEmptyObjects()` and globally via `AssertionOptions.AssertEquivalencyUsing(opts => opts.AllowingEmptyObjects())`
+- `EmptyObjectEquivalencyStep` — `IEquivalencyStep` that allows `BeEquivalentTo` on types with no public properties/fields; returns `EquivalencyProven` for empty types to bypass AwesomeAssertions' structural step that would throw `InvalidOperationException`
+- `AllowingEmptyObjects<TSelf>()` — extension on `SelfReferenceEquivalencyOptions<TSelf>` that registers `EmptyObjectEquivalencyStep`; works per-call via `opts.AllowingEmptyObjects()` and globally via `AssertionOptions.AssertEquivalencyUsing(opts => opts.AllowingEmptyObjects())`
 
 #### `StringContentExtensions`
 

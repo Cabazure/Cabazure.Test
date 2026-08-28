@@ -2,7 +2,7 @@ using AutoFixture;
 using AutoFixture.Kernel;
 using FrozenAttribute = AutoFixture.Xunit3.FrozenAttribute;
 using Cabazure.Test.Customizations;
-using FluentAssertions;
+using AwesomeAssertions;
 using NSubstitute;
 using Xunit;
 

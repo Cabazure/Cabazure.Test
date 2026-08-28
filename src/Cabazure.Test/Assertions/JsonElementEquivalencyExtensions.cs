@@ -1,9 +1,9 @@
-using FluentAssertions.Equivalency;
+using AwesomeAssertions.Equivalency;
 
 namespace Cabazure.Test;
 
 /// <summary>
-/// Extension methods for registering <see cref="JsonElementEquivalencyStep"/> with FluentAssertions
+/// Extension methods for registering <see cref="JsonElementEquivalencyStep"/> with AwesomeAssertions
 /// equivalency assertion options.
 /// </summary>
 public static class JsonElementEquivalencyExtensions

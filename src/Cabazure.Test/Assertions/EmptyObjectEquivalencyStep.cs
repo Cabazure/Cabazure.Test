@@ -1,14 +1,14 @@
-using FluentAssertions.Equivalency;
+using AwesomeAssertions.Equivalency;
 
 namespace Cabazure.Test;
 
 /// <summary>
-/// A FluentAssertions <see cref="IEquivalencyStep"/> that allows <c>BeEquivalentTo</c> to succeed
+/// An AwesomeAssertions <see cref="IEquivalencyStep"/> that allows <c>BeEquivalentTo</c> to succeed
 /// when comparing instances of a type that has no public properties or fields.
 /// </summary>
 /// <remarks>
 /// <para>
-/// AwesomeAssertions 8.x throws <see cref="InvalidOperationException"/>
+/// AwesomeAssertions 9.x throws <see cref="InvalidOperationException"/>
 /// ("No members were found for comparison…") from <c>StructuralEqualityEquivalencyStep</c> any time
 /// the root-level object graph has zero public instance members to compare. This is a common problem
 /// when testing serialisation round-trips across many DTO types, some of which are marker/empty types.
@@ -17,7 +17,7 @@ namespace Cabazure.Test;
 /// This step intercepts the comparison pipeline <em>before</em> the structural step. If the
 /// expectation type has zero public instance properties and zero public instance fields, the two
 /// instances are considered trivially equivalent (there is nothing that can differ) and the assertion
-/// is immediately completed. All other types pass through to FluentAssertions' normal pipeline.
+/// is immediately completed. All other types pass through to AwesomeAssertions' normal pipeline.
 /// </para>
 /// <para>
 /// Register per-call:

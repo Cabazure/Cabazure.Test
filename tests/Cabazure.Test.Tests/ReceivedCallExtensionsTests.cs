@@ -1,5 +1,5 @@
 using Cabazure.Test;
-using FluentAssertions;
+using AwesomeAssertions;
 using NSubstitute;
 using Xunit;
 
@@ -100,7 +100,7 @@ public class ReceivedCallExtensionsTests
     }
 
     [Fact]
-    public void ReceivedArg_CombinedWithFluentAssertions_WorksEndToEnd()
+    public void ReceivedArg_CombinedWithAwesomeAssertions_WorksEndToEnd()
     {
         var service = Substitute.For<IReceivedTestService>();
         service.Process(new TestRequest { Name = "Alice", Amount = 100 });

@@ -12,9 +12,7 @@
     <PackageReference Include="AutoFixture" Version="4.18.1" />
     <PackageReference Include="AutoFixture.AutoNSubstitute" Version="4.18.1" />
     <PackageReference Include="AutoFixture.Xunit3" Version="4.19.0" />
-    <!-- Pinned to v8: AwesomeAssertions 9 renames namespaces/assembly and drops netstandard2.1 support.
-         Staying on v8 keeps FluentAssertions source compatibility for consumers on current targets. -->
-    <PackageReference Include="AwesomeAssertions" Version="[8.0.0, 9.0.0)" />
+    <PackageReference Include="AwesomeAssertions" Version="9.6.0" />
     <PackageReference Include="NSubstitute" Version="5.3.0" />
     <PackageReference Include="xunit.v3" Version="3.2.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />

@@ -1,7 +1,7 @@
 using System.Collections;
 using FrozenAttribute = AutoFixture.Xunit3.FrozenAttribute;
 using Cabazure.Test.Tests.Fixture;
-using FluentAssertions;
+using AwesomeAssertions;
 using Xunit;
 
 namespace Cabazure.Test.Tests.Attributes;
