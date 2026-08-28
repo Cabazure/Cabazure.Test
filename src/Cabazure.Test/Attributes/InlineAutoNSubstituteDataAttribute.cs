@@ -42,7 +42,7 @@ public sealed class InlineAutoNSubstituteDataAttribute : DataAttribute
     /// <param name="values">The explicit values for the leading theory parameters.</param>
     public InlineAutoNSubstituteDataAttribute(params object?[] values)
     {
-        Values = values;
+        Values = values ?? [null];
     }
 
     /// <summary>

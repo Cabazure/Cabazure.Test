@@ -64,4 +64,24 @@ public class InlineAutoNSubstituteDataAttributeTests
     {
         sut.Message.Should().Be("hello");
     }
+
+    [Theory]
+    [InlineAutoNSubstituteData(null)]
+    public void NullInlineReferenceValue_IsPassedThrough(
+        string? value,
+        FixtureFactoryTests.IMyInterface service)
+    {
+        value.Should().BeNull();
+        service.Should().NotBeNull();
+    }
+
+    [Theory]
+    [InlineAutoNSubstituteData(null)]
+    public void NullInlineNullableValue_IsPassedThrough(
+        bool? enabled,
+        FixtureFactoryTests.IMyInterface service)
+    {
+        enabled.Should().BeNull();
+        service.Should().NotBeNull();
+    }
 }
