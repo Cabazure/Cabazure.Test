@@ -49,8 +49,12 @@ Referencing Cabazure.Test via `PackageReference` automatically adds the followin
 - `AutoFixture.AutoNSubstitute`
 - `AutoFixture.Xunit3`
 - `AwesomeAssertions`
+- `AwesomeAssertions.Execution`
 - `NSubstitute`
 - `NSubstitute.ReturnsExtensions`
+- `NSubstitute.ExceptionExtensions`
+- `NSubstitute.ReceivedExtensions`
+- `NSubstitute.ClearExtensions`
 - `Xunit`
 - `System.ComponentModel.DataAnnotations`
 

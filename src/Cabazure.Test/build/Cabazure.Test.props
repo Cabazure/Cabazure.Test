@@ -11,8 +11,12 @@
     <Using Include="AutoFixture.AutoNSubstitute" />
     <Using Include="AutoFixture.Xunit3" />
     <Using Include="AwesomeAssertions" />
+    <Using Include="AwesomeAssertions.Execution" />
     <Using Include="NSubstitute" />
     <Using Include="NSubstitute.ReturnsExtensions" />
+    <Using Include="NSubstitute.ExceptionExtensions" />
+    <Using Include="NSubstitute.ReceivedExtensions" />
+    <Using Include="NSubstitute.ClearExtensions" />
     <Using Include="Xunit" />
     <Using Include="System.ComponentModel.DataAnnotations" />
   </ItemGroup>
